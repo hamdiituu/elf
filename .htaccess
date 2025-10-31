@@ -17,8 +17,8 @@ Options -Indexes
     Deny from all
 </FilesMatch>
 
-# Protect config and scripts folders
-<DirectoryMatch "^(config|scripts|database)">
+# Protect config, scripts, database and cron folders
+<DirectoryMatch "^(config|scripts|database|cron)">
     Order allow,deny
     Deny from all
 </DirectoryMatch>
