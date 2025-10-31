@@ -108,6 +108,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </svg>
                 Database Explorer
             </a>
+            <a
+                href="cron-manager.php"
+                class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == 'cron-manager.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
+            >
+                <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Cron Manager
+            </a>
         </nav>
         <div class="border-t border-border px-3 py-4 mt-auto">
             <div class="flex items-center justify-between">
