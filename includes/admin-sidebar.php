@@ -7,7 +7,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <div class="flex h-16 shrink-0 items-center px-6 border-b border-border">
             <h1 class="text-lg font-semibold text-foreground">Stok Sayım</h1>
         </div>
-        <nav class="flex-1 space-y-1 px-3 py-4">
+        <nav class="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+            <!-- Dashboard -->
             <a
                 href="admin.php"
                 class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == 'admin.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
@@ -17,6 +18,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </svg>
                 Ana Sayfa
             </a>
+            
+            <!-- Divider - Sayım Yönetimi -->
+            <div class="px-3 py-2">
+                <div class="border-t border-border"></div>
+                <div class="mt-2 px-2">
+                    <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sayım Yönetimi</span>
+                </div>
+            </div>
+            
             <a
                 href="sayimlar.php"
                 class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == 'sayimlar.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
@@ -35,6 +45,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </svg>
                 Sayım İçerikleri
             </a>
+            
+            <!-- Divider - Ürün Yönetimi -->
+            <div class="px-3 py-2">
+                <div class="border-t border-border"></div>
+                <div class="mt-2 px-2">
+                    <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ürün Yönetimi</span>
+                </div>
+            </div>
+            
             <a
                 href="urun-tanimi.php"
                 class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == 'urun-tanimi.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
@@ -44,6 +63,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </svg>
                 Ürün Tanımları
             </a>
+            
+            <!-- Divider - Sistem Yönetimi -->
+            <div class="px-3 py-2">
+                <div class="border-t border-border"></div>
+                <div class="mt-2 px-2">
+                    <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sistem Yönetimi</span>
+                </div>
+            </div>
+            
             <a
                 href="kullanicilar.php"
                 class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == 'kullanicilar.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
@@ -53,6 +81,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </svg>
                 Kullanıcılar
             </a>
+            
+            <!-- Divider - Developer -->
+            <div class="px-3 py-2">
+                <div class="border-t border-border"></div>
+                <div class="mt-2 px-2">
+                    <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Developer</span>
+                </div>
+            </div>
+            
             <a
                 href="api-playground.php"
                 class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == 'api-playground.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
@@ -81,4 +118,3 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </div>
     </div>
 </aside>
-
