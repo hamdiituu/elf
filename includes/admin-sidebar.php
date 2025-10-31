@@ -99,6 +99,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </svg>
                 API Playground
             </a>
+            <a
+                href="database-explorer.php"
+                class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == 'database-explorer.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
+            >
+                <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                </svg>
+                Database Explorer
+            </a>
         </nav>
         <div class="border-t border-border px-3 py-4 mt-auto">
             <div class="flex items-center justify-between">
