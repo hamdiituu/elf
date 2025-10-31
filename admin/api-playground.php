@@ -47,6 +47,18 @@ $apis = [
             ['name' => 'sayim_no', 'type' => 'string', 'required' => true, 'description' => 'Sayım numarası (query parameter)'],
             ['name' => 'barkod', 'type' => 'string', 'required' => false, 'description' => 'Ürün barkodu (optional - filter by barkod)']
         ]
+    ],
+    [
+        'id' => 'product-record',
+        'name' => 'Product Record',
+        'description' => 'Create, read, update, and delete product records (urun_tanimi)',
+        'methods' => ['GET', 'POST', 'PUT', 'DELETE'],
+        'endpoint' => '../api/integration/product-record.php',
+        'parameters' => [
+            ['name' => 'barkod', 'type' => 'string', 'required' => false, 'description' => 'Ürün barkodu (GET: optional query, POST/PUT/DELETE: required in body)'],
+            ['name' => 'include_deleted', 'type' => 'boolean', 'required' => false, 'description' => 'Silinen ürünleri de dahil et (GET only - query parameter)'],
+            ['name' => 'urun_aciklamasi', 'type' => 'string', 'required' => false, 'description' => 'Ürün açıklaması (POST/PUT: optional in body)']
+        ]
     ]
 ];
 
