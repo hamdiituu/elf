@@ -13,6 +13,66 @@ $selected_table = null;
 $table_columns = [];
 $table_data = [];
 $custom_query = $_POST['custom_query'] ?? null;
+$saved_query_name = $_POST['saved_query_name'] ?? null;
+$load_query_id = $_GET['load_query'] ?? null;
+$delete_query_id = $_GET['delete_query'] ?? null;
+
+// Ensure saved_queries table exists
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS saved_queries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        query TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )");
+} catch (PDOException $e) {
+    // Table might already exist, ignore error
+}
+
+// Handle save query
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_query' && $custom_query && $saved_query_name) {
+    try {
+        $stmt = $db->prepare("INSERT INTO saved_queries (name, query) VALUES (?, ?)");
+        $stmt->execute([$saved_query_name, $custom_query]);
+        $success_message = "Query başarıyla kaydedildi!";
+    } catch (PDOException $e) {
+        $error_message = "Query kaydedilirken hata: " . $e->getMessage();
+    }
+}
+
+// Handle delete query
+if ($delete_query_id) {
+    try {
+        $stmt = $db->prepare("DELETE FROM saved_queries WHERE id = ?");
+        $stmt->execute([$delete_query_id]);
+        $success_message = "Query başarıyla silindi!";
+    } catch (PDOException $e) {
+        $error_message = "Query silinirken hata: " . $e->getMessage();
+    }
+}
+
+// Handle load query
+if ($load_query_id) {
+    try {
+        $stmt = $db->prepare("SELECT query FROM saved_queries WHERE id = ?");
+        $stmt->execute([$load_query_id]);
+        $saved_query = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($saved_query) {
+            $custom_query = $saved_query['query'];
+        }
+    } catch (PDOException $e) {
+        $error_message = "Query yüklenirken hata: " . $e->getMessage();
+    }
+}
+
+// Get saved queries
+$saved_queries = [];
+try {
+    $saved_queries = $db->query("SELECT * FROM saved_queries ORDER BY updated_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // Table might not exist yet
+}
 
 // Get all tables
 try {
@@ -113,23 +173,33 @@ include '../includes/header.php';
                     </div>
                 <?php endif; ?>
                 
-                <div class="grid gap-6 lg:grid-cols-3">
+                <div class="grid gap-6 lg:grid-cols-12">
                     <!-- Tables List -->
-                    <div class="lg:col-span-1">
+                    <div class="lg:col-span-3 transition-all duration-300" id="tables-panel">
                         <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
-                            <div class="p-6 pb-0">
-                                <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Tablolar</h3>
+                            <div class="p-4 pb-0 flex items-center justify-between">
+                                <h3 class="text-lg font-semibold leading-none tracking-tight" id="tables-title">Tablolar</h3>
+                                <button
+                                    type="button"
+                                    id="toggle-tables"
+                                    class="p-1 rounded hover:bg-muted transition-colors"
+                                    title="Küçült / Büyüt"
+                                >
+                                    <svg class="h-5 w-5 text-muted-foreground transition-transform" id="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V5l7 7-7 7z" />
+                                    </svg>
+                                </button>
                             </div>
-                            <div class="p-6 pt-0">
+                            <div class="p-4 pt-2" id="tables-content">
                                 <div class="space-y-2 max-h-[600px] overflow-y-auto">
                                     <?php foreach ($tables as $table): ?>
                                         <a
                                             href="?table=<?php echo htmlspecialchars($table); ?>"
-                                            class="block p-3 rounded-md border border-border hover:bg-accent transition-colors <?php echo $selected_table === $table ? 'bg-accent border-primary' : ''; ?>"
+                                            class="block p-2 rounded-md border border-border hover:bg-accent transition-colors <?php echo $selected_table === $table ? 'bg-accent border-primary' : ''; ?>"
                                         >
                                             <div class="flex items-center justify-between">
-                                                <span class="font-medium text-sm"><?php echo htmlspecialchars($table); ?></span>
-                                                <svg class="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <span class="font-medium text-xs"><?php echo htmlspecialchars($table); ?></span>
+                                                <svg class="h-3 w-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                                 </svg>
                                             </div>
@@ -141,25 +211,88 @@ include '../includes/header.php';
                     </div>
 
                     <!-- Table Content / Query Result -->
-                    <div class="lg:col-span-2">
+                    <div class="lg:col-span-9 transition-all duration-300" id="query-panel">
+                        <!-- Saved Queries Sidebar -->
+                        <?php if (!empty($saved_queries)): ?>
+                        <div class="mb-6 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
+                            <div class="p-4 pb-0">
+                                <h3 class="text-sm font-semibold leading-none tracking-tight mb-3">Kaydedilmiş Query'ler</h3>
+                            </div>
+                            <div class="p-4 pt-2">
+                                <div class="space-y-2 max-h-[200px] overflow-y-auto">
+                                    <?php foreach ($saved_queries as $sq): ?>
+                                        <div class="flex items-center justify-between bg-muted/50 rounded p-2 hover:bg-muted transition-colors">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-sm font-medium text-foreground truncate"><?php echo htmlspecialchars($sq['name']); ?></span>
+                                                    <span class="text-xs text-muted-foreground"><?php echo date('d.m.Y H:i', strtotime($sq['created_at'])); ?></span>
+                                                </div>
+                                                <p class="text-xs text-muted-foreground truncate mt-1"><?php echo htmlspecialchars(substr($sq['query'], 0, 60)); ?>...</p>
+                                            </div>
+                                            <div class="flex items-center gap-1 ml-2 flex-shrink-0">
+                                                <a
+                                                    href="?load_query=<?php echo $sq['id']; ?><?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>"
+                                                    class="p-1.5 rounded hover:bg-primary hover:text-primary-foreground transition-colors"
+                                                    title="Yükle"
+                                                >
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                                    </svg>
+                                                </a>
+                                                <a
+                                                    href="?delete_query=<?php echo $sq['id']; ?><?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>"
+                                                    class="p-1.5 rounded hover:bg-red-500 hover:text-white transition-colors"
+                                                    title="Sil"
+                                                    onclick="return confirm('Bu query'yi silmek istediğinizden emin misiniz?')"
+                                                >
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
                         <!-- Custom Query Section -->
                         <div class="mb-6 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                             <div class="p-6 pb-0">
-                                <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">SQL Sorgusu</h3>
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight">SQL Sorgusu</h3>
+                                    <?php if (!empty($saved_queries)): ?>
+                                        <select
+                                            id="load-saved-query"
+                                            class="text-sm px-3 py-1.5 border border-input bg-background text-foreground rounded-md hover:bg-accent transition-colors"
+                                            onchange="if(this.value) { window.location.href='?load_query=' + this.value + '<?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>'; }"
+                                        >
+                                            <option value="">Kaydedilmiş Query Seç...</option>
+                                            <?php foreach ($saved_queries as $sq): ?>
+                                                <option value="<?php echo $sq['id']; ?>"><?php echo htmlspecialchars($sq['name']); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="p-6 pt-0">
-                                <form method="POST" action="">
+                                <form method="POST" action="" id="query-form">
+                                    <input type="hidden" name="action" value="run_query">
                                     <div class="space-y-4">
                                         <div>
                                             <textarea
                                                 name="custom_query"
-                                                rows="4"
+                                                id="custom_query"
+                                                rows="6"
                                                 class="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                                                 placeholder="SELECT * FROM users LIMIT 10;"><?php echo htmlspecialchars($custom_query ?? ''); ?></textarea>
                                         </div>
-                                        <div class="flex items-center gap-2">
+                                        <div class="flex items-center gap-2 flex-wrap">
                                             <button
                                                 type="submit"
+                                                name="action"
+                                                value="run_query"
                                                 class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 transition-colors"
                                             >
                                                 <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,6 +301,16 @@ include '../includes/header.php';
                                                 Sorguyu Çalıştır
                                             </button>
                                             <?php if ($custom_query): ?>
+                                                <button
+                                                    type="button"
+                                                    onclick="showSaveDialog()"
+                                                    class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 transition-colors"
+                                                >
+                                                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                                    </svg>
+                                                    Kaydet
+                                                </button>
                                                 <a
                                                     href="database-explorer.php<?php echo $selected_table ? '?table=' . htmlspecialchars($selected_table) : ''; ?>"
                                                     class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-4 py-2 transition-colors"
@@ -278,3 +421,115 @@ include '../includes/header.php';
 
 <?php include '../includes/footer.php'; ?>
 
+<!-- Save Query Dialog -->
+<div id="save-dialog" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" onclick="if(event.target === this) hideSaveDialog()">
+    <div class="bg-card border border-border rounded-lg shadow-lg p-6 max-w-md w-full mx-4" onclick="event.stopPropagation()">
+        <h3 class="text-lg font-semibold mb-4">Query Kaydet</h3>
+        <form method="POST" action="">
+            <input type="hidden" name="action" value="save_query">
+            <input type="hidden" name="custom_query" id="save_query_text">
+            <div class="space-y-4">
+                <div>
+                    <label for="saved_query_name" class="block text-sm font-medium mb-2">Query Adı:</label>
+                    <input
+                        type="text"
+                        name="saved_query_name"
+                        id="saved_query_name"
+                        required
+                        class="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Örn: Kullanıcı Listesi"
+                    >
+                </div>
+                <div class="flex items-center gap-2 justify-end">
+                    <button
+                        type="button"
+                        onclick="hideSaveDialog()"
+                        class="px-4 py-2 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 rounded-md transition-colors"
+                    >
+                        İptal
+                    </button>
+                    <button
+                        type="submit"
+                        class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
+                    >
+                        Kaydet
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Toggle tables panel
+let tablesCollapsed = localStorage.getItem('tablesCollapsed') === 'true';
+const panel = document.getElementById('tables-panel');
+const content = document.getElementById('tables-content');
+const queryPanel = document.getElementById('query-panel');
+const toggleBtn = document.getElementById('toggle-tables');
+const toggleIcon = document.getElementById('toggle-icon');
+const tablesTitle = document.getElementById('tables-title');
+
+function updateTablesPanel() {
+    if (tablesCollapsed) {
+        // Collapse: hide content, minimize panel
+        panel.classList.remove('lg:col-span-3');
+        panel.classList.add('lg:col-span-1');
+        panel.style.width = 'auto';
+        panel.style.minWidth = '60px';
+        content.style.display = 'none';
+        tablesTitle.style.display = 'none';
+        queryPanel.classList.remove('lg:col-span-9');
+        queryPanel.classList.add('lg:col-span-11');
+        toggleIcon.style.transform = 'rotate(180deg)';
+        // Make panel just show toggle button
+        panel.querySelector('.rounded-lg').classList.add('p-2');
+        panel.querySelector('.rounded-lg').classList.remove('p-4');
+    } else {
+        // Expand: show content, restore panel
+        panel.classList.remove('lg:col-span-1');
+        panel.classList.add('lg:col-span-3');
+        panel.style.width = '';
+        panel.style.minWidth = '';
+        content.style.display = 'block';
+        tablesTitle.style.display = 'block';
+        queryPanel.classList.remove('lg:col-span-11');
+        queryPanel.classList.add('lg:col-span-9');
+        toggleIcon.style.transform = 'rotate(0deg)';
+        // Restore padding
+        panel.querySelector('.rounded-lg').classList.remove('p-2');
+        panel.querySelector('.rounded-lg').classList.add('p-4');
+    }
+    localStorage.setItem('tablesCollapsed', tablesCollapsed);
+}
+
+// Initialize on page load
+updateTablesPanel();
+
+toggleBtn.addEventListener('click', function() {
+    tablesCollapsed = !tablesCollapsed;
+    updateTablesPanel();
+});
+
+// Save dialog functions
+function showSaveDialog() {
+    const query = document.getElementById('custom_query').value;
+    document.getElementById('save_query_text').value = query;
+    document.getElementById('save-dialog').classList.remove('hidden');
+    document.getElementById('save-dialog').classList.add('flex');
+    document.getElementById('saved_query_name').focus();
+}
+
+function hideSaveDialog() {
+    document.getElementById('save-dialog').classList.add('hidden');
+    document.getElementById('save-dialog').classList.remove('flex');
+    document.getElementById('saved_query_name').value = '';
+}
+
+// Close dialog on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideSaveDialog();
+    }
+});
+</script>
