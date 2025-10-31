@@ -7,6 +7,7 @@ if (isLoggedIn()) {
     exit;
 }
 
+$page_title = 'Giriş Yap - Stok Sayım Sistemi';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -35,54 +36,68 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error = 'Lütfen tüm alanları doldurun!';
     }
 }
+
+include 'includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giriş Yap - Stok Sayım Sistemi</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            padding: 40px;
-            max-width: 400px;
-            width: 100%;
-        }
-    </style>
-</head>
-<body>
-    <div class="login-card">
-        <h2 class="text-center mb-4">Stok Sayım Sistemi</h2>
-        <h4 class="text-center text-muted mb-4">Giriş Yap</h4>
+<div class="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <div class="w-full max-w-sm space-y-8">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-foreground">
+                Stok Sayım Sistemi
+            </h2>
+            <p class="mt-2 text-center text-sm text-muted-foreground">
+                Hesabınıza giriş yapın
+            </p>
+        </div>
         
         <?php if ($error): ?>
-            <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
+            <div class="rounded-md bg-red-50 p-4 border border-red-200">
+                <div class="text-sm text-red-800">
+                    <?php echo htmlspecialchars($error); ?>
+                </div>
+            </div>
         <?php endif; ?>
         
-        <form method="POST" action="">
-            <div class="mb-3">
-                <label for="username" class="form-label">Kullanıcı Adı</label>
-                <input type="text" class="form-control" id="username" name="username" required autofocus>
+        <form class="mt-8 space-y-6" method="POST" action="">
+            <div class="space-y-4 rounded-md shadow-sm">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-foreground mb-1.5">
+                        Kullanıcı Adı
+                    </label>
+                    <input
+                        id="username"
+                        name="username"
+                        type="text"
+                        required
+                        autofocus
+                        class="relative block w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:z-10 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm"
+                        placeholder="Kullanıcı adınızı girin"
+                    >
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-foreground mb-1.5">
+                        Şifre
+                    </label>
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        required
+                        class="relative block w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:z-10 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm"
+                        placeholder="Şifrenizi girin"
+                    >
+                </div>
             </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Şifre</label>
-                <input type="password" class="form-control" id="password" name="password" required>
+
+            <div>
+                <button
+                    type="submit"
+                    class="group relative flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
+                >
+                    Giriş Yap
+                </button>
             </div>
-            <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
         </form>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+<?php include 'includes/footer.php'; ?>
