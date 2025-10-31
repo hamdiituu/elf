@@ -53,19 +53,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </svg>
                 Kullanıcılar
             </a>
-            <a
-                href="../logout.php"
-                class="flex items-center px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            >
-                <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Çıkış Yap
-            </a>
         </nav>
-        <div class="border-t border-border px-3 py-4">
-            <div class="text-xs text-muted-foreground">
-                <?php echo htmlspecialchars($_SESSION['username']); ?>
+        <div class="border-t border-border px-3 py-4 mt-auto">
+            <div class="flex items-center justify-between">
+                <div class="text-xs text-muted-foreground">
+                    <?php echo htmlspecialchars($_SESSION['username']); ?>
+                </div>
+                <a
+                    href="../logout.php"
+                    class="inline-flex items-center justify-center rounded-md text-xs font-medium text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                    <svg class="mr-1.5 h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Çıkış Yap
+                </a>
             </div>
         </div>
     </div>
