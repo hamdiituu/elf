@@ -17,35 +17,13 @@ $apis = [
         ]
     ],
     [
-        'id' => 'sayimlar',
-        'name' => 'Sayımlar API',
-        'description' => 'Get all sayımlar (counts)',
+        'id' => 'check-counting',
+        'name' => 'Check Counting',
+        'description' => 'Check if an active counting (sayım) exists with given sayım number',
         'methods' => ['GET', 'POST'],
-        'endpoint' => '../api/sayimlar.php',
+        'endpoint' => '../api/counting/check-counting.php',
         'parameters' => [
-            ['name' => 'sayim_no', 'type' => 'string', 'required' => false, 'description' => 'Filter by sayım number']
-        ]
-    ],
-    [
-        'id' => 'sayim-icerikleri',
-        'name' => 'Sayım İçerikleri API',
-        'description' => 'Get sayım içerikleri (inventory contents)',
-        'methods' => ['GET', 'POST', 'PUT', 'DELETE'],
-        'endpoint' => '../api/sayim-icerikleri.php',
-        'parameters' => [
-            ['name' => 'sayim_id', 'type' => 'integer', 'required' => false, 'description' => 'Filter by sayım ID'],
-            ['name' => 'barkod', 'type' => 'string', 'required' => false, 'description' => 'Filter by barkod']
-        ]
-    ],
-    [
-        'id' => 'urun-tanimi',
-        'name' => 'Ürün Tanımları API',
-        'description' => 'Get product definitions',
-        'methods' => ['GET', 'POST', 'PUT', 'DELETE'],
-        'endpoint' => '../api/urun-tanimi.php',
-        'parameters' => [
-            ['name' => 'barkod', 'type' => 'string', 'required' => false, 'description' => 'Filter by barkod'],
-            ['name' => 'urun_aciklamasi', 'type' => 'string', 'required' => false, 'description' => 'Product description']
+            ['name' => 'sayim_no', 'type' => 'string', 'required' => true, 'description' => 'Sayım numarası (GET: query, POST: body)']
         ]
     ]
 ];
