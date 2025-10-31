@@ -422,8 +422,8 @@ include '../includes/header.php';
 <?php include '../includes/footer.php'; ?>
 
 <!-- Save Query Dialog -->
-<div id="save-dialog" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" onclick="if(event.target === this) hideSaveDialog()">
-    <div class="bg-card border border-border rounded-lg shadow-lg p-6 max-w-md w-full mx-4" onclick="event.stopPropagation()">
+<div id="save-dialog" class="fixed inset-0 hidden items-center justify-center z-50" onclick="if(event.target === this) hideSaveDialog()" style="background-color: rgba(0, 0, 0, 0.9) !important; backdrop-filter: blur(2px);">
+    <div class="border border-border rounded-lg shadow-lg p-6 max-w-md w-full mx-4" onclick="event.stopPropagation()" style="background-color: hsl(var(--background)) !important; z-index: 51;">
         <h3 class="text-lg font-semibold mb-4">Query Kaydet</h3>
         <form method="POST" action="">
             <input type="hidden" name="action" value="save_query">
