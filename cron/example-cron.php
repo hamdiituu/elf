@@ -26,6 +26,8 @@ $log_file = __DIR__ . '/example-cron.log';
  * Main cron job function
  */
 function runCronJob() {
+    global $log_file;
+    
     try {
         $db = getDB();
         
@@ -39,7 +41,7 @@ function runCronJob() {
         
         // Example: Log statistics
         $message = "Cron job executed successfully - Active sayımlar: {$active_count}, Total products: {$product_count}";
-        cronLogToFile($message, $log_file);
+        //cronLogToFile($message, $log_file);
         
         // Add your custom logic here
         // Example: Clean up old data, send notifications, etc.
@@ -48,7 +50,7 @@ function runCronJob() {
         
     } catch (Exception $e) {
         $error_msg = "Error in cron job: " . $e->getMessage();
-        cronLogToFile($error_msg, $log_file);
+        //cronLogToFile($error_msg, $log_file);
         return ['success' => false, 'message' => $error_msg, 'error' => $e->getMessage()];
     }
 }
@@ -58,7 +60,7 @@ $start_time = microtime(true);
 
 // Log start to database
 cronLog($cron_name, 'started', 'Cron job başlatıldı');
-cronLogToFile("Starting cron job execution...", $log_file);
+//cronLogToFile("Starting cron job execution...", $log_file);
 
 // Execute cron job
 $result = runCronJob();
@@ -69,10 +71,10 @@ $execution_time = round(($end_time - $start_time) * 1000, 2); // milliseconds
 // Log finish to database
 if ($result['success']) {
     cronLog($cron_name, 'success', $result['message'], $execution_time);
-    cronLogToFile("Cron job completed successfully in {$execution_time}ms", $log_file);
+    //cronLogToFile("Cron job completed successfully in {$execution_time}ms", $log_file);
 } else {
     cronLog($cron_name, 'failed', $result['message'], $execution_time, $result['error'] ?? null);
-    cronLogToFile("Cron job completed with errors in {$execution_time}ms", $log_file);
+    //cronLogToFile("Cron job completed with errors in {$execution_time}ms", $log_file);
 }
 
 // Exit with appropriate code

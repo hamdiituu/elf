@@ -4,7 +4,7 @@
  * Provides reusable functions for cron job logging
  */
 
-require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../../config/config.php';
 
 // Ensure cron_log table exists
 function ensureCronLogTable() {
