@@ -53,6 +53,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </svg>
                 Kullanıcılar
             </a>
+            <a
+                href="api-playground.php"
+                class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == 'api-playground.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
+            >
+                <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                API Playground
+            </a>
         </nav>
         <div class="border-t border-border px-3 py-4 mt-auto">
             <div class="flex items-center justify-between">
