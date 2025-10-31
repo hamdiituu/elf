@@ -5,17 +5,30 @@
  */
 
 /**
- * Set common API headers
- * @param array $allowedMethods Allowed HTTP methods (e.g., ['POST', 'GET'])
+ * HTTP Method Constants
  */
-function setApiHeaders($allowedMethods = ['GET', 'POST']) {
+class HttpMethod {
+    const GET = 'GET';
+    const POST = 'POST';
+    const PUT = 'PUT';
+    const DELETE = 'DELETE';
+    const PATCH = 'PATCH';
+    const OPTIONS = 'OPTIONS';
+    const HEAD = 'HEAD';
+}
+
+/**
+ * Set common API headers
+ * @param array $allowedMethods Allowed HTTP methods (e.g., [HttpMethod::POST, HttpMethod::GET])
+ */
+function setApiHeaders($allowedMethods = [HttpMethod::GET, HttpMethod::POST]) {
     header('Content-Type: application/json; charset=utf-8');
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: ' . implode(', ', $allowedMethods));
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
     
     // Handle OPTIONS request for CORS preflight
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    if ($_SERVER['REQUEST_METHOD'] === HttpMethod::OPTIONS) {
         http_response_code(200);
         exit;
     }

@@ -5,7 +5,7 @@ require_once '../../config/config.php';
 // Handle multiple methods with different handlers
 handleMethod([
     // POST method - Check if counting exists and is active
-    'POST' => function() {
+    HttpMethod::POST => function() {
         // Get sayim_no from request body (required)
         $sayim_no = getRequiredParam('sayim_no', true);
         
@@ -46,7 +46,7 @@ handleMethod([
     },
     
     // GET method - Get counting info by sayim_no query parameter
-    'GET' => function() {
+    HttpMethod::GET => function() {
         // Get sayim_no from query parameter (required)
         $sayim_no = getRequiredParam('sayim_no', false);
         

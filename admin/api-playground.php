@@ -25,6 +25,17 @@ $apis = [
         'parameters' => [
             ['name' => 'sayim_no', 'type' => 'string', 'required' => true, 'description' => 'Sayım numarası (GET: query, POST: body)']
         ]
+    ],
+    [
+        'id' => 'product-count',
+        'name' => 'Product Count',
+        'description' => 'Add or remove product from counting (sayım)',
+        'methods' => ['POST', 'DELETE'],
+        'endpoint' => '../api/counting/product-count.php',
+        'parameters' => [
+            ['name' => 'sayim_no', 'type' => 'string', 'required' => true, 'description' => 'Sayım numarası'],
+            ['name' => 'barkod', 'type' => 'string', 'required' => true, 'description' => 'Ürün barkodu']
+        ]
     ]
 ];
 

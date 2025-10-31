@@ -2,8 +2,8 @@
 require_once 'common/api-helper.php';
 
 // Set headers and allow GET and POST
-setApiHeaders(['GET', 'POST']);
-validateMethod(['GET', 'POST']);
+setApiHeaders([HttpMethod::GET, HttpMethod::POST]);
+validateMethod([HttpMethod::GET, HttpMethod::POST]);
 
 $method = $_SERVER['REQUEST_METHOD'];
 
