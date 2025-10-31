@@ -4,6 +4,46 @@ require_once '../../config/config.php';
 
 // Handle POST and DELETE methods
 handleMethod([
+    // GET method - Get product count (barkod optional)
+    HttpMethod::GET => function() {
+        $sayim_no = getRequiredParam('sayim_no', false);
+        $barkod = getOptionalParam('barkod', null, false);
+        
+        $db = getDB();
+        
+        // Check if sayım exists
+        $stmt = $db->prepare("SELECT id FROM sayimlar WHERE sayim_no = ? LIMIT 1");
+        $stmt->execute([$sayim_no]);
+        $sayim = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$sayim) {
+            sendErrorResponse('Sayım bulunamadı', 404);
+        }
+        
+        $sayim_id = (int)$sayim['id'];
+        
+        // Build query based on whether barkod is provided
+        if ($barkod !== null && $barkod !== '') {
+            $stmt = $db->prepare("SELECT COUNT(*) FROM sayim_icerikleri WHERE sayim_id = ? AND barkod = ?");
+            $stmt->execute([$sayim_id, $barkod]);
+        } else {
+            $stmt = $db->prepare("SELECT COUNT(*) FROM sayim_icerikleri WHERE sayim_id = ?");
+            $stmt->execute([$sayim_id]);
+        }
+        
+        $count = $stmt->fetchColumn();
+        
+        $response = [
+            'count' => (int)$count,
+            'sayim_no' => $sayim_no
+        ];
+        
+        if ($barkod !== null && $barkod !== '') {
+            $response['barkod'] = $barkod;
+        }
+        
+        sendSuccessResponse($response, 'Ürün sayımı');
+    },
     // POST method - Add product to counting
     HttpMethod::POST => function() {
         // Get required parameters from body

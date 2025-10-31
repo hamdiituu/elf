@@ -33,8 +33,19 @@ $apis = [
         'methods' => ['POST', 'DELETE'],
         'endpoint' => '../api/counting/product-count.php',
         'parameters' => [
-            ['name' => 'sayim_no', 'type' => 'string', 'required' => true, 'description' => 'Sayım numarası'],
-            ['name' => 'barkod', 'type' => 'string', 'required' => true, 'description' => 'Ürün barkodu']
+            ['name' => 'sayim_no', 'type' => 'string', 'required' => true, 'description' => 'Sayım numarası (GET: query, POST/DELETE: body)'],
+            ['name' => 'barkod', 'type' => 'string', 'required' => false, 'description' => 'Ürün barkodu (GET: optional query, POST/DELETE: required in body)']
+        ]
+    ],
+    [
+        'id' => 'list-counting',
+        'name' => 'List Counting',
+        'description' => 'List counting contents for a given sayım number',
+        'methods' => ['GET'],
+        'endpoint' => '../api/counting/list-counting.php',
+        'parameters' => [
+            ['name' => 'sayim_no', 'type' => 'string', 'required' => true, 'description' => 'Sayım numarası (query parameter)'],
+            ['name' => 'barkod', 'type' => 'string', 'required' => false, 'description' => 'Ürün barkodu (optional - filter by barkod)']
         ]
     ]
 ];
