@@ -16,6 +16,7 @@ $custom_query = $_POST['custom_query'] ?? null;
 $saved_query_name = $_POST['saved_query_name'] ?? null;
 $load_query_id = $_GET['load_query'] ?? null;
 $delete_query_id = $_GET['delete_query'] ?? null;
+$export_excel = $_GET['export_excel'] ?? null;
 
 // Ensure saved_queries table exists
 try {
@@ -63,6 +64,127 @@ if ($load_query_id) {
         }
     } catch (PDOException $e) {
         $error_message = "Query yüklenirken hata: " . $e->getMessage();
+    }
+}
+
+// Handle Excel export (must be early, before page rendering)
+if ($export_excel) {
+    $export_data = null;
+    $export_columns = [];
+    $export_name = 'query_results';
+    
+    // Get table name from GET if not set yet
+    $export_table_name = $_GET['table'] ?? $table_name ?? null;
+    
+    if ($export_excel === 'query') {
+        // Get query from GET parameter
+        $export_query = $_GET['custom_query'] ?? null;
+        
+        if ($export_query) {
+            try {
+                $trimmed_query = trim($export_query);
+                $stmt = $db->prepare($trimmed_query);
+                $stmt->execute();
+                
+                // Check if it's a SELECT query
+                $query_upper = strtoupper($trimmed_query);
+                if (strpos($query_upper, 'SELECT') === 0) {
+                    $export_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    // Get column names even if data is empty
+                    if (!empty($export_data)) {
+                        $export_columns = array_keys($export_data[0]);
+                    } else {
+                        // Try to get column info from statement
+                        $export_columns = [];
+                        for ($i = 0; $i < $stmt->columnCount(); $i++) {
+                            $col = $stmt->getColumnMeta($i);
+                            $export_columns[] = $col['name'] ?? "Column " . ($i + 1);
+                        }
+                    }
+                    $export_name = 'query_results';
+                }
+            } catch (PDOException $e) {
+                die("Query hatası: " . $e->getMessage());
+            }
+        } else {
+            die("Export için query bulunamadı.");
+        }
+    } elseif ($export_excel === 'table') {
+        if ($export_table_name) {
+            try {
+                // Get all tables to validate
+                $all_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
+                
+                // Validate table name to prevent SQL injection
+                if (in_array($export_table_name, $all_tables)) {
+                    // Use quoted table name for safety
+                    $quoted_table = '"' . str_replace('"', '""', $export_table_name) . '"';
+                    $stmt = $db->query("SELECT * FROM $quoted_table LIMIT 10000");
+                    $export_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    if (!empty($export_data)) {
+                        $export_columns = array_keys($export_data[0]);
+                    } else {
+                        // Get column info from table structure
+                        $table_info = $db->query("PRAGMA table_info($quoted_table)")->fetchAll(PDO::FETCH_ASSOC);
+                        $export_columns = array_column($table_info, 'name');
+                    }
+                    $export_name = $export_table_name;
+                } else {
+                    die("Geçersiz tablo adı: " . htmlspecialchars($export_table_name));
+                }
+            } catch (PDOException $e) {
+                die("Veri yüklenirken hata: " . $e->getMessage());
+            }
+        } else {
+            die("Export için tablo adı belirtilmedi.");
+        }
+    }
+    
+    if ($export_data !== null) {
+        // Ensure we have columns even if data is empty
+        if (empty($export_columns) && !empty($export_data)) {
+            $export_columns = array_keys($export_data[0]);
+        }
+        
+        if (!empty($export_columns)) {
+        // Set headers for CSV download
+        $filename = $export_name . '_' . date('Y-m-d_H-i-s') . '.csv';
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Add BOM for UTF-8 Excel compatibility
+        echo "\xEF\xBB\xBF";
+        
+        // Open output stream
+        $output = fopen('php://output', 'w');
+        
+        // Write column headers
+        fputcsv($output, $export_columns, ';');
+        
+        // Write data rows
+        foreach ($export_data as $row) {
+            $csv_row = [];
+            foreach ($export_columns as $col) {
+                $value = $row[$col] ?? '';
+                // Convert null to empty string
+                if ($value === null) {
+                    $value = '';
+                }
+                $csv_row[] = $value;
+            }
+            fputcsv($output, $csv_row, ';');
+        }
+        
+            fclose($output);
+            exit;
+        } else {
+            die("Export için kolon bilgisi bulunamadı.");
+        }
+    } else {
+        die("Export için veri bulunamadı.");
     }
 }
 
@@ -330,24 +452,43 @@ include '../includes/header.php';
                         </div>
 
                         <!-- Table Content -->
+                        <?php 
+                        // Prepare display data before rendering
+                        $display_data = null;
+                        $display_columns = [];
+                        
+                        if ($selected_table || $query_result !== null) {
+                            $display_data = $query_result !== null ? $query_result : $table_data;
+                            $display_columns = !empty($display_data) ? array_keys($display_data[0]) : $table_columns;
+                        }
+                        ?>
                         <?php if ($selected_table || $query_result !== null): ?>
                             <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                                 <div class="p-6 pb-0">
-                                    <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">
-                                        <?php 
-                                        if ($query_result !== null) {
-                                            echo 'Sorgu Sonuçları';
-                                        } else {
-                                            echo htmlspecialchars($selected_table) . ' Tablosu';
-                                        }
-                                        ?>
-                                    </h3>
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h3 class="text-lg font-semibold leading-none tracking-tight">
+                                            <?php 
+                                            if ($query_result !== null) {
+                                                echo 'Sorgu Sonuçları';
+                                            } else {
+                                                echo htmlspecialchars($selected_table) . ' Tablosu';
+                                            }
+                                            ?>
+                                        </h3>
+                                        <?php if (!empty($display_data)): ?>
+                                            <a
+                                                href="?export_excel=<?php echo $query_result !== null ? 'query' : 'table'; ?><?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?><?php echo $custom_query ? '&custom_query=' . urlencode($custom_query) : ''; ?>"
+                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-green-600 text-white hover:bg-green-700 px-4 py-2 transition-colors"
+                                            >
+                                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                Excel'e Aktar
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                                 <div class="p-6 pt-0">
-                                    <?php 
-                                    $display_data = $query_result !== null ? $query_result : $table_data;
-                                    $display_columns = !empty($display_data) ? array_keys($display_data[0]) : $table_columns;
-                                    ?>
                                     
                                     <?php if (empty($display_data)): ?>
                                         <div class="text-center py-8 text-muted-foreground">
