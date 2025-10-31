@@ -116,21 +116,25 @@ include '../includes/header.php';
                                     <?php foreach ($cron_jobs as $cron): ?>
                                         <?php 
                                         $latest = $latest_logs[$cron['name']] ?? null;
-                                        $status_color = 'gray';
+                                        $status_bg_class = 'bg-gray-100';
+                                        $status_text_class = 'text-gray-800';
                                         $status_text = 'Bilinmiyor';
                                         
                                         if ($latest) {
                                             switch ($latest['status']) {
                                                 case 'success':
-                                                    $status_color = 'green';
+                                                    $status_bg_class = 'bg-green-100';
+                                                    $status_text_class = 'text-green-800';
                                                     $status_text = 'Başarılı';
                                                     break;
                                                 case 'failed':
-                                                    $status_color = 'red';
+                                                    $status_bg_class = 'bg-red-100';
+                                                    $status_text_class = 'text-red-800';
                                                     $status_text = 'Başarısız';
                                                     break;
                                                 case 'started':
-                                                    $status_color = 'yellow';
+                                                    $status_bg_class = 'bg-yellow-100';
+                                                    $status_text_class = 'text-yellow-800';
                                                     $status_text = 'Çalışıyor';
                                                     break;
                                             }
@@ -144,7 +148,7 @@ include '../includes/header.php';
                                                 </div>
                                                 <div class="ml-4">
                                                     <?php if ($latest): ?>
-                                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-<?php echo $status_color; ?>-100 text-<?php echo $status_color; ?>-800">
+                                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium <?php echo $status_bg_class . ' ' . $status_text_class; ?>">
                                                             <?php echo $status_text; ?>
                                                         </span>
                                                     <?php endif; ?>
@@ -178,7 +182,7 @@ include '../includes/header.php';
                                                     Çalıştır
                                                 </a>
                                                 <a
-                                                    href="database-explorer.php?table=cron_log&filter_cron_name=<?php echo urlencode($cron['name']); ?>"
+                                                    href="database-explorer.php?table=cron_log"
                                                     class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-3 py-1.5 transition-colors"
                                                 >
                                                     <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,16 +212,20 @@ include '../includes/header.php';
                                 <div class="space-y-3 max-h-[600px] overflow-y-auto">
                                     <?php foreach ($cron_logs as $log): ?>
                                         <?php
-                                        $status_color = 'gray';
+                                        $status_bg_class = 'bg-gray-100';
+                                        $status_text_class = 'text-gray-800';
                                         switch ($log['status']) {
                                             case 'success':
-                                                $status_color = 'green';
+                                                $status_bg_class = 'bg-green-100';
+                                                $status_text_class = 'text-green-800';
                                                 break;
                                             case 'failed':
-                                                $status_color = 'red';
+                                                $status_bg_class = 'bg-red-100';
+                                                $status_text_class = 'text-red-800';
                                                 break;
                                             case 'started':
-                                                $status_color = 'yellow';
+                                                $status_bg_class = 'bg-yellow-100';
+                                                $status_text_class = 'text-yellow-800';
                                                 break;
                                         }
                                         ?>
@@ -225,7 +233,7 @@ include '../includes/header.php';
                                             <div class="flex items-center justify-between mb-2">
                                                 <div class="flex items-center gap-2">
                                                     <span class="font-medium text-sm"><?php echo htmlspecialchars($log['cron_name']); ?></span>
-                                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-<?php echo $status_color; ?>-100 text-<?php echo $status_color; ?>-800">
+                                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium <?php echo $status_bg_class . ' ' . $status_text_class; ?>">
                                                         <?php 
                                                         switch ($log['status']) {
                                                             case 'success': echo 'Başarılı'; break;
