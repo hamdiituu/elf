@@ -24,16 +24,46 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     }
                 }
                 break;
+                
+            case 'delete_icerik':
+                $icerik_id = intval($_POST['icerik_id'] ?? 0);
+                if ($icerik_id > 0) {
+                    try {
+                        // Soft delete - set deleted_at timestamp
+                        $stmt = $db->prepare("UPDATE sayim_icerikleri SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?");
+                        $stmt->execute([$icerik_id]);
+                        $success_message = "Ürün başarıyla silindi!";
+                    } catch (PDOException $e) {
+                        $error_message = "Ürün silinirken hata oluştu: " . $e->getMessage();
+                    }
+                }
+                header('Location: sayim-icerikleri.php');
+                exit;
+                
+            case 'restore_icerik':
+                $icerik_id = intval($_POST['icerik_id'] ?? 0);
+                if ($icerik_id > 0) {
+                    try {
+                        // Restore - clear deleted_at
+                        $stmt = $db->prepare("UPDATE sayim_icerikleri SET deleted_at = NULL WHERE id = ?");
+                        $stmt->execute([$icerik_id]);
+                        $success_message = "Ürün başarıyla geri alındı!";
+                    } catch (PDOException $e) {
+                        $error_message = "Ürün geri alınırken hata oluştu: " . $e->getMessage();
+                    }
+                }
+                header('Location: sayim-icerikleri.php');
+                exit;
         }
     }
 }
 
-// Get all sayim_icerikleri with sayim info
+// Get all sayim_icerikleri with sayim info (including soft deleted)
 $icerikler = $db->query("
     SELECT si.*, s.sayim_no, s.aktif as sayim_aktif
     FROM sayim_icerikleri si
     JOIN sayimlar s ON si.sayim_id = s.id
-    ORDER BY si.okutulma_zamani DESC
+    ORDER BY si.deleted_at IS NULL DESC, si.okutulma_zamani DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 // Get active sayimlar for dropdown
@@ -152,18 +182,34 @@ include '../includes/header.php';
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Ürün Adı</th>
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Okutulma Zamanı</th>
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Sayım Durumu</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">İşlemler</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach ($icerikler as $icerik): ?>
-                                            <tr class="border-b border-border transition-colors hover:bg-muted/50">
-                                                <td class="p-4 align-middle text-sm"><?php echo $icerik['id']; ?></td>
-                                                <td class="p-4 align-middle font-medium"><?php echo htmlspecialchars($icerik['sayim_no']); ?></td>
-                                                <td class="p-4 align-middle font-mono text-sm"><?php echo htmlspecialchars($icerik['barkod']); ?></td>
-                                                <td class="p-4 align-middle text-sm"><?php echo htmlspecialchars($icerik['urun_adi'] ?? '-'); ?></td>
-                                                <td class="p-4 align-middle text-sm text-muted-foreground"><?php echo date('d.m.Y H:i:s', strtotime($icerik['okutulma_zamani'])); ?></td>
+                                            <?php $is_deleted = !empty($icerik['deleted_at']); ?>
+                                            <tr class="border-b border-border transition-colors hover:bg-muted/50 <?php echo $is_deleted ? 'opacity-60' : ''; ?>">
+                                                <td class="p-4 align-middle text-sm <?php echo $is_deleted ? 'line-through text-muted-foreground' : ''; ?>">
+                                                    <?php echo $icerik['id']; ?>
+                                                </td>
+                                                <td class="p-4 align-middle font-medium <?php echo $is_deleted ? 'line-through text-muted-foreground' : ''; ?>">
+                                                    <?php echo htmlspecialchars($icerik['sayim_no']); ?>
+                                                </td>
+                                                <td class="p-4 align-middle font-mono text-sm <?php echo $is_deleted ? 'line-through text-muted-foreground' : ''; ?>">
+                                                    <?php echo htmlspecialchars($icerik['barkod']); ?>
+                                                </td>
+                                                <td class="p-4 align-middle text-sm <?php echo $is_deleted ? 'line-through text-muted-foreground' : ''; ?>">
+                                                    <?php echo htmlspecialchars($icerik['urun_adi'] ?? '-'); ?>
+                                                </td>
+                                                <td class="p-4 align-middle text-sm text-muted-foreground <?php echo $is_deleted ? 'line-through' : ''; ?>">
+                                                    <?php echo date('d.m.Y H:i:s', strtotime($icerik['okutulma_zamani'])); ?>
+                                                </td>
                                                 <td class="p-4 align-middle">
-                                                    <?php if ($icerik['sayim_aktif']): ?>
+                                                    <?php if ($is_deleted): ?>
+                                                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                                                            Silindi
+                                                        </span>
+                                                    <?php elseif ($icerik['sayim_aktif']): ?>
                                                         <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                                                             Aktif
                                                         </span>
@@ -171,6 +217,32 @@ include '../includes/header.php';
                                                         <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
                                                             Pasif
                                                         </span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="p-4 align-middle">
+                                                    <?php if ($is_deleted): ?>
+                                                        <form method="POST" action="" class="inline">
+                                                            <input type="hidden" name="action" value="restore_icerik">
+                                                            <input type="hidden" name="icerik_id" value="<?php echo $icerik['id']; ?>">
+                                                            <button
+                                                                type="submit"
+                                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-green-100 text-green-800 hover:bg-green-200 h-9 px-3"
+                                                            >
+                                                                Geri Al
+                                                            </button>
+                                                        </form>
+                                                    <?php else: ?>
+                                                        <form method="POST" action="" class="inline">
+                                                            <input type="hidden" name="action" value="delete_icerik">
+                                                            <input type="hidden" name="icerik_id" value="<?php echo $icerik['id']; ?>">
+                                                            <button
+                                                                type="submit"
+                                                                onclick="return confirm('Bu ürünü silmek istediğinizden emin misiniz?');"
+                                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-red-100 text-red-800 hover:bg-red-200 h-9 px-3"
+                                                            >
+                                                                Sil
+                                                            </button>
+                                                        </form>
                                                     <?php endif; ?>
                                                 </td>
                                             </tr>

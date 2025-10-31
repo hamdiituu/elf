@@ -8,17 +8,18 @@ $db = getDB();
 // Get statistics
 $total_sayimlar = $db->query("SELECT COUNT(*) FROM sayimlar")->fetchColumn();
 $aktif_sayimlar_count = $db->query("SELECT COUNT(*) FROM sayimlar WHERE aktif = 1")->fetchColumn();
-$total_icerikler = $db->query("SELECT COUNT(*) FROM sayim_icerikleri")->fetchColumn();
+$total_icerikler = $db->query("SELECT COUNT(*) FROM sayim_icerikleri WHERE deleted_at IS NULL")->fetchColumn();
 $total_kullanicilar = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
 
 // Get recent sayimlar
 $recent_sayimlar = $db->query("SELECT * FROM sayimlar ORDER BY created_at DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
 
-// Get recent icerikler
+// Get recent icerikler (excluding soft deleted)
 $recent_icerikler = $db->query("
     SELECT si.*, s.sayim_no
     FROM sayim_icerikleri si
     JOIN sayimlar s ON si.sayim_id = s.id
+    WHERE si.deleted_at IS NULL
     ORDER BY si.okutulma_zamani DESC
     LIMIT 5
 ")->fetchAll(PDO::FETCH_ASSOC);
