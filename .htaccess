@@ -1,0 +1,25 @@
+# PHP configuration
+php_flag display_errors Off
+php_flag log_errors On
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Protect database folder
+<FilesMatch "\.(db|sqlite|sqlite3)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect config and scripts folders
+<DirectoryMatch "^(config|scripts|database)">
+    Order allow,deny
+    Deny from all
+</DirectoryMatch>
+
