@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireLogin();
 
-$page_title = 'API Playground - Stok Sayım Sistemi';
+$page_title = 'API Playground - Vira Stok Sistemi';
 
 // Define available APIs
 $apis = [

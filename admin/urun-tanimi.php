@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireLogin();
 
-$page_title = 'Ürün Tanımı - Stok Sayım Sistemi';
+$page_title = 'Ürün Tanımı - Vira Stok Sistemi';
 $db = getDB();
 
 // Handle product definition operations

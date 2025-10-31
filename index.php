@@ -7,7 +7,7 @@ if (isLoggedIn()) {
     exit;
 }
 
-$page_title = 'Giriş Yap - Stok Sayım Sistemi';
+$page_title = 'Giriş Yap - Vira Stok Sistemi';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -43,7 +43,7 @@ include 'includes/header.php';
     <div class="w-full max-w-sm space-y-8">
         <div>
             <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-foreground">
-                Stok Sayım Sistemi
+                Vira Stok Sistemi
             </h2>
             <p class="mt-2 text-center text-sm text-muted-foreground">
                 Hesabınıza giriş yapın

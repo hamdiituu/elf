@@ -1,6 +1,6 @@
-# Stok Sayım Sistemi
+# Vira Stok Sistemi
 
-PHP ve SQLite kullanılarak geliştirilmiş stok sayım yönetim sistemi.
+PHP ve SQLite kullanılarak geliştirilmiş Vira Stok yönetim sistemi.
 
 ## Gereksinimler
 

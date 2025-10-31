@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireLogin();
 
-$page_title = 'Database Explorer - Stok Sayım Sistemi';
+$page_title = 'Database Explorer - Vira Stok Sistemi';
 
 $db = getDB();
 $error_message = null;

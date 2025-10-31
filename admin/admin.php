@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireLogin();
 
-$page_title = 'Ana Sayfa - Stok Sayım Sistemi';
+$page_title = 'Ana Sayfa - Vira Stok Sistemi';
 $db = getDB();
 
 // Get statistics

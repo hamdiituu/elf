@@ -5,7 +5,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <aside class="hidden md:flex md:flex-shrink-0">
     <div class="flex flex-col w-64 border-r border-border bg-background">
         <div class="flex h-16 shrink-0 items-center px-6 border-b border-border">
-            <h1 class="text-lg font-semibold text-foreground">Stok Sayım</h1>
+            <h1 class="text-lg font-semibold text-foreground">Vira Stok</h1>
         </div>
         <nav class="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
             <!-- Dashboard -->
