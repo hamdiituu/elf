@@ -54,12 +54,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $insert_placeholders = [];
                         $values = [];
                         
+                        // Check if table has created_at and updated_at columns
+                        $has_created_at = false;
+                        $has_updated_at = false;
+                        foreach ($columns as $col) {
+                            if (strtolower($col['name']) === 'created_at') {
+                                $has_created_at = true;
+                            }
+                            if (strtolower($col['name']) === 'updated_at') {
+                                $has_updated_at = true;
+                            }
+                        }
+                        
                         foreach ($columns as $col) {
                             // Skip auto-increment primary key
                             if ($col['pk'] == 1 && strtolower($col['type']) === 'integer') {
                                 continue;
                             }
-                            // Skip timestamps
+                            // Skip timestamps (will be added automatically if they exist)
                             if (strtolower($col['name']) === 'created_at' || strtolower($col['name']) === 'updated_at') {
                                 continue;
                             }
@@ -97,7 +109,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             }
                         }
                         
-                        $sql = "INSERT INTO $table_name (" . implode(", ", $insert_columns) . ") VALUES (" . implode(", ", $insert_placeholders) . ")";
+                        // Add created_at and updated_at to columns if they exist
+                        $timestamp_columns = [];
+                        $timestamp_values = [];
+                        if ($has_created_at) {
+                            $timestamp_columns[] = 'created_at';
+                            $timestamp_values[] = 'CURRENT_TIMESTAMP';
+                        }
+                        if ($has_updated_at) {
+                            $timestamp_columns[] = 'updated_at';
+                            $timestamp_values[] = 'CURRENT_TIMESTAMP';
+                        }
+                        
+                        // Combine regular columns with timestamp columns
+                        $all_columns = array_merge($insert_columns, $timestamp_columns);
+                        // For regular columns use ?, for timestamps use CURRENT_TIMESTAMP directly
+                        $all_values_sql = array_merge($insert_placeholders, $timestamp_values);
+                        
+                        // Build SQL - escape table name for security (SQLite uses double quotes)
+                        $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+                        $sql = "INSERT INTO \"$escaped_table_name\" (" . implode(", ", $all_columns) . ") VALUES (" . implode(", ", $all_values_sql) . ")";
                         $stmt = $db->prepare($sql);
                         $stmt->execute($values);
                         $success_message = "Kayıt başarıyla eklendi!";
