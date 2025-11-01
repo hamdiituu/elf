@@ -698,3 +698,1314 @@
 [Sat Nov  1 19:04:01 2025] [::1]:51010 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
 [Sat Nov  1 19:04:01 2025] [::1]:51010 Closing
 [Sat Nov  1 19:04:01 2025] [::1]:51008 Closing
+[Sat Nov  1 19:04:22 2025] [::1]:51105 Accepted
+[Sat Nov  1 19:04:22 2025] [::1]:51106 Accepted
+[Sat Nov  1 19:04:22 2025] [::1]:51105 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:04:22 2025] [::1]:51105 Closing
+[Sat Nov  1 19:04:22 2025] [::1]:51106 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:04:22 2025] [::1]:51106 Closing
+[Sat Nov  1 19:04:22 2025] [::1]:51108 Accepted
+[Sat Nov  1 19:04:22 2025] [::1]:51108 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:04:22 2025] [::1]:51108 Closing
+[Sat Nov  1 19:04:22 2025] [::1]:51109 Accepted
+[Sat Nov  1 19:04:22 2025] [::1]:51109 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:04:22 2025] [::1]:51109 Closing
+[Sat Nov  1 19:04:26 2025] [::1]:51126 Accepted
+[Sat Nov  1 19:04:26 2025] [::1]:51126 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:04:26 2025] [::1]:51126 Closing
+[Sat Nov  1 19:05:19 2025] [::1]:51375 Accepted
+[Sat Nov  1 19:05:20 2025] [::1]:51375 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:05:20 2025] [::1]:51375 Closing
+[Sat Nov  1 19:05:21 2025] [::1]:51385 Accepted
+[Sat Nov  1 19:05:21 2025] [::1]:51385 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:05:21 2025] [::1]:51385 Closing
+[Sat Nov  1 19:05:22 2025] [::1]:51386 Accepted
+[Sat Nov  1 19:05:22 2025] [::1]:51386 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:05:22 2025] [::1]:51386 Closing
+[Sat Nov  1 19:05:22 2025] [::1]:51391 Accepted
+[Sat Nov  1 19:05:22 2025] [::1]:51391 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:05:22 2025] [::1]:51391 Closing
+[Sat Nov  1 19:05:27 2025] [::1]:51409 Accepted
+[Sat Nov  1 19:05:27 2025] [::1]:51409 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:05:27 2025] [::1]:51409 Closing
+[Sat Nov  1 19:05:52 2025] [::1]:51525 Accepted
+[Sat Nov  1 19:05:53 2025] [::1]:51525 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:05:53 2025] [::1]:51525 Closing
+[Sat Nov  1 19:05:53 2025] [::1]:51532 Accepted
+[Sat Nov  1 19:05:54 2025] [::1]:51532 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:05:54 2025] [::1]:51532 Closing
+[Sat Nov  1 19:05:54 2025] [::1]:51533 Accepted
+[Sat Nov  1 19:05:54 2025] [::1]:51533 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:05:54 2025] [::1]:51533 Closing
+[Sat Nov  1 19:06:21 2025] [::1]:51666 Accepted
+[Sat Nov  1 19:06:21 2025] [::1]:51666 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:21 2025] [::1]:51666 Closing
+[Sat Nov  1 19:06:22 2025] [::1]:51671 Accepted
+[Sat Nov  1 19:06:22 2025] [::1]:51671 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:22 2025] [::1]:51671 Closing
+[Sat Nov  1 19:06:22 2025] [::1]:51672 Accepted
+[Sat Nov  1 19:06:22 2025] [::1]:51672 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:22 2025] [::1]:51672 Closing
+[Sat Nov  1 19:06:23 2025] [::1]:51679 Accepted
+[Sat Nov  1 19:06:23 2025] [::1]:51679 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:23 2025] [::1]:51679 Closing
+[Sat Nov  1 19:06:23 2025] [::1]:51680 Accepted
+[Sat Nov  1 19:06:23 2025] [::1]:51680 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:23 2025] [::1]:51680 Closing
+[Sat Nov  1 19:06:23 2025] [::1]:51681 Accepted
+[Sat Nov  1 19:06:23 2025] [::1]:51681 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:23 2025] [::1]:51681 Closing
+[Sat Nov  1 19:06:24 2025] [::1]:51686 Accepted
+[Sat Nov  1 19:06:24 2025] [::1]:51686 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:24 2025] [::1]:51686 Closing
+[Sat Nov  1 19:06:24 2025] [::1]:51687 Accepted
+[Sat Nov  1 19:06:24 2025] [::1]:51687 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:24 2025] [::1]:51687 Closing
+[Sat Nov  1 19:06:24 2025] [::1]:51688 Accepted
+[Sat Nov  1 19:06:24 2025] [::1]:51688 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:24 2025] [::1]:51688 Closing
+[Sat Nov  1 19:06:24 2025] [::1]:51689 Accepted
+[Sat Nov  1 19:06:24 2025] [::1]:51689 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:24 2025] [::1]:51689 Closing
+[Sat Nov  1 19:06:24 2025] [::1]:51694 Accepted
+[Sat Nov  1 19:06:25 2025] [::1]:51694 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:25 2025] [::1]:51694 Closing
+[Sat Nov  1 19:06:25 2025] [::1]:51695 Accepted
+[Sat Nov  1 19:06:25 2025] [::1]:51695 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:25 2025] [::1]:51695 Closing
+[Sat Nov  1 19:06:25 2025] [::1]:51696 Accepted
+[Sat Nov  1 19:06:25 2025] [::1]:51696 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:25 2025] [::1]:51696 Closing
+[Sat Nov  1 19:06:25 2025] [::1]:51697 Accepted
+[Sat Nov  1 19:06:25 2025] [::1]:51697 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:25 2025] [::1]:51697 Closing
+[Sat Nov  1 19:06:25 2025] [::1]:51698 Accepted
+[Sat Nov  1 19:06:25 2025] [::1]:51698 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:25 2025] [::1]:51698 Closing
+[Sat Nov  1 19:06:26 2025] [::1]:51703 Accepted
+[Sat Nov  1 19:06:26 2025] [::1]:51703 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:26 2025] [::1]:51703 Closing
+[Sat Nov  1 19:06:26 2025] [::1]:51704 Accepted
+[Sat Nov  1 19:06:26 2025] [::1]:51704 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:26 2025] [::1]:51704 Closing
+[Sat Nov  1 19:06:26 2025] [::1]:51705 Accepted
+[Sat Nov  1 19:06:26 2025] [::1]:51705 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:26 2025] [::1]:51705 Closing
+[Sat Nov  1 19:06:26 2025] [::1]:51710 Accepted
+[Sat Nov  1 19:06:27 2025] [::1]:51710 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:27 2025] [::1]:51710 Closing
+[Sat Nov  1 19:06:27 2025] [::1]:51711 Accepted
+[Sat Nov  1 19:06:27 2025] [::1]:51711 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:27 2025] [::1]:51711 Closing
+[Sat Nov  1 19:06:27 2025] [::1]:51712 Accepted
+[Sat Nov  1 19:06:27 2025] [::1]:51712 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:27 2025] [::1]:51712 Closing
+[Sat Nov  1 19:06:27 2025] [::1]:51713 Accepted
+[Sat Nov  1 19:06:27 2025] [::1]:51713 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:27 2025] [::1]:51713 Closing
+[Sat Nov  1 19:06:27 2025] [::1]:51714 Accepted
+[Sat Nov  1 19:06:27 2025] [::1]:51714 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:27 2025] [::1]:51714 Closing
+[Sat Nov  1 19:06:27 2025] [::1]:51719 Accepted
+[Sat Nov  1 19:06:28 2025] [::1]:51719 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:28 2025] [::1]:51719 Closing
+[Sat Nov  1 19:06:28 2025] [::1]:51720 Accepted
+[Sat Nov  1 19:06:28 2025] [::1]:51720 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:28 2025] [::1]:51720 Closing
+[Sat Nov  1 19:06:28 2025] [::1]:51721 Accepted
+[Sat Nov  1 19:06:28 2025] [::1]:51721 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:28 2025] [::1]:51721 Closing
+[Sat Nov  1 19:06:36 2025] [::1]:51759 Accepted
+[Sat Nov  1 19:06:36 2025] [::1]:51759 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:36 2025] [::1]:51759 Closing
+[Sat Nov  1 19:06:36 2025] [::1]:51760 Accepted
+[Sat Nov  1 19:06:36 2025] [::1]:51760 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:36 2025] [::1]:51760 Closing
+[Sat Nov  1 19:06:36 2025] [::1]:51765 Accepted
+[Sat Nov  1 19:06:37 2025] [::1]:51765 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:37 2025] [::1]:51765 Closing
+[Sat Nov  1 19:06:37 2025] [::1]:51767 Accepted
+[Sat Nov  1 19:06:37 2025] [::1]:51767 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:37 2025] [::1]:51767 Closing
+[Sat Nov  1 19:06:37 2025] [::1]:51768 Accepted
+[Sat Nov  1 19:06:37 2025] [::1]:51768 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:37 2025] [::1]:51768 Closing
+[Sat Nov  1 19:06:37 2025] [::1]:51769 Accepted
+[Sat Nov  1 19:06:37 2025] [::1]:51769 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:37 2025] [::1]:51769 Closing
+[Sat Nov  1 19:06:37 2025] [::1]:51770 Accepted
+[Sat Nov  1 19:06:37 2025] [::1]:51770 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:37 2025] [::1]:51770 Closing
+[Sat Nov  1 19:06:37 2025] [::1]:51775 Accepted
+[Sat Nov  1 19:06:37 2025] [::1]:51775 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:37 2025] [::1]:51775 Closing
+[Sat Nov  1 19:06:38 2025] [::1]:51776 Accepted
+[Sat Nov  1 19:06:38 2025] [::1]:51776 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:38 2025] [::1]:51776 Closing
+[Sat Nov  1 19:06:38 2025] [::1]:51779 Accepted
+[Sat Nov  1 19:06:38 2025] [::1]:51779 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:38 2025] [::1]:51779 Closing
+[Sat Nov  1 19:06:38 2025] [::1]:51780 Accepted
+[Sat Nov  1 19:06:38 2025] [::1]:51780 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:06:38 2025] [::1]:51780 Closing
+[Sat Nov  1 19:06:40 2025] [::1]:51793 Accepted
+[Sat Nov  1 19:06:40 2025] [::1]:51793 [200]: GET /admin/cloud-functions.php
+[Sat Nov  1 19:06:40 2025] [::1]:51793 Closing
+[Sat Nov  1 19:06:40 2025] [::1]:51794 Accepted
+[Sat Nov  1 19:06:40 2025] [::1]:51794 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:06:40 2025] [::1]:51794 Closing
+[Sat Nov  1 19:07:15 2025] [::1]:51978 Accepted
+[Sat Nov  1 19:07:15 2025] [::1]:51979 Accepted
+[Sat Nov  1 19:07:15 2025] [::1]:51978 [302]: POST /admin/cloud-functions.php
+[Sat Nov  1 19:07:15 2025] [::1]:51978 Closing
+[Sat Nov  1 19:07:15 2025] [::1]:51979 [200]: GET /admin/cloud-functions.php?success=Fonksiyon+ba%C5%9Far%C4%B1yla+olu%C5%9Fturuldu%21
+[Sat Nov  1 19:07:15 2025] [::1]:51979 Closing
+[Sat Nov  1 19:07:15 2025] [::1]:51981 Accepted
+[Sat Nov  1 19:07:15 2025] [::1]:51981 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:07:15 2025] [::1]:51981 Closing
+[Sat Nov  1 19:07:17 2025] [::1]:51986 Accepted
+[Sat Nov  1 19:07:17 2025] [::1]:51987 Accepted
+[Sat Nov  1 19:07:17 2025] [::1]:51986 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:07:17 2025] [::1]:51986 Closing
+[Sat Nov  1 19:07:17 2025] [::1]:51987 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:07:17 2025] [::1]:51987 Closing
+[Sat Nov  1 19:07:20 2025] [::1]:52000 Accepted
+[Sat Nov  1 19:07:20 2025] [::1]:52000 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:20 2025] [::1]:52000 Closing
+[Sat Nov  1 19:07:22 2025] [::1]:52009 Accepted
+[Sat Nov  1 19:07:22 2025] [::1]:52009 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:22 2025] [::1]:52009 Closing
+[Sat Nov  1 19:07:23 2025] [::1]:52014 Accepted
+[Sat Nov  1 19:07:23 2025] [::1]:52014 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:23 2025] [::1]:52014 Closing
+[Sat Nov  1 19:07:23 2025] [::1]:52015 Accepted
+[Sat Nov  1 19:07:23 2025] [::1]:52015 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:23 2025] [::1]:52015 Closing
+[Sat Nov  1 19:07:23 2025] [::1]:52016 Accepted
+[Sat Nov  1 19:07:23 2025] [::1]:52016 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:23 2025] [::1]:52016 Closing
+[Sat Nov  1 19:07:26 2025] [::1]:52029 Accepted
+[Sat Nov  1 19:07:26 2025] [::1]:52029 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:26 2025] [::1]:52029 Closing
+[Sat Nov  1 19:07:28 2025] [::1]:52038 Accepted
+[Sat Nov  1 19:07:28 2025] [::1]:52038 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:28 2025] [::1]:52038 Closing
+[Sat Nov  1 19:07:29 2025] [::1]:52043 Accepted
+[Sat Nov  1 19:07:29 2025] [::1]:52043 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:29 2025] [::1]:52043 Closing
+[Sat Nov  1 19:07:29 2025] [::1]:52044 Accepted
+[Sat Nov  1 19:07:30 2025] [::1]:52044 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:30 2025] [::1]:52044 Closing
+[Sat Nov  1 19:07:30 2025] [::1]:52049 Accepted
+[Sat Nov  1 19:07:30 2025] [::1]:52049 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:30 2025] [::1]:52049 Closing
+[Sat Nov  1 19:07:30 2025] [::1]:52051 Accepted
+[Sat Nov  1 19:07:30 2025] [::1]:52051 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:30 2025] [::1]:52051 Closing
+[Sat Nov  1 19:07:31 2025] [::1]:52056 Accepted
+[Sat Nov  1 19:07:31 2025] [::1]:52056 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:31 2025] [::1]:52056 Closing
+[Sat Nov  1 19:07:31 2025] [::1]:52057 Accepted
+[Sat Nov  1 19:07:31 2025] [::1]:52057 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:31 2025] [::1]:52057 Closing
+[Sat Nov  1 19:07:32 2025] [::1]:52062 Accepted
+[Sat Nov  1 19:07:32 2025] [::1]:52062 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:32 2025] [::1]:52062 Closing
+[Sat Nov  1 19:07:32 2025] [::1]:52063 Accepted
+[Sat Nov  1 19:07:32 2025] [::1]:52063 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:32 2025] [::1]:52063 Closing
+[Sat Nov  1 19:07:32 2025] [::1]:52068 Accepted
+[Sat Nov  1 19:07:33 2025] [::1]:52068 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:33 2025] [::1]:52068 Closing
+[Sat Nov  1 19:07:33 2025] [::1]:52069 Accepted
+[Sat Nov  1 19:07:33 2025] [::1]:52069 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:33 2025] [::1]:52069 Closing
+[Sat Nov  1 19:07:33 2025] [::1]:52070 Accepted
+[Sat Nov  1 19:07:33 2025] [::1]:52070 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:33 2025] [::1]:52070 Closing
+[Sat Nov  1 19:07:33 2025] [::1]:52071 Accepted
+[Sat Nov  1 19:07:33 2025] [::1]:52071 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:33 2025] [::1]:52071 Closing
+[Sat Nov  1 19:07:34 2025] [::1]:52076 Accepted
+[Sat Nov  1 19:07:34 2025] [::1]:52076 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:34 2025] [::1]:52076 Closing
+[Sat Nov  1 19:07:34 2025] [::1]:52077 Accepted
+[Sat Nov  1 19:07:34 2025] [::1]:52077 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:34 2025] [::1]:52077 Closing
+[Sat Nov  1 19:07:34 2025] [::1]:52079 Accepted
+[Sat Nov  1 19:07:34 2025] [::1]:52079 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:34 2025] [::1]:52079 Closing
+[Sat Nov  1 19:07:34 2025] [::1]:52080 Accepted
+[Sat Nov  1 19:07:34 2025] [::1]:52080 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:34 2025] [::1]:52080 Closing
+[Sat Nov  1 19:07:34 2025] [::1]:52081 Accepted
+[Sat Nov  1 19:07:34 2025] [::1]:52081 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:34 2025] [::1]:52081 Closing
+[Sat Nov  1 19:07:34 2025] [::1]:52086 Accepted
+[Sat Nov  1 19:07:35 2025] [::1]:52086 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:35 2025] [::1]:52086 Closing
+[Sat Nov  1 19:07:35 2025] [::1]:52087 Accepted
+[Sat Nov  1 19:07:35 2025] [::1]:52087 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:35 2025] [::1]:52087 Closing
+[Sat Nov  1 19:07:35 2025] [::1]:52088 Accepted
+[Sat Nov  1 19:07:35 2025] [::1]:52088 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:35 2025] [::1]:52088 Closing
+[Sat Nov  1 19:07:35 2025] [::1]:52089 Accepted
+[Sat Nov  1 19:07:35 2025] [::1]:52089 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:35 2025] [::1]:52089 Closing
+[Sat Nov  1 19:07:35 2025] [::1]:52090 Accepted
+[Sat Nov  1 19:07:35 2025] [::1]:52090 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:35 2025] [::1]:52090 Closing
+[Sat Nov  1 19:07:35 2025] [::1]:52091 Accepted
+[Sat Nov  1 19:07:35 2025] [::1]:52091 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:35 2025] [::1]:52091 Closing
+[Sat Nov  1 19:07:35 2025] [::1]:52092 Accepted
+[Sat Nov  1 19:07:36 2025] [::1]:52092 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:36 2025] [::1]:52092 Closing
+[Sat Nov  1 19:07:36 2025] [::1]:52097 Accepted
+[Sat Nov  1 19:07:36 2025] [::1]:52097 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:36 2025] [::1]:52097 Closing
+[Sat Nov  1 19:07:36 2025] [::1]:52098 Accepted
+[Sat Nov  1 19:07:36 2025] [::1]:52098 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:36 2025] [::1]:52098 Closing
+[Sat Nov  1 19:07:36 2025] [::1]:52099 Accepted
+[Sat Nov  1 19:07:36 2025] [::1]:52099 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:36 2025] [::1]:52099 Closing
+[Sat Nov  1 19:07:36 2025] [::1]:52100 Accepted
+[Sat Nov  1 19:07:36 2025] [::1]:52100 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:36 2025] [::1]:52100 Closing
+[Sat Nov  1 19:07:44 2025] [::1]:52146 Accepted
+[Sat Nov  1 19:07:44 2025] [::1]:52146 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:44 2025] [::1]:52146 Closing
+[Sat Nov  1 19:07:45 2025] [::1]:52151 Accepted
+[Sat Nov  1 19:07:45 2025] [::1]:52151 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:45 2025] [::1]:52151 Closing
+[Sat Nov  1 19:07:45 2025] [::1]:52152 Accepted
+[Sat Nov  1 19:07:45 2025] [::1]:52152 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:45 2025] [::1]:52152 Closing
+[Sat Nov  1 19:07:45 2025] [::1]:52153 Accepted
+[Sat Nov  1 19:07:45 2025] [::1]:52153 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:45 2025] [::1]:52153 Closing
+[Sat Nov  1 19:07:46 2025] [::1]:52158 Accepted
+[Sat Nov  1 19:07:46 2025] [::1]:52158 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:46 2025] [::1]:52158 Closing
+[Sat Nov  1 19:07:46 2025] [::1]:52159 Accepted
+[Sat Nov  1 19:07:46 2025] [::1]:52159 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:46 2025] [::1]:52159 Closing
+[Sat Nov  1 19:07:46 2025] [::1]:52161 Accepted
+[Sat Nov  1 19:07:46 2025] [::1]:52161 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:46 2025] [::1]:52161 Closing
+[Sat Nov  1 19:07:46 2025] [::1]:52162 Accepted
+[Sat Nov  1 19:07:46 2025] [::1]:52162 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:46 2025] [::1]:52162 Closing
+[Sat Nov  1 19:07:46 2025] [::1]:52163 Accepted
+[Sat Nov  1 19:07:46 2025] [::1]:52163 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:46 2025] [::1]:52163 Closing
+[Sat Nov  1 19:07:47 2025] [::1]:52168 Accepted
+[Sat Nov  1 19:07:47 2025] [::1]:52168 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:07:47 2025] [::1]:52168 Closing
+[Sat Nov  1 19:07:53 2025] [::1]:52199 Accepted
+[Sat Nov  1 19:07:53 2025] [::1]:52199 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:53 2025] [::1]:52199 Closing
+[Sat Nov  1 19:07:55 2025] [::1]:52208 Accepted
+[Sat Nov  1 19:07:55 2025] [::1]:52208 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:55 2025] [::1]:52208 Closing
+[Sat Nov  1 19:07:55 2025] [::1]:52209 Accepted
+[Sat Nov  1 19:07:55 2025] [::1]:52209 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:55 2025] [::1]:52209 Closing
+[Sat Nov  1 19:07:55 2025] [::1]:52210 Accepted
+[Sat Nov  1 19:07:55 2025] [::1]:52210 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:55 2025] [::1]:52210 Closing
+[Sat Nov  1 19:07:55 2025] [::1]:52211 Accepted
+[Sat Nov  1 19:07:55 2025] [::1]:52211 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:55 2025] [::1]:52211 Closing
+[Sat Nov  1 19:07:56 2025] [::1]:52212 Accepted
+[Sat Nov  1 19:07:56 2025] [::1]:52212 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:56 2025] [::1]:52212 Closing
+[Sat Nov  1 19:07:56 2025] [::1]:52217 Accepted
+[Sat Nov  1 19:07:56 2025] [::1]:52217 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:56 2025] [::1]:52217 Closing
+[Sat Nov  1 19:07:56 2025] [::1]:52218 Accepted
+[Sat Nov  1 19:07:56 2025] [::1]:52218 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:56 2025] [::1]:52218 Closing
+[Sat Nov  1 19:07:56 2025] [::1]:52219 Accepted
+[Sat Nov  1 19:07:56 2025] [::1]:52219 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:56 2025] [::1]:52219 Closing
+[Sat Nov  1 19:07:56 2025] [::1]:52220 Accepted
+[Sat Nov  1 19:07:56 2025] [::1]:52220 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:56 2025] [::1]:52220 Closing
+[Sat Nov  1 19:07:57 2025] [::1]:52225 Accepted
+[Sat Nov  1 19:07:57 2025] [::1]:52225 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:57 2025] [::1]:52225 Closing
+[Sat Nov  1 19:07:57 2025] [::1]:52226 Accepted
+[Sat Nov  1 19:07:57 2025] [::1]:52226 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:57 2025] [::1]:52226 Closing
+[Sat Nov  1 19:07:57 2025] [::1]:52227 Accepted
+[Sat Nov  1 19:07:57 2025] [::1]:52227 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:57 2025] [::1]:52227 Closing
+[Sat Nov  1 19:07:57 2025] [::1]:52228 Accepted
+[Sat Nov  1 19:07:57 2025] [::1]:52228 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:57 2025] [::1]:52228 Closing
+[Sat Nov  1 19:07:57 2025] [::1]:52229 Accepted
+[Sat Nov  1 19:07:57 2025] [::1]:52229 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:57 2025] [::1]:52229 Closing
+[Sat Nov  1 19:07:58 2025] [::1]:52230 Accepted
+[Sat Nov  1 19:07:58 2025] [::1]:52230 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:58 2025] [::1]:52230 Closing
+[Sat Nov  1 19:07:58 2025] [::1]:52235 Accepted
+[Sat Nov  1 19:07:58 2025] [::1]:52235 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:58 2025] [::1]:52235 Closing
+[Sat Nov  1 19:07:58 2025] [::1]:52236 Accepted
+[Sat Nov  1 19:07:58 2025] [::1]:52236 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:58 2025] [::1]:52236 Closing
+[Sat Nov  1 19:07:58 2025] [::1]:52237 Accepted
+[Sat Nov  1 19:07:58 2025] [::1]:52237 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:58 2025] [::1]:52237 Closing
+[Sat Nov  1 19:07:58 2025] [::1]:52238 Accepted
+[Sat Nov  1 19:07:58 2025] [::1]:52238 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:58 2025] [::1]:52238 Closing
+[Sat Nov  1 19:07:58 2025] [::1]:52239 Accepted
+[Sat Nov  1 19:07:58 2025] [::1]:52239 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:58 2025] [::1]:52239 Closing
+[Sat Nov  1 19:07:59 2025] [::1]:52244 Accepted
+[Sat Nov  1 19:07:59 2025] [::1]:52244 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:59 2025] [::1]:52244 Closing
+[Sat Nov  1 19:07:59 2025] [::1]:52245 Accepted
+[Sat Nov  1 19:07:59 2025] [::1]:52245 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:59 2025] [::1]:52245 Closing
+[Sat Nov  1 19:07:59 2025] [::1]:52246 Accepted
+[Sat Nov  1 19:07:59 2025] [::1]:52246 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:07:59 2025] [::1]:52246 Closing
+[Sat Nov  1 19:08:00 2025] [::1]:52251 Accepted
+[Sat Nov  1 19:08:00 2025] [::1]:52251 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:00 2025] [::1]:52251 Closing
+[Sat Nov  1 19:08:00 2025] [::1]:52252 Accepted
+[Sat Nov  1 19:08:00 2025] [::1]:52252 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:00 2025] [::1]:52252 Closing
+[Sat Nov  1 19:08:00 2025] [::1]:52253 Accepted
+[Sat Nov  1 19:08:00 2025] [::1]:52253 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:00 2025] [::1]:52253 Closing
+[Sat Nov  1 19:08:00 2025] [::1]:52254 Accepted
+[Sat Nov  1 19:08:00 2025] [::1]:52254 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:00 2025] [::1]:52254 Closing
+[Sat Nov  1 19:08:00 2025] [::1]:52255 Accepted
+[Sat Nov  1 19:08:00 2025] [::1]:52255 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:00 2025] [::1]:52255 Closing
+[Sat Nov  1 19:08:00 2025] [::1]:52256 Accepted
+[Sat Nov  1 19:08:00 2025] [::1]:52256 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:00 2025] [::1]:52256 Closing
+[Sat Nov  1 19:08:01 2025] [::1]:52261 Accepted
+[Sat Nov  1 19:08:01 2025] [::1]:52261 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:01 2025] [::1]:52261 Closing
+[Sat Nov  1 19:08:01 2025] [::1]:52262 Accepted
+[Sat Nov  1 19:08:01 2025] [::1]:52262 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:01 2025] [::1]:52262 Closing
+[Sat Nov  1 19:08:01 2025] [::1]:52264 Accepted
+[Sat Nov  1 19:08:01 2025] [::1]:52264 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:01 2025] [::1]:52264 Closing
+[Sat Nov  1 19:08:01 2025] [::1]:52265 Accepted
+[Sat Nov  1 19:08:01 2025] [::1]:52265 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:01 2025] [::1]:52265 Closing
+[Sat Nov  1 19:08:01 2025] [::1]:52266 Accepted
+[Sat Nov  1 19:08:01 2025] [::1]:52266 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:01 2025] [::1]:52266 Closing
+[Sat Nov  1 19:08:02 2025] [::1]:52272 Accepted
+[Sat Nov  1 19:08:02 2025] [::1]:52272 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:02 2025] [::1]:52272 Closing
+[Sat Nov  1 19:08:02 2025] [::1]:52274 Accepted
+[Sat Nov  1 19:08:02 2025] [::1]:52274 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:02 2025] [::1]:52274 Closing
+[Sat Nov  1 19:08:02 2025] [::1]:52275 Accepted
+[Sat Nov  1 19:08:02 2025] [::1]:52275 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:02 2025] [::1]:52275 Closing
+[Sat Nov  1 19:08:21 2025] [::1]:52358 Accepted
+[Sat Nov  1 19:08:21 2025] [::1]:52358 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:21 2025] [::1]:52358 Closing
+[Sat Nov  1 19:08:21 2025] [::1]:52359 Accepted
+[Sat Nov  1 19:08:21 2025] [::1]:52359 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:21 2025] [::1]:52359 Closing
+[Sat Nov  1 19:08:22 2025] [::1]:52364 Accepted
+[Sat Nov  1 19:08:22 2025] [::1]:52364 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:22 2025] [::1]:52364 Closing
+[Sat Nov  1 19:08:22 2025] [::1]:52365 Accepted
+[Sat Nov  1 19:08:22 2025] [::1]:52365 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:22 2025] [::1]:52365 Closing
+[Sat Nov  1 19:08:23 2025] [::1]:52370 Accepted
+[Sat Nov  1 19:08:23 2025] [::1]:52370 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:23 2025] [::1]:52370 Closing
+[Sat Nov  1 19:08:23 2025] [::1]:52371 Accepted
+[Sat Nov  1 19:08:23 2025] [::1]:52371 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:23 2025] [::1]:52371 Closing
+[Sat Nov  1 19:08:23 2025] [::1]:52372 Accepted
+[Sat Nov  1 19:08:23 2025] [::1]:52372 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:23 2025] [::1]:52372 Closing
+[Sat Nov  1 19:08:23 2025] [::1]:52375 Accepted
+[Sat Nov  1 19:08:23 2025] [::1]:52375 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:23 2025] [::1]:52375 Closing
+[Sat Nov  1 19:08:24 2025] [::1]:52376 Accepted
+[Sat Nov  1 19:08:24 2025] [::1]:52376 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:24 2025] [::1]:52376 Closing
+[Sat Nov  1 19:08:24 2025] [::1]:52381 Accepted
+[Sat Nov  1 19:08:24 2025] [::1]:52381 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:24 2025] [::1]:52381 Closing
+[Sat Nov  1 19:08:24 2025] [::1]:52382 Accepted
+[Sat Nov  1 19:08:24 2025] [::1]:52382 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:24 2025] [::1]:52382 Closing
+[Sat Nov  1 19:08:24 2025] [::1]:52383 Accepted
+[Sat Nov  1 19:08:24 2025] [::1]:52383 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:24 2025] [::1]:52383 Closing
+[Sat Nov  1 19:08:24 2025] [::1]:52384 Accepted
+[Sat Nov  1 19:08:24 2025] [::1]:52384 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:25 2025] [::1]:52384 Closing
+[Sat Nov  1 19:08:25 2025] [::1]:52389 Accepted
+[Sat Nov  1 19:08:25 2025] [::1]:52389 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:25 2025] [::1]:52389 Closing
+[Sat Nov  1 19:08:25 2025] [::1]:52390 Accepted
+[Sat Nov  1 19:08:25 2025] [::1]:52390 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:25 2025] [::1]:52390 Closing
+[Sat Nov  1 19:08:25 2025] [::1]:52391 Accepted
+[Sat Nov  1 19:08:25 2025] [::1]:52391 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:25 2025] [::1]:52391 Closing
+[Sat Nov  1 19:08:25 2025] [::1]:52392 Accepted
+[Sat Nov  1 19:08:25 2025] [::1]:52392 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:25 2025] [::1]:52392 Closing
+[Sat Nov  1 19:08:25 2025] [::1]:52393 Accepted
+[Sat Nov  1 19:08:25 2025] [::1]:52393 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:25 2025] [::1]:52393 Closing
+[Sat Nov  1 19:08:29 2025] [::1]:52410 Accepted
+[Sat Nov  1 19:08:29 2025] [::1]:52410 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:29 2025] [::1]:52410 Closing
+[Sat Nov  1 19:08:30 2025] [::1]:52415 Accepted
+[Sat Nov  1 19:08:30 2025] [::1]:52415 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:30 2025] [::1]:52415 Closing
+[Sat Nov  1 19:08:30 2025] [::1]:52416 Accepted
+[Sat Nov  1 19:08:31 2025] [::1]:52416 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:31 2025] [::1]:52416 Closing
+[Sat Nov  1 19:08:31 2025] [::1]:52421 Accepted
+[Sat Nov  1 19:08:31 2025] [::1]:52421 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:31 2025] [::1]:52421 Closing
+[Sat Nov  1 19:08:31 2025] [::1]:52423 Accepted
+[Sat Nov  1 19:08:31 2025] [::1]:52423 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:31 2025] [::1]:52423 Closing
+[Sat Nov  1 19:08:31 2025] [::1]:52424 Accepted
+[Sat Nov  1 19:08:31 2025] [::1]:52424 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:31 2025] [::1]:52424 Closing
+[Sat Nov  1 19:08:31 2025] [::1]:52425 Accepted
+[Sat Nov  1 19:08:31 2025] [::1]:52425 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:31 2025] [::1]:52425 Closing
+[Sat Nov  1 19:08:32 2025] [::1]:52426 Accepted
+[Sat Nov  1 19:08:32 2025] [::1]:52426 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:32 2025] [::1]:52426 Closing
+[Sat Nov  1 19:08:32 2025] [::1]:52431 Accepted
+[Sat Nov  1 19:08:32 2025] [::1]:52431 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:32 2025] [::1]:52431 Closing
+[Sat Nov  1 19:08:32 2025] [::1]:52432 Accepted
+[Sat Nov  1 19:08:32 2025] [::1]:52432 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:32 2025] [::1]:52432 Closing
+[Sat Nov  1 19:08:32 2025] [::1]:52433 Accepted
+[Sat Nov  1 19:08:32 2025] [::1]:52433 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:32 2025] [::1]:52433 Closing
+[Sat Nov  1 19:08:32 2025] [::1]:52434 Accepted
+[Sat Nov  1 19:08:33 2025] [::1]:52434 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:33 2025] [::1]:52434 Closing
+[Sat Nov  1 19:08:33 2025] [::1]:52435 Accepted
+[Sat Nov  1 19:08:33 2025] [::1]:52435 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:33 2025] [::1]:52435 Closing
+[Sat Nov  1 19:08:33 2025] [::1]:52440 Accepted
+[Sat Nov  1 19:08:33 2025] [::1]:52440 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:33 2025] [::1]:52440 Closing
+[Sat Nov  1 19:08:33 2025] [::1]:52441 Accepted
+[Sat Nov  1 19:08:33 2025] [::1]:52441 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:33 2025] [::1]:52441 Closing
+[Sat Nov  1 19:08:33 2025] [::1]:52442 Accepted
+[Sat Nov  1 19:08:33 2025] [::1]:52442 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:33 2025] [::1]:52442 Closing
+[Sat Nov  1 19:08:33 2025] [::1]:52443 Accepted
+[Sat Nov  1 19:08:34 2025] [::1]:52443 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:34 2025] [::1]:52443 Closing
+[Sat Nov  1 19:08:34 2025] [::1]:52445 Accepted
+[Sat Nov  1 19:08:34 2025] [::1]:52445 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:34 2025] [::1]:52445 Closing
+[Sat Nov  1 19:08:34 2025] [::1]:52450 Accepted
+[Sat Nov  1 19:08:34 2025] [::1]:52450 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:34 2025] [::1]:52450 Closing
+[Sat Nov  1 19:08:34 2025] [::1]:52451 Accepted
+[Sat Nov  1 19:08:34 2025] [::1]:52451 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:34 2025] [::1]:52451 Closing
+[Sat Nov  1 19:08:34 2025] [::1]:52452 Accepted
+[Sat Nov  1 19:08:35 2025] [::1]:52452 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:35 2025] [::1]:52452 Closing
+[Sat Nov  1 19:08:35 2025] [::1]:52457 Accepted
+[Sat Nov  1 19:08:35 2025] [::1]:52457 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:35 2025] [::1]:52457 Closing
+[Sat Nov  1 19:08:35 2025] [::1]:52458 Accepted
+[Sat Nov  1 19:08:35 2025] [::1]:52458 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:35 2025] [::1]:52458 Closing
+[Sat Nov  1 19:08:35 2025] [::1]:52459 Accepted
+[Sat Nov  1 19:08:36 2025] [::1]:52459 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:36 2025] [::1]:52459 Closing
+[Sat Nov  1 19:08:36 2025] [::1]:52464 Accepted
+[Sat Nov  1 19:08:36 2025] [::1]:52464 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:36 2025] [::1]:52464 Closing
+[Sat Nov  1 19:08:36 2025] [::1]:52466 Accepted
+[Sat Nov  1 19:08:36 2025] [::1]:52466 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:36 2025] [::1]:52466 Closing
+[Sat Nov  1 19:08:36 2025] [::1]:52467 Accepted
+[Sat Nov  1 19:08:37 2025] [::1]:52467 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:37 2025] [::1]:52467 Closing
+[Sat Nov  1 19:08:37 2025] [::1]:52472 Accepted
+[Sat Nov  1 19:08:37 2025] [::1]:52472 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:37 2025] [::1]:52472 Closing
+[Sat Nov  1 19:08:37 2025] [::1]:52473 Accepted
+[Sat Nov  1 19:08:37 2025] [::1]:52473 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:08:37 2025] [::1]:52473 Closing
+[Sat Nov  1 19:08:48 2025] [::1]:52536 Accepted
+[Sat Nov  1 19:08:48 2025] [::1]:52536 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:48 2025] [::1]:52536 Closing
+[Sat Nov  1 19:08:51 2025] [::1]:52550 Accepted
+[Sat Nov  1 19:08:51 2025] [::1]:52550 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:51 2025] [::1]:52550 Closing
+[Sat Nov  1 19:08:51 2025] [::1]:52551 Accepted
+[Sat Nov  1 19:08:51 2025] [::1]:52551 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:51 2025] [::1]:52551 Closing
+[Sat Nov  1 19:08:51 2025] [::1]:52552 Accepted
+[Sat Nov  1 19:08:51 2025] [::1]:52552 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:51 2025] [::1]:52552 Closing
+[Sat Nov  1 19:08:52 2025] [::1]:52553 Accepted
+[Sat Nov  1 19:08:52 2025] [::1]:52553 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:52 2025] [::1]:52553 Closing
+[Sat Nov  1 19:08:52 2025] [::1]:52554 Accepted
+[Sat Nov  1 19:08:52 2025] [::1]:52554 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:52 2025] [::1]:52554 Closing
+[Sat Nov  1 19:08:52 2025] [::1]:52559 Accepted
+[Sat Nov  1 19:08:52 2025] [::1]:52559 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:52 2025] [::1]:52559 Closing
+[Sat Nov  1 19:08:53 2025] [::1]:52565 Accepted
+[Sat Nov  1 19:08:53 2025] [::1]:52565 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:53 2025] [::1]:52565 Closing
+[Sat Nov  1 19:08:54 2025] [::1]:52566 Accepted
+[Sat Nov  1 19:08:54 2025] [::1]:52566 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:08:54 2025] [::1]:52566 Closing
+[Sat Nov  1 19:09:14 2025] [::1]:52663 Accepted
+[Sat Nov  1 19:09:15 2025] [::1]:52663 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:09:15 2025] [::1]:52663 Closing
+[Sat Nov  1 19:09:16 2025] [::1]:52668 Accepted
+[Sat Nov  1 19:09:16 2025] [::1]:52668 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:09:16 2025] [::1]:52668 Closing
+[Sat Nov  1 19:09:16 2025] [::1]:52673 Accepted
+[Sat Nov  1 19:09:16 2025] [::1]:52673 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:09:16 2025] [::1]:52673 Closing
+[Sat Nov  1 19:09:16 2025] [::1]:52674 Accepted
+[Sat Nov  1 19:09:16 2025] [::1]:52674 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:09:16 2025] [::1]:52674 Closing
+[Sat Nov  1 19:09:16 2025] [::1]:52675 Accepted
+[Sat Nov  1 19:09:17 2025] [::1]:52675 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:09:17 2025] [::1]:52675 Closing
+[Sat Nov  1 19:09:17 2025] [::1]:52680 Accepted
+[Sat Nov  1 19:09:17 2025] [::1]:52680 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:09:17 2025] [::1]:52680 Closing
+[Sat Nov  1 19:09:17 2025] [::1]:52681 Accepted
+[Sat Nov  1 19:09:17 2025] [::1]:52681 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:09:17 2025] [::1]:52681 Closing
+[Sat Nov  1 19:09:17 2025] [::1]:52683 Accepted
+[Sat Nov  1 19:09:17 2025] [::1]:52683 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:09:17 2025] [::1]:52683 Closing
+[Sat Nov  1 19:09:17 2025] [::1]:52684 Accepted
+[Sat Nov  1 19:09:17 2025] [::1]:52684 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:09:17 2025] [::1]:52684 Closing
+[Sat Nov  1 19:09:21 2025] [::1]:52701 Accepted
+[Sat Nov  1 19:09:21 2025] [::1]:52701 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:09:21 2025] [::1]:52701 Closing
+[Sat Nov  1 19:09:39 2025] [::1]:52786 Accepted
+[Sat Nov  1 19:09:39 2025] [::1]:52786 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:09:39 2025] [::1]:52786 Closing
+[Sat Nov  1 19:09:41 2025] [::1]:52793 Accepted
+[Sat Nov  1 19:09:41 2025] [::1]:52793 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:09:41 2025] [::1]:52793 Closing
+[Sat Nov  1 19:09:41 2025] [::1]:52798 Accepted
+[Sat Nov  1 19:09:41 2025] [::1]:52798 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:09:41 2025] [::1]:52798 Closing
+[Sat Nov  1 19:09:41 2025] [::1]:52799 Accepted
+[Sat Nov  1 19:09:41 2025] [::1]:52799 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:09:41 2025] [::1]:52799 Closing
+[Sat Nov  1 19:09:41 2025] [::1]:52800 Accepted
+[Sat Nov  1 19:09:41 2025] [::1]:52800 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:09:41 2025] [::1]:52800 Closing
+[Sat Nov  1 19:09:42 2025] [::1]:52801 Accepted
+[Sat Nov  1 19:09:42 2025] [::1]:52801 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:09:42 2025] [::1]:52801 Closing
+[Sat Nov  1 19:09:42 2025] [::1]:52802 Accepted
+[Sat Nov  1 19:09:42 2025] [::1]:52802 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:09:42 2025] [::1]:52802 Closing
+[Sat Nov  1 19:09:42 2025] [::1]:52807 Accepted
+[Sat Nov  1 19:09:42 2025] [::1]:52807 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:09:42 2025] [::1]:52807 Closing
+[Sat Nov  1 19:09:42 2025] [::1]:52808 Accepted
+[Sat Nov  1 19:09:42 2025] [::1]:52808 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:09:42 2025] [::1]:52808 Closing
+[Sat Nov  1 19:09:42 2025] [::1]:52809 Accepted
+[Sat Nov  1 19:09:42 2025] [::1]:52809 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:09:42 2025] [::1]:52809 Closing
+[Sat Nov  1 19:09:42 2025] [::1]:52810 Accepted
+[Sat Nov  1 19:09:42 2025] [::1]:52810 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:09:42 2025] [::1]:52810 Closing
+[Sat Nov  1 19:09:44 2025] [::1]:52820 Accepted
+[Sat Nov  1 19:09:44 2025] [::1]:52821 Accepted
+[Sat Nov  1 19:09:44 2025] [::1]:52820 [200]: GET /admin/cloud-functions.php
+[Sat Nov  1 19:09:44 2025] [::1]:52820 Closing
+[Sat Nov  1 19:09:44 2025] [::1]:52821 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:09:44 2025] [::1]:52821 Closing
+[Sat Nov  1 19:10:52 2025] [::1]:53130 Accepted
+[Sat Nov  1 19:10:53 2025] [::1]:53130 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:10:53 2025] [::1]:53130 Closing
+[Sat Nov  1 19:10:53 2025] [::1]:53131 Accepted
+[Sat Nov  1 19:10:53 2025] [::1]:53131 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:10:53 2025] [::1]:53131 Closing
+[Sat Nov  1 19:10:58 2025] [::1]:53158 Accepted
+[Sat Nov  1 19:10:58 2025] [::1]:53158 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:10:58 2025] [::1]:53158 Closing
+[Sat Nov  1 19:10:59 2025] [::1]:53166 Accepted
+[Sat Nov  1 19:10:59 2025] [::1]:53166 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:10:59 2025] [::1]:53166 Closing
+[Sat Nov  1 19:11:00 2025] [::1]:53171 Accepted
+[Sat Nov  1 19:11:00 2025] [::1]:53171 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:11:00 2025] [::1]:53171 Closing
+[Sat Nov  1 19:11:00 2025] [::1]:53176 Accepted
+[Sat Nov  1 19:11:01 2025] [::1]:53176 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:11:01 2025] [::1]:53176 Closing
+[Sat Nov  1 19:11:01 2025] [::1]:53177 Accepted
+[Sat Nov  1 19:11:01 2025] [::1]:53177 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:11:01 2025] [::1]:53177 Closing
+[Sat Nov  1 19:11:02 2025] [::1]:53182 Accepted
+[Sat Nov  1 19:11:02 2025] [::1]:53182 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:11:02 2025] [::1]:53182 Closing
+[Sat Nov  1 19:11:02 2025] [::1]:53190 Accepted
+[Sat Nov  1 19:11:02 2025] [::1]:53190 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:11:02 2025] [::1]:53190 Closing
+[Sat Nov  1 19:11:03 2025] [::1]:53191 Accepted
+[Sat Nov  1 19:11:03 2025] [::1]:53191 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:11:03 2025] [::1]:53191 Closing
+[Sat Nov  1 19:11:03 2025] [::1]:53196 Accepted
+[Sat Nov  1 19:11:03 2025] [::1]:53196 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:11:03 2025] [::1]:53196 Closing
+[Sat Nov  1 19:11:04 2025] [::1]:53197 Accepted
+[Sat Nov  1 19:11:04 2025] [::1]:53197 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:11:04 2025] [::1]:53197 Closing
+[Sat Nov  1 19:11:04 2025] [::1]:53198 Accepted
+[Sat Nov  1 19:11:04 2025] [::1]:53198 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:11:04 2025] [::1]:53198 Closing
+[Sat Nov  1 19:11:11 2025] [::1]:53236 Accepted
+[Sat Nov  1 19:11:12 2025] [::1]:53236 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:12 2025] [::1]:53236 Closing
+[Sat Nov  1 19:11:12 2025] [::1]:53241 Accepted
+[Sat Nov  1 19:11:12 2025] [::1]:53241 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:12 2025] [::1]:53241 Closing
+[Sat Nov  1 19:11:13 2025] [::1]:53242 Accepted
+[Sat Nov  1 19:11:13 2025] [::1]:53242 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:13 2025] [::1]:53242 Closing
+[Sat Nov  1 19:11:13 2025] [::1]:53243 Accepted
+[Sat Nov  1 19:11:13 2025] [::1]:53243 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:13 2025] [::1]:53243 Closing
+[Sat Nov  1 19:11:13 2025] [::1]:53248 Accepted
+[Sat Nov  1 19:11:13 2025] [::1]:53248 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:13 2025] [::1]:53248 Closing
+[Sat Nov  1 19:11:14 2025] [::1]:53249 Accepted
+[Sat Nov  1 19:11:14 2025] [::1]:53249 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:14 2025] [::1]:53249 Closing
+[Sat Nov  1 19:11:14 2025] [::1]:53250 Accepted
+[Sat Nov  1 19:11:14 2025] [::1]:53250 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:14 2025] [::1]:53250 Closing
+[Sat Nov  1 19:11:14 2025] [::1]:53251 Accepted
+[Sat Nov  1 19:11:14 2025] [::1]:53251 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:14 2025] [::1]:53251 Closing
+[Sat Nov  1 19:11:14 2025] [::1]:53256 Accepted
+[Sat Nov  1 19:11:14 2025] [::1]:53256 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:14 2025] [::1]:53256 Closing
+[Sat Nov  1 19:11:14 2025] [::1]:53257 Accepted
+[Sat Nov  1 19:11:14 2025] [::1]:53257 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:14 2025] [::1]:53257 Closing
+[Sat Nov  1 19:11:15 2025] [::1]:53259 Accepted
+[Sat Nov  1 19:11:15 2025] [::1]:53259 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:15 2025] [::1]:53259 Closing
+[Sat Nov  1 19:11:15 2025] [::1]:53260 Accepted
+[Sat Nov  1 19:11:15 2025] [::1]:53260 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:15 2025] [::1]:53260 Closing
+[Sat Nov  1 19:11:20 2025] [::1]:53285 Accepted
+[Sat Nov  1 19:11:20 2025] [::1]:53285 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:11:20 2025] [::1]:53285 Closing
+[Sat Nov  1 19:12:01 2025] [::1]:53486 Accepted
+[Sat Nov  1 19:12:02 2025] [::1]:53486 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:02 2025] [::1]:53486 Closing
+[Sat Nov  1 19:12:03 2025] [::1]:53495 Accepted
+[Sat Nov  1 19:12:03 2025] [::1]:53495 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:03 2025] [::1]:53495 Closing
+[Sat Nov  1 19:12:03 2025] [::1]:53497 Accepted
+[Sat Nov  1 19:12:03 2025] [::1]:53497 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:03 2025] [::1]:53497 Closing
+[Sat Nov  1 19:12:04 2025] [::1]:53502 Accepted
+[Sat Nov  1 19:12:04 2025] [::1]:53502 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:04 2025] [::1]:53502 Closing
+[Sat Nov  1 19:12:04 2025] [::1]:53503 Accepted
+[Sat Nov  1 19:12:04 2025] [::1]:53503 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:04 2025] [::1]:53503 Closing
+[Sat Nov  1 19:12:04 2025] [::1]:53504 Accepted
+[Sat Nov  1 19:12:04 2025] [::1]:53504 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:04 2025] [::1]:53504 Closing
+[Sat Nov  1 19:12:05 2025] [::1]:53509 Accepted
+[Sat Nov  1 19:12:05 2025] [::1]:53509 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:05 2025] [::1]:53509 Closing
+[Sat Nov  1 19:12:05 2025] [::1]:53510 Accepted
+[Sat Nov  1 19:12:05 2025] [::1]:53510 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:05 2025] [::1]:53510 Closing
+[Sat Nov  1 19:12:05 2025] [::1]:53511 Accepted
+[Sat Nov  1 19:12:05 2025] [::1]:53511 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:05 2025] [::1]:53511 Closing
+[Sat Nov  1 19:12:05 2025] [::1]:53516 Accepted
+[Sat Nov  1 19:12:06 2025] [::1]:53516 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:06 2025] [::1]:53516 Closing
+[Sat Nov  1 19:12:06 2025] [::1]:53518 Accepted
+[Sat Nov  1 19:12:06 2025] [::1]:53518 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:06 2025] [::1]:53518 Closing
+[Sat Nov  1 19:12:06 2025] [::1]:53523 Accepted
+[Sat Nov  1 19:12:07 2025] [::1]:53523 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:07 2025] [::1]:53523 Closing
+[Sat Nov  1 19:12:07 2025] [::1]:53524 Accepted
+[Sat Nov  1 19:12:07 2025] [::1]:53524 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:07 2025] [::1]:53524 Closing
+[Sat Nov  1 19:12:34 2025] [::1]:53660 Accepted
+[Sat Nov  1 19:12:34 2025] [::1]:53661 Accepted
+[Sat Nov  1 19:12:34 2025] [::1]:53660 [200]: GET /admin/cloud-middlewares.php
+[Sat Nov  1 19:12:34 2025] [::1]:53660 Closing
+[Sat Nov  1 19:12:34 2025] [::1]:53661 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:12:34 2025] [::1]:53661 Closing
+[Sat Nov  1 19:12:37 2025] [::1]:53675 Accepted
+[Sat Nov  1 19:12:37 2025] [::1]:53675 [200]: GET /admin/cron-manager.php
+[Sat Nov  1 19:12:37 2025] [::1]:53675 Closing
+[Sat Nov  1 19:12:37 2025] [::1]:53676 Accepted
+[Sat Nov  1 19:12:37 2025] [::1]:53676 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:12:37 2025] [::1]:53676 Closing
+[Sat Nov  1 19:12:38 2025] [::1]:53683 Accepted
+[Sat Nov  1 19:12:38 2025] [::1]:53688 Accepted
+[Sat Nov  1 19:12:38 2025] [::1]:53683 [200]: GET /admin/database-explorer.php
+[Sat Nov  1 19:12:38 2025] [::1]:53683 Closing
+[Sat Nov  1 19:12:38 2025] [::1]:53688 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:12:38 2025] [::1]:53688 Closing
+[Sat Nov  1 19:12:40 2025] [::1]:53694 Accepted
+[Sat Nov  1 19:12:40 2025] [::1]:53694 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:12:40 2025] [::1]:53694 Closing
+[Sat Nov  1 19:12:40 2025] [::1]:53695 Accepted
+[Sat Nov  1 19:12:40 2025] [::1]:53695 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:12:40 2025] [::1]:53695 Closing
+[Sat Nov  1 19:12:44 2025] [::1]:53718 Accepted
+[Sat Nov  1 19:12:44 2025] [::1]:53719 Accepted
+[Sat Nov  1 19:12:44 2025] [::1]:53718 [200]: GET /admin/cloud-functions.php
+[Sat Nov  1 19:12:44 2025] [::1]:53718 Closing
+[Sat Nov  1 19:12:44 2025] [::1]:53719 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:12:44 2025] [::1]:53719 Closing
+[Sat Nov  1 19:12:47 2025] [::1]:53736 Accepted
+[Sat Nov  1 19:12:47 2025] [::1]:53737 Accepted
+[Sat Nov  1 19:12:47 2025] [::1]:53736 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:12:47 2025] [::1]:53736 Closing
+[Sat Nov  1 19:12:47 2025] [::1]:53737 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:12:47 2025] [::1]:53737 Closing
+[Sat Nov  1 19:12:51 2025] [::1]:53755 Accepted
+[Sat Nov  1 19:12:51 2025] [::1]:53755 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:12:51 2025] [::1]:53755 Closing
+[Sat Nov  1 19:13:33 2025] [::1]:53957 Accepted
+[Sat Nov  1 19:13:33 2025] [::1]:53958 Accepted
+[Sat Nov  1 19:13:33 2025] [::1]:53957 [200]: GET /admin/kullanicilar.php
+[Sat Nov  1 19:13:33 2025] [::1]:53957 Closing
+[Sat Nov  1 19:13:33 2025] [::1]:53958 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:13:33 2025] [::1]:53958 Closing
+[Sat Nov  1 19:13:34 2025] [::1]:53964 Accepted
+[Sat Nov  1 19:13:34 2025] [::1]:53964 [200]: GET /admin/settings.php
+[Sat Nov  1 19:13:34 2025] [::1]:53964 Closing
+[Sat Nov  1 19:13:34 2025] [::1]:53965 Accepted
+[Sat Nov  1 19:13:34 2025] [::1]:53966 Accepted
+[Sat Nov  1 19:13:34 2025] [::1]:53965 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:13:34 2025] [::1]:53966 [200]: GET /uploads/favicon_1762000180.png
+[Sat Nov  1 19:13:34 2025] [::1]:53965 Closing
+[Sat Nov  1 19:13:34 2025] [::1]:53966 Closing
+[Sat Nov  1 19:13:34 2025] [::1]:53968 Accepted
+[Sat Nov  1 19:13:35 2025] [::1]:53968 [200]: GET /admin/kullanicilar.php
+[Sat Nov  1 19:13:35 2025] [::1]:53968 Closing
+[Sat Nov  1 19:13:35 2025] [::1]:53974 Accepted
+[Sat Nov  1 19:13:35 2025] [::1]:53974 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:13:35 2025] [::1]:53974 Closing
+[Sat Nov  1 19:13:35 2025] [::1]:53975 Accepted
+[Sat Nov  1 19:13:35 2025] [::1]:53976 Accepted
+[Sat Nov  1 19:13:35 2025] [::1]:53975 [200]: GET /admin/settings.php
+[Sat Nov  1 19:13:35 2025] [::1]:53975 Closing
+[Sat Nov  1 19:13:35 2025] [::1]:53976 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:13:35 2025] [::1]:53977 Accepted
+[Sat Nov  1 19:13:35 2025] [::1]:53977 [200]: GET /uploads/favicon_1762000180.png
+[Sat Nov  1 19:13:35 2025] [::1]:53976 Closing
+[Sat Nov  1 19:13:35 2025] [::1]:53977 Closing
+[Sat Nov  1 19:15:56 2025] [::1]:54602 Accepted
+[Sat Nov  1 19:15:56 2025] [::1]:54603 Accepted
+[Sat Nov  1 19:15:56 2025] [::1]:54602 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:15:56 2025] [::1]:54602 Closing
+[Sat Nov  1 19:15:56 2025] [::1]:54603 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:15:56 2025] [::1]:54603 Closing
+[Sat Nov  1 19:16:01 2025] [::1]:54622 Accepted
+[Sat Nov  1 19:16:01 2025] PHP Warning:  Undefined variable $lineMatchFromMessage in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 575
+[Sat Nov  1 19:16:01 2025] PHP Warning:  Trying to access array offset on value of type null in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 575
+[Sat Nov  1 19:16:01 2025] PHP Warning:  Undefined variable $stackLineMatch in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 597
+[Sat Nov  1 19:16:01 2025] PHP Warning:  Trying to access array offset on value of type null in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 597
+[Sat Nov  1 19:16:01 2025] PHP Warning:  Undefined variable $match in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 706
+[Sat Nov  1 19:16:01 2025] PHP Warning:  Trying to access array offset on value of type null in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 706
+[Sat Nov  1 19:16:01 2025] [::1]:54622 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:16:01 2025] [::1]:54622 Closing
+[Sat Nov  1 19:16:51 2025] [::1]:54845 Accepted
+[Sat Nov  1 19:16:51 2025] PHP Warning:  Undefined variable $lineMatchFromMessage in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 575
+[Sat Nov  1 19:16:51 2025] PHP Warning:  Trying to access array offset on value of type null in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 575
+[Sat Nov  1 19:16:51 2025] PHP Warning:  Undefined variable $stackLineMatch in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 597
+[Sat Nov  1 19:16:51 2025] PHP Warning:  Trying to access array offset on value of type null in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 597
+[Sat Nov  1 19:16:51 2025] PHP Warning:  Undefined variable $match in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 706
+[Sat Nov  1 19:16:51 2025] PHP Warning:  Trying to access array offset on value of type null in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 706
+[Sat Nov  1 19:16:52 2025] [::1]:54845 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:16:52 2025] [::1]:54845 Closing
+[Sat Nov  1 19:18:42 2025] [::1]:55480 Accepted
+[Sat Nov  1 19:18:43 2025] [::1]:55480 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:18:43 2025] [::1]:55480 Closing
+[Sat Nov  1 19:21:40 2025] [::1]:56254 Accepted
+[Sat Nov  1 19:21:40 2025] [::1]:56254 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:21:40 2025] [::1]:56254 Closing
+[Sat Nov  1 19:23:36 2025] [::1]:56785 Accepted
+[Sat Nov  1 19:23:37 2025] [::1]:56785 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:23:37 2025] [::1]:56785 Closing
+[Sat Nov  1 19:23:37 2025] [::1]:56801 Accepted
+[Sat Nov  1 19:23:38 2025] [::1]:56801 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:23:38 2025] [::1]:56801 Closing
+[Sat Nov  1 19:23:41 2025] [::1]:56828 Accepted
+[Sat Nov  1 19:23:41 2025] [::1]:56828 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:23:41 2025] [::1]:56828 Closing
+[Sat Nov  1 19:23:57 2025] [::1]:56899 Accepted
+[Sat Nov  1 19:23:58 2025] [::1]:56899 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:23:58 2025] [::1]:56899 Closing
+[Sat Nov  1 19:23:58 2025] [::1]:56904 Accepted
+[Sat Nov  1 19:23:59 2025] [::1]:56904 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:23:59 2025] [::1]:56904 Closing
+[Sat Nov  1 19:23:59 2025] [::1]:56909 Accepted
+[Sat Nov  1 19:23:59 2025] [::1]:56909 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:23:59 2025] [::1]:56909 Closing
+[Sat Nov  1 19:23:59 2025] [::1]:56910 Accepted
+[Sat Nov  1 19:23:59 2025] [::1]:56911 Accepted
+[Sat Nov  1 19:23:59 2025] [::1]:56910 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:23:59 2025] [::1]:56910 Closing
+[Sat Nov  1 19:23:59 2025] [::1]:56912 Accepted
+[Sat Nov  1 19:24:00 2025] [::1]:56911 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:00 2025] [::1]:56911 Closing
+[Sat Nov  1 19:24:00 2025] [::1]:56913 Accepted
+[Sat Nov  1 19:24:00 2025] [::1]:56912 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:00 2025] [::1]:56912 Closing
+[Sat Nov  1 19:24:00 2025] [::1]:56919 Accepted
+[Sat Nov  1 19:24:01 2025] [::1]:56913 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:01 2025] [::1]:56913 Closing
+[Sat Nov  1 19:24:01 2025] [::1]:56920 Accepted
+[Sat Nov  1 19:24:01 2025] [::1]:56919 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:01 2025] [::1]:56919 Closing
+[Sat Nov  1 19:24:01 2025] [::1]:56921 Accepted
+[Sat Nov  1 19:24:01 2025] [::1]:56920 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:01 2025] [::1]:56920 Closing
+[Sat Nov  1 19:24:01 2025] [::1]:56922 Accepted
+[Sat Nov  1 19:24:02 2025] [::1]:56921 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:02 2025] [::1]:56921 Closing
+[Sat Nov  1 19:24:02 2025] [::1]:56923 Accepted
+[Sat Nov  1 19:24:02 2025] [::1]:56922 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:02 2025] [::1]:56922 Closing
+[Sat Nov  1 19:24:02 2025] [::1]:56928 Accepted
+[Sat Nov  1 19:24:02 2025] [::1]:56923 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:02 2025] [::1]:56923 Closing
+[Sat Nov  1 19:24:02 2025] [::1]:56929 Accepted
+[Sat Nov  1 19:24:03 2025] [::1]:56928 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:03 2025] [::1]:56928 Closing
+[Sat Nov  1 19:24:03 2025] [::1]:56930 Accepted
+[Sat Nov  1 19:24:03 2025] [::1]:56929 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:03 2025] [::1]:56929 Closing
+[Sat Nov  1 19:24:03 2025] [::1]:56935 Accepted
+[Sat Nov  1 19:24:04 2025] [::1]:56930 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:04 2025] [::1]:56930 Closing
+[Sat Nov  1 19:24:04 2025] [::1]:56936 Accepted
+[Sat Nov  1 19:24:04 2025] [::1]:56935 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:04 2025] [::1]:56935 Closing
+[Sat Nov  1 19:24:04 2025] [::1]:56937 Accepted
+[Sat Nov  1 19:24:04 2025] [::1]:56936 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:04 2025] [::1]:56936 Closing
+[Sat Nov  1 19:24:04 2025] [::1]:56942 Accepted
+[Sat Nov  1 19:24:05 2025] [::1]:56937 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:05 2025] [::1]:56937 Closing
+[Sat Nov  1 19:24:05 2025] [::1]:56943 Accepted
+[Sat Nov  1 19:24:05 2025] [::1]:56942 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:05 2025] [::1]:56942 Closing
+[Sat Nov  1 19:24:05 2025] [::1]:56944 Accepted
+[Sat Nov  1 19:24:05 2025] [::1]:56943 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:05 2025] [::1]:56943 Closing
+[Sat Nov  1 19:24:05 2025] [::1]:56949 Accepted
+[Sat Nov  1 19:24:06 2025] [::1]:56944 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:06 2025] [::1]:56944 Closing
+[Sat Nov  1 19:24:06 2025] [::1]:56950 Accepted
+[Sat Nov  1 19:24:06 2025] [::1]:56949 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:06 2025] [::1]:56949 Closing
+[Sat Nov  1 19:24:06 2025] [::1]:56955 Accepted
+[Sat Nov  1 19:24:07 2025] [::1]:56950 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:07 2025] [::1]:56950 Closing
+[Sat Nov  1 19:24:07 2025] [::1]:56957 Accepted
+[Sat Nov  1 19:24:07 2025] [::1]:56955 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:07 2025] [::1]:56955 Closing
+[Sat Nov  1 19:24:07 2025] [::1]:56960 Accepted
+[Sat Nov  1 19:24:07 2025] [::1]:56957 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:07 2025] [::1]:56957 Closing
+[Sat Nov  1 19:24:07 2025] [::1]:56965 Accepted
+[Sat Nov  1 19:24:08 2025] [::1]:56960 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:08 2025] [::1]:56960 Closing
+[Sat Nov  1 19:24:08 2025] [::1]:56966 Accepted
+[Sat Nov  1 19:24:08 2025] [::1]:56965 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:08 2025] [::1]:56965 Closing
+[Sat Nov  1 19:24:08 2025] [::1]:56966 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:08 2025] [::1]:56966 Closing
+[Sat Nov  1 19:24:11 2025] [::1]:56992 Accepted
+[Sat Nov  1 19:24:11 2025] [::1]:56992 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:11 2025] [::1]:56992 Closing
+[Sat Nov  1 19:24:12 2025] [::1]:56997 Accepted
+[Sat Nov  1 19:24:13 2025] [::1]:56997 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:13 2025] [::1]:56997 Closing
+[Sat Nov  1 19:24:13 2025] [::1]:57002 Accepted
+[Sat Nov  1 19:24:13 2025] [::1]:57002 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:13 2025] [::1]:57002 Closing
+[Sat Nov  1 19:24:13 2025] [::1]:57003 Accepted
+[Sat Nov  1 19:24:13 2025] [::1]:57004 Accepted
+[Sat Nov  1 19:24:14 2025] [::1]:57003 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:14 2025] [::1]:57003 Closing
+[Sat Nov  1 19:24:14 2025] [::1]:57004 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:14 2025] [::1]:57004 Closing
+[Sat Nov  1 19:24:15 2025] [::1]:57013 Accepted
+[Sat Nov  1 19:24:15 2025] [::1]:57013 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:15 2025] [::1]:57013 Closing
+[Sat Nov  1 19:24:16 2025] [::1]:57018 Accepted
+[Sat Nov  1 19:24:17 2025] [::1]:57018 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:17 2025] [::1]:57018 Closing
+[Sat Nov  1 19:24:22 2025] [::1]:57046 Accepted
+[Sat Nov  1 19:24:23 2025] [::1]:57046 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:24:23 2025] [::1]:57046 Closing
+[Sat Nov  1 19:24:32 2025] [::1]:57091 Accepted
+[Sat Nov  1 19:24:32 2025] [::1]:57092 Accepted
+[Sat Nov  1 19:24:32 2025] [::1]:57091 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:24:32 2025] [::1]:57091 Closing
+[Sat Nov  1 19:24:32 2025] [::1]:57092 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:24:32 2025] [::1]:57092 Closing
+[Sat Nov  1 19:24:32 2025] [::1]:57093 Accepted
+[Sat Nov  1 19:24:32 2025] [::1]:57093 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:24:32 2025] [::1]:57093 Closing
+[Sat Nov  1 19:24:32 2025] [::1]:57094 Accepted
+[Sat Nov  1 19:24:32 2025] [::1]:57094 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:24:32 2025] [::1]:57094 Closing
+[Sat Nov  1 19:24:35 2025] [::1]:57109 Accepted
+[Sat Nov  1 19:24:35 2025] [::1]:57109 [200]: GET /admin/cloud-functions.php
+[Sat Nov  1 19:24:35 2025] [::1]:57109 Closing
+[Sat Nov  1 19:24:35 2025] [::1]:57110 Accepted
+[Sat Nov  1 19:24:35 2025] [::1]:57110 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:24:35 2025] [::1]:57110 Closing
+[Sat Nov  1 19:24:39 2025] [::1]:57134 Accepted
+[Sat Nov  1 19:24:40 2025] [::1]:57134 [200]: GET /admin/cloud-functions.php?edit=9
+[Sat Nov  1 19:24:40 2025] [::1]:57134 Closing
+[Sat Nov  1 19:24:40 2025] [::1]:57135 Accepted
+[Sat Nov  1 19:24:40 2025] [::1]:57135 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:24:40 2025] [::1]:57135 Closing
+[Sat Nov  1 19:24:59 2025] [::1]:57222 Accepted
+[Sat Nov  1 19:24:59 2025] [::1]:57223 Accepted
+[Sat Nov  1 19:24:59 2025] [::1]:57222 [302]: POST /admin/cloud-functions.php?edit=9
+[Sat Nov  1 19:24:59 2025] [::1]:57222 Closing
+[Sat Nov  1 19:24:59 2025] [::1]:57223 [200]: GET /admin/cloud-functions.php?success=Fonksiyon+ba%C5%9Far%C4%B1yla+g%C3%BCncellendi%21
+[Sat Nov  1 19:24:59 2025] [::1]:57223 Closing
+[Sat Nov  1 19:24:59 2025] [::1]:57225 Accepted
+[Sat Nov  1 19:24:59 2025] [::1]:57225 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:24:59 2025] [::1]:57225 Closing
+[Sat Nov  1 19:25:03 2025] [::1]:57247 Accepted
+[Sat Nov  1 19:25:03 2025] [::1]:57247 [200]: GET /admin/cloud-functions.php?edit=9
+[Sat Nov  1 19:25:03 2025] [::1]:57247 Closing
+[Sat Nov  1 19:25:03 2025] [::1]:57248 Accepted
+[Sat Nov  1 19:25:03 2025] [::1]:57248 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:25:03 2025] [::1]:57248 Closing
+[Sat Nov  1 19:25:15 2025] [::1]:57307 Accepted
+[Sat Nov  1 19:25:15 2025] [::1]:57308 Accepted
+[Sat Nov  1 19:25:15 2025] [::1]:57307 [302]: POST /admin/cloud-functions.php?edit=9
+[Sat Nov  1 19:25:15 2025] [::1]:57307 Closing
+[Sat Nov  1 19:25:15 2025] [::1]:57308 [200]: GET /admin/cloud-functions.php?success=Fonksiyon+ba%C5%9Far%C4%B1yla+g%C3%BCncellendi%21
+[Sat Nov  1 19:25:15 2025] [::1]:57308 Closing
+[Sat Nov  1 19:25:15 2025] [::1]:57310 Accepted
+[Sat Nov  1 19:25:15 2025] [::1]:57310 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:25:15 2025] [::1]:57310 Closing
+[Sat Nov  1 19:25:16 2025] [::1]:57315 Accepted
+[Sat Nov  1 19:25:16 2025] [::1]:57316 Accepted
+[Sat Nov  1 19:25:16 2025] [::1]:57315 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:25:16 2025] [::1]:57315 Closing
+[Sat Nov  1 19:25:16 2025] [::1]:57316 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:25:16 2025] [::1]:57316 Closing
+[Sat Nov  1 19:25:20 2025] [::1]:57333 Accepted
+[Sat Nov  1 19:25:21 2025] [::1]:57333 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:25:21 2025] [::1]:57333 Closing
+[Sat Nov  1 19:25:22 2025] [::1]:57338 Accepted
+[Sat Nov  1 19:25:22 2025] [::1]:57338 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:25:22 2025] [::1]:57338 Closing
+[Sat Nov  1 19:25:54 2025] [::1]:57494 Accepted
+[Sat Nov  1 19:25:54 2025] [::1]:57495 Accepted
+[Sat Nov  1 19:25:54 2025] [::1]:57494 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:25:54 2025] [::1]:57494 Closing
+[Sat Nov  1 19:25:55 2025] [::1]:57495 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:25:55 2025] [::1]:57495 Closing
+[Sat Nov  1 19:25:55 2025] [::1]:57497 Accepted
+[Sat Nov  1 19:25:55 2025] [::1]:57497 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:25:55 2025] [::1]:57497 Closing
+[Sat Nov  1 19:25:55 2025] [::1]:57498 Accepted
+[Sat Nov  1 19:25:55 2025] [::1]:57498 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:25:55 2025] [::1]:57498 Closing
+[Sat Nov  1 19:27:04 2025] [::1]:57837 Accepted
+[Sat Nov  1 19:27:05 2025] [::1]:57837 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:27:05 2025] [::1]:57837 Closing
+[Sat Nov  1 19:27:06 2025] [::1]:57846 Accepted
+[Sat Nov  1 19:27:06 2025] [::1]:57847 Accepted
+[Sat Nov  1 19:27:06 2025] [::1]:57846 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:27:06 2025] [::1]:57846 Closing
+[Sat Nov  1 19:27:06 2025] [::1]:57847 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:27:06 2025] [::1]:57847 Closing
+[Sat Nov  1 19:27:07 2025] [::1]:57849 Accepted
+[Sat Nov  1 19:27:07 2025] [::1]:57849 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:27:07 2025] [::1]:57849 Closing
+[Sat Nov  1 19:27:07 2025] [::1]:57850 Accepted
+[Sat Nov  1 19:27:07 2025] [::1]:57850 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:27:07 2025] [::1]:57850 Closing
+[Sat Nov  1 19:27:11 2025] [::1]:57868 Accepted
+[Sat Nov  1 19:27:11 2025] [::1]:57868 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:27:11 2025] [::1]:57868 Closing
+[Sat Nov  1 19:27:58 2025] [::1]:58086 Accepted
+[Sat Nov  1 19:27:58 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:27:58 2025] [::1]:58086 [200]: POST /api/cloud-functions/execute.php?function=test - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:27:58 2025] [::1]:58086 Closing
+[Sat Nov  1 19:27:58 2025] [::1]:58087 Accepted
+[Sat Nov  1 19:27:58 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:27:58 2025] [::1]:58087 [200]: POST /api/cloud-functions/execute.php?function=test - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:27:58 2025] [::1]:58087 Closing
+[Sat Nov  1 19:27:59 2025] [::1]:58092 Accepted
+[Sat Nov  1 19:27:59 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:27:59 2025] [::1]:58092 [200]: POST /api/cloud-functions/execute.php?function=test - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:27:59 2025] [::1]:58092 Closing
+[Sat Nov  1 19:27:59 2025] [::1]:58094 Accepted
+[Sat Nov  1 19:27:59 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:27:59 2025] [::1]:58094 [200]: POST /api/cloud-functions/execute.php?function=test - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:27:59 2025] [::1]:58094 Closing
+[Sat Nov  1 19:27:59 2025] [::1]:58099 Accepted
+[Sat Nov  1 19:27:59 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:27:59 2025] [::1]:58099 [200]: POST /api/cloud-functions/execute.php?function=test - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:27:59 2025] [::1]:58099 Closing
+[Sat Nov  1 19:28:00 2025] [::1]:58100 Accepted
+[Sat Nov  1 19:28:00 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:00 2025] [::1]:58100 [200]: POST /api/cloud-functions/execute.php?function=test - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:00 2025] [::1]:58100 Closing
+[Sat Nov  1 19:28:01 2025] [::1]:58105 Accepted
+[Sat Nov  1 19:28:01 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:01 2025] [::1]:58105 [200]: POST /api/cloud-functions/execute.php?function=test - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:01 2025] [::1]:58105 Closing
+[Sat Nov  1 19:28:03 2025] [::1]:58114 Accepted
+[Sat Nov  1 19:28:03 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:03 2025] [::1]:58114 [200]: POST /api/cloud-functions/execute.php?function=test - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:03 2025] [::1]:58114 Closing
+[Sat Nov  1 19:28:03 2025] [::1]:58119 Accepted
+[Sat Nov  1 19:28:03 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:03 2025] [::1]:58119 [200]: POST /api/cloud-functions/execute.php?function=test - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:03 2025] [::1]:58119 Closing
+[Sat Nov  1 19:28:04 2025] [::1]:58120 Accepted
+[Sat Nov  1 19:28:04 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:04 2025] [::1]:58120 [200]: POST /api/cloud-functions/execute.php?function=test - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:04 2025] [::1]:58120 Closing
+[Sat Nov  1 19:28:04 2025] [::1]:58121 Accepted
+[Sat Nov  1 19:28:04 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:04 2025] [::1]:58121 [200]: POST /api/cloud-functions/execute.php?function=test - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 961
+[Sat Nov  1 19:28:04 2025] [::1]:58121 Closing
+[Sat Nov  1 19:28:07 2025] [::1]:58136 Accepted
+[Sat Nov  1 19:28:07 2025] [::1]:58136 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:28:07 2025] [::1]:58136 Closing
+[Sat Nov  1 19:28:08 2025] [::1]:58141 Accepted
+[Sat Nov  1 19:28:08 2025] [::1]:58141 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:28:08 2025] [::1]:58141 Closing
+[Sat Nov  1 19:29:27 2025] [::1]:58503 Accepted
+[Sat Nov  1 19:29:27 2025] [::1]:58503 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:29:27 2025] [::1]:58503 Closing
+[Sat Nov  1 19:29:28 2025] [::1]:58508 Accepted
+[Sat Nov  1 19:29:28 2025] [::1]:58508 [200]: POST /api/cloud-functions/execute.php?function=test-say-hello
+[Sat Nov  1 19:29:28 2025] [::1]:58508 Closing
+[Sat Nov  1 19:29:32 2025] [::1]:58525 Accepted
+[Sat Nov  1 19:29:32 2025] [::1]:58525 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:29:32 2025] [::1]:58525 Closing
+[Sat Nov  1 19:31:10 2025] [::1]:58961 Accepted
+[Sat Nov  1 19:31:10 2025] [::1]:58962 Accepted
+[Sat Nov  1 19:31:10 2025] [::1]:58961 [200]: GET /admin/cloud-functions.php?success=Fonksiyon+ba%C5%9Far%C4%B1yla+g%C3%BCncellendi%21
+[Sat Nov  1 19:31:10 2025] [::1]:58961 Closing
+[Sat Nov  1 19:31:10 2025] [::1]:58962 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:31:10 2025] [::1]:58962 Closing
+[Sat Nov  1 19:31:10 2025] [::1]:58968 Accepted
+[Sat Nov  1 19:31:10 2025] [::1]:58968 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:31:10 2025] [::1]:58968 Closing
+[Sat Nov  1 19:31:10 2025] [::1]:58969 Accepted
+[Sat Nov  1 19:31:10 2025] [::1]:58969 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 19:31:10 2025] [::1]:58969 Closing
+[Sat Nov  1 19:31:11 2025] [::1]:58974 Accepted
+[Sat Nov  1 19:31:11 2025] [::1]:58974 [200]: GET /admin/cloud-functions.php?edit=9
+[Sat Nov  1 19:31:11 2025] [::1]:58974 Closing
+[Sat Nov  1 19:31:11 2025] [::1]:58975 Accepted
+[Sat Nov  1 19:31:11 2025] [::1]:58975 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:31:11 2025] [::1]:58975 Closing
+[Sat Nov  1 19:32:09 2025] [::1]:59253 Accepted
+[Sat Nov  1 19:32:09 2025] [::1]:59253 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:32:09 2025] [::1]:59253 Closing
+[Sat Nov  1 19:32:45 2025] [::1]:59429 Accepted
+[Sat Nov  1 19:32:46 2025] [::1]:59429 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:32:46 2025] [::1]:59429 Closing
+[Sat Nov  1 19:32:46 2025] [::1]:59438 Accepted
+[Sat Nov  1 19:32:47 2025] [::1]:59438 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:32:47 2025] [::1]:59438 Closing
+[Sat Nov  1 19:33:11 2025] [::1]:59549 Accepted
+[Sat Nov  1 19:33:11 2025] [::1]:59549 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:33:11 2025] [::1]:59549 Closing
+[Sat Nov  1 19:33:12 2025] [::1]:59554 Accepted
+[Sat Nov  1 19:33:12 2025] [::1]:59554 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:33:12 2025] [::1]:59554 Closing
+[Sat Nov  1 19:33:22 2025] [::1]:59598 Accepted
+[Sat Nov  1 19:33:22 2025] [::1]:59599 Accepted
+[Sat Nov  1 19:33:22 2025] [::1]:59598 [302]: POST /admin/cloud-functions.php?edit=9
+[Sat Nov  1 19:33:22 2025] [::1]:59598 Closing
+[Sat Nov  1 19:33:22 2025] [::1]:59599 [200]: GET /admin/cloud-functions.php?success=Fonksiyon+ba%C5%9Far%C4%B1yla+g%C3%BCncellendi%21
+[Sat Nov  1 19:33:22 2025] [::1]:59599 Closing
+[Sat Nov  1 19:33:22 2025] [::1]:59601 Accepted
+[Sat Nov  1 19:33:22 2025] [::1]:59601 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:33:22 2025] [::1]:59601 Closing
+[Sat Nov  1 19:33:24 2025] [::1]:59612 Accepted
+[Sat Nov  1 19:33:24 2025] [::1]:59612 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:33:24 2025] [::1]:59612 Closing
+[Sat Nov  1 19:33:25 2025] [::1]:59617 Accepted
+[Sat Nov  1 19:33:25 2025] [::1]:59617 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:33:25 2025] [::1]:59617 Closing
+[Sat Nov  1 19:33:52 2025] [::1]:59753 Accepted
+[Sat Nov  1 19:33:53 2025] [::1]:59753 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:33:53 2025] [::1]:59753 Closing
+[Sat Nov  1 19:34:05 2025] [::1]:59816 Accepted
+[Sat Nov  1 19:34:06 2025] [::1]:59816 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:34:06 2025] [::1]:59816 Closing
+[Sat Nov  1 19:34:15 2025] [::1]:59864 Accepted
+[Sat Nov  1 19:34:16 2025] [::1]:59864 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:34:16 2025] [::1]:59864 Closing
+[Sat Nov  1 19:34:16 2025] [::1]:59869 Accepted
+[Sat Nov  1 19:34:17 2025] [::1]:59869 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:34:17 2025] [::1]:59869 Closing
+[Sat Nov  1 19:40:28 2025] [::1]:61458 Accepted
+[Sat Nov  1 19:40:29 2025] [::1]:61458 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:40:29 2025] [::1]:61458 Closing
+[Sat Nov  1 19:41:05 2025] [::1]:61658 Accepted
+[Sat Nov  1 19:41:05 2025] [::1]:61659 Accepted
+[Sat Nov  1 19:41:05 2025] [::1]:61658 [200]: GET /admin/dashboard-widgets.php
+[Sat Nov  1 19:41:05 2025] [::1]:61658 Closing
+[Sat Nov  1 19:41:05 2025] [::1]:61659 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:41:05 2025] [::1]:61659 Closing
+[Sat Nov  1 19:41:06 2025] [::1]:61668 Accepted
+[Sat Nov  1 19:41:06 2025] [::1]:61669 Accepted
+[Sat Nov  1 19:41:06 2025] [::1]:61668 [200]: GET /admin/cron-manager.php
+[Sat Nov  1 19:41:06 2025] [::1]:61668 Closing
+[Sat Nov  1 19:41:06 2025] [::1]:61669 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:41:06 2025] [::1]:61669 Closing
+[Sat Nov  1 19:41:07 2025] [::1]:61671 Accepted
+[Sat Nov  1 19:41:07 2025] [::1]:61672 Accepted
+[Sat Nov  1 19:41:07 2025] [::1]:61671 [200]: GET /admin/cloud-functions.php
+[Sat Nov  1 19:41:07 2025] [::1]:61671 Closing
+[Sat Nov  1 19:41:07 2025] [::1]:61672 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:41:07 2025] [::1]:61672 Closing
+[Sat Nov  1 19:41:08 2025] [::1]:61679 Accepted
+[Sat Nov  1 19:41:08 2025] [::1]:61680 Accepted
+[Sat Nov  1 19:41:08 2025] [::1]:61679 [200]: GET /admin/cloud-middlewares.php
+[Sat Nov  1 19:41:08 2025] [::1]:61679 Closing
+[Sat Nov  1 19:41:08 2025] [::1]:61680 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:41:08 2025] [::1]:61680 Closing
+[Sat Nov  1 19:41:12 2025] [::1]:61699 Accepted
+[Sat Nov  1 19:41:12 2025] [::1]:61699 Closed without sending a request; it was probably just an unused speculative preconnection
+[Sat Nov  1 19:41:12 2025] [::1]:61699 Closing
+[Sat Nov  1 19:41:12 2025] [::1]:61704 Accepted
+[Sat Nov  1 19:41:12 2025] [::1]:61705 Accepted
+[Sat Nov  1 19:41:12 2025] [::1]:61704 [200]: GET /admin/cloud-functions.php
+[Sat Nov  1 19:41:12 2025] [::1]:61704 Closing
+[Sat Nov  1 19:41:12 2025] [::1]:61705 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:41:12 2025] [::1]:61705 Closing
+[Sat Nov  1 19:42:30 2025] [::1]:62068 Accepted
+[Sat Nov  1 19:42:30 2025] [::1]:62069 Accepted
+[Sat Nov  1 19:42:30 2025] [::1]:62068 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:42:30 2025] [::1]:62068 Closing
+[Sat Nov  1 19:42:30 2025] [::1]:62069 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:42:30 2025] [::1]:62069 Closing
+[Sat Nov  1 19:42:34 2025] [::1]:62087 Accepted
+[Sat Nov  1 19:42:35 2025] [::1]:62087 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:42:35 2025] [::1]:62087 Closing
+[Sat Nov  1 19:42:50 2025] [::1]:62163 Accepted
+[Sat Nov  1 19:42:50 2025] [::1]:62164 Accepted
+[Sat Nov  1 19:42:50 2025] [::1]:62163 [200]: GET /admin/dynamic-page.php?page=integ_siparis
+[Sat Nov  1 19:42:50 2025] [::1]:62163 Closing
+[Sat Nov  1 19:42:50 2025] [::1]:62164 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:42:50 2025] [::1]:62164 Closing
+[Sat Nov  1 19:42:53 2025] [::1]:62182 Accepted
+[Sat Nov  1 19:42:53 2025] [::1]:62182 [200]: GET /admin/dynamic-page.php?page=integ_siparis&edit=2
+[Sat Nov  1 19:42:53 2025] [::1]:62182 Closing
+[Sat Nov  1 19:42:53 2025] [::1]:62183 Accepted
+[Sat Nov  1 19:42:53 2025] [::1]:62183 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:42:53 2025] [::1]:62183 Closing
+[Sat Nov  1 19:43:00 2025] [::1]:62220 Accepted
+[Sat Nov  1 19:43:01 2025] [::1]:62220 [200]: POST /api/cloud-functions/execute.php?function=test_function
+[Sat Nov  1 19:43:01 2025] [::1]:62220 Closing
+[Sat Nov  1 19:45:51 2025] [::1]:62963 Accepted
+[Sat Nov  1 19:45:52 2025] [::1]:62963 [200]: POST /api/cloud-functions/execute.php?function=test_function
+[Sat Nov  1 19:45:52 2025] [::1]:62963 Closing
+[Sat Nov  1 19:46:23 2025] [::1]:63106 Accepted
+[Sat Nov  1 19:46:23 2025] [::1]:63106 [200]: POST /api/cloud-functions/execute.php?function=test_function
+[Sat Nov  1 19:46:23 2025] [::1]:63106 Closing
+[Sat Nov  1 19:46:48 2025] [::1]:63217 Accepted
+[Sat Nov  1 19:46:48 2025] [::1]:63217 [200]: POST /api/cloud-functions/execute.php?function=test_function
+[Sat Nov  1 19:46:48 2025] [::1]:63217 Closing
+[Sat Nov  1 19:47:38 2025] [::1]:63451 Accepted
+[Sat Nov  1 19:47:38 2025] [::1]:63451 [200]: POST /api/cloud-functions/execute.php?function=test_function
+[Sat Nov  1 19:47:38 2025] [::1]:63451 Closing
+[Sat Nov  1 19:48:09 2025] [::1]:63613 Accepted
+[Sat Nov  1 19:48:10 2025] [::1]:63614 Accepted
+[Sat Nov  1 19:48:10 2025] [::1]:63613 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:48:10 2025] [::1]:63613 Closing
+[Sat Nov  1 19:48:10 2025] [::1]:63614 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:48:10 2025] [::1]:63614 Closing
+[Sat Nov  1 19:48:13 2025] [::1]:63628 Accepted
+[Sat Nov  1 19:48:14 2025] [::1]:63628 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:48:14 2025] [::1]:63628 Closing
+[Sat Nov  1 19:48:41 2025] [::1]:63774 Accepted
+[Sat Nov  1 19:48:41 2025] [::1]:63774 [200]: POST /api/cloud-functions/execute.php?function=test_function
+[Sat Nov  1 19:48:41 2025] [::1]:63774 Closing
+[Sat Nov  1 19:48:52 2025] [::1]:63828 Accepted
+[Sat Nov  1 19:48:52 2025] [::1]:63828 [200]: POST /api/cloud-functions/execute.php?function=test_function
+[Sat Nov  1 19:48:52 2025] [::1]:63828 Closing
+[Sat Nov  1 19:51:15 2025] [::1]:64447 Accepted
+[Sat Nov  1 19:51:16 2025] [::1]:64447 [200]: POST /api/cloud-functions/execute.php?function=test_function
+[Sat Nov  1 19:51:16 2025] [::1]:64447 Closing
+[Sat Nov  1 20:42:07 2025] [::1]:61072 Accepted
+[Sat Nov  1 20:42:07 2025] [::1]:61073 Accepted
+[Sat Nov  1 20:42:07 2025] [::1]:61072 [200]: GET /admin/api-playground.php
+[Sat Nov  1 20:42:07 2025] [::1]:61072 Closing
+[Sat Nov  1 20:42:07 2025] [::1]:61073 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 20:42:07 2025] [::1]:61073 Closing
+[Sat Nov  1 20:42:07 2025] [::1]:61075 Accepted
+[Sat Nov  1 20:42:07 2025] [::1]:61075 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 20:42:07 2025] [::1]:61075 Closing
+[Sat Nov  1 20:42:07 2025] [::1]:61076 Accepted
+[Sat Nov  1 20:42:07 2025] [::1]:61076 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 20:42:07 2025] [::1]:61076 Closing
+[Sat Nov  1 20:42:10 2025] [::1]:61089 Accepted
+[Sat Nov  1 20:42:11 2025] [::1]:61089 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 20:42:11 2025] [::1]:61089 Closing
+[Sat Nov  1 20:48:58 2025] [::1]:62938 Accepted
+[Sat Nov  1 20:48:58 2025] PHP Parse error:  Unmatched '}' in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 1234
+[Sat Nov  1 20:48:58 2025] [::1]:62938 [200]: POST /api/cloud-functions/execute.php?function=test_function - Unmatched '}' in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 1234
+[Sat Nov  1 20:48:58 2025] [::1]:62938 Closing
+[Sat Nov  1 20:50:24 2025] [::1]:63323 Accepted
+
+Fatal error: Maximum execution time of 30+2 seconds exceeded (terminated) in /Users/hamditug/Hamdis/StockCountWeb/api/common/node-executor.php on line 44

@@ -196,8 +196,13 @@ function executeCronJob($job, $db) {
             // JavaScript/Node.js execution
             require_once __DIR__ . '/../api/common/node-executor.php';
             
+            // Note: PDO objects cannot be serialized for Node.js
+            // The node-executor will get database config from settings
             $context = [
-                'dbContext' => $db
+                'request' => [],
+                'method' => 'GET',
+                'headers' => [],
+                'response' => ['success' => false, 'data' => null, 'message' => '', 'error' => null]
             ];
             
             $result = executeNodeCode($job['code'], $context);

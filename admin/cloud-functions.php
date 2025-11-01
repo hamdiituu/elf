@@ -597,6 +597,7 @@ include '../includes/header.php';
 response.success = true;
 response.data = { message: 'Hello from Node.js!' };
 response.message = 'Function executed successfully';
+// NOTE: Do NOT use 'return' in JavaScript code - just set response object
 
 // Example: Database query (SELECT) - Works with both SQLite and MySQL
 // try {
