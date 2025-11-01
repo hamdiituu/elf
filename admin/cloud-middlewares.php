@@ -172,6 +172,7 @@ if ($edit_id) {
 }
 
 // Get all middlewares (handle middleware_id column safely)
+$middlewares = [];
 try {
     // First check if middleware_id column exists in cloud_functions table
     $settings = getSettings();
@@ -197,21 +198,44 @@ try {
         }
     }
     
-    if ($has_middleware_id) {
-        $middlewares = $db->query("SELECT cm.*, u.username as created_by_name, 
-            (SELECT COUNT(*) FROM cloud_functions WHERE middleware_id = cm.id) as usage_count
-            FROM cloud_middlewares cm 
-            LEFT JOIN users u ON cm.created_by = u.id 
-            ORDER BY cm.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-    } else {
-        // middleware_id column doesn't exist, use simpler query
-        $middlewares = $db->query("SELECT cm.*, u.username as created_by_name, 0 as usage_count
-            FROM cloud_middlewares cm 
-            LEFT JOIN users u ON cm.created_by = u.id 
-            ORDER BY cm.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    // Try query with usage count
+    try {
+        if ($has_middleware_id) {
+            $middlewares = $db->query("SELECT cm.*, u.username as created_by_name, 
+                (SELECT COUNT(*) FROM cloud_functions WHERE middleware_id = cm.id) as usage_count
+                FROM cloud_middlewares cm 
+                LEFT JOIN users u ON cm.created_by = u.id 
+                ORDER BY cm.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            // middleware_id column doesn't exist, use simpler query
+            $middlewares = $db->query("SELECT cm.*, u.username as created_by_name, 0 as usage_count
+                FROM cloud_middlewares cm 
+                LEFT JOIN users u ON cm.created_by = u.id 
+                ORDER BY cm.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+        }
+    } catch (PDOException $e) {
+        // If join fails, try simpler query without users
+        try {
+            $middlewares = $db->query("SELECT cm.*, 0 as usage_count FROM cloud_middlewares cm ORDER BY cm.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($middlewares as &$mw) {
+                $mw['created_by_name'] = null;
+            }
+        } catch (PDOException $e2) {
+            // If even simpler query fails, try basic query
+            try {
+                $middlewares = $db->query("SELECT * FROM cloud_middlewares ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($middlewares as &$mw) {
+                    $mw['created_by_name'] = null;
+                    $mw['usage_count'] = 0;
+                }
+            } catch (PDOException $e3) {
+                error_log("Error fetching cloud middlewares: " . $e3->getMessage());
+                $middlewares = [];
+            }
+        }
     }
-} catch (PDOException $e) {
-    // If query fails, return empty array
+} catch (Exception $e) {
+    error_log("Error fetching cloud middlewares: " . $e->getMessage());
     $middlewares = [];
 }
 
@@ -401,7 +425,13 @@ include '../includes/header.php';
                             </div>
                             <div class="p-4">
                                 <div class="space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto" id="middlewares-list">
-                                    <?php if (empty($middlewares)): ?>
+                                    <?php 
+                                    // Debug: Check if middlewares array is set and not empty
+                                    if (!isset($middlewares)) {
+                                        $middlewares = [];
+                                    }
+                                    if (empty($middlewares)): 
+                                    ?>
                                         <div class="text-center py-12 text-muted-foreground">
                                             <svg class="mx-auto h-12 w-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
