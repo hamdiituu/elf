@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $function_name = trim($_POST['function_name'] ?? '');
             $description = trim($_POST['description'] ?? '');
             $code = $_POST['code'] ?? '';
-            $http_method = $_POST['http_method'] ?? 'POST';
+            $http_method = 'POST'; // Always POST
             $enabled = isset($_POST['enabled']) ? 1 : 0;
             
             if (empty($function_name) || empty($code)) {
@@ -237,11 +237,8 @@ include '../includes/header.php';
                                                         <?php if ($func['description']): ?>
                                                             <p class="text-xs text-muted-foreground mt-1"><?php echo htmlspecialchars($func['description']); ?></p>
                                                         <?php endif; ?>
-                                                        <p class="text-xs font-mono text-muted-foreground mt-1 break-all">
-                                                            <?php echo htmlspecialchars($func['http_method']); ?> <?php echo htmlspecialchars($func['endpoint']); ?>
-                                                        </p>
                                                         <p class="text-xs text-muted-foreground mt-1">
-                                                            API: /api/cloud-functions/execute.php?function=<?php echo htmlspecialchars($func['name']); ?>
+                                                            POST /api/cloud-functions/execute.php?function=<?php echo htmlspecialchars($func['name']); ?>
                                                         </p>
                                                     </div>
                                                 </div>
@@ -286,37 +283,20 @@ include '../includes/header.php';
                                     <input type="hidden" name="function_id" value="<?php echo $edit_function ? $edit_function['id'] : '0'; ?>">
                                     
                                     <div class="space-y-4">
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                    Fonksiyon Adı *
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    name="function_name"
-                                                    id="function_name"
-                                                    value="<?php echo htmlspecialchars($edit_function['name'] ?? ''); ?>"
-                                                    required
-                                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                                    placeholder="my-function"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                    HTTP Method *
-                                                </label>
-                                                <select
-                                                    name="http_method"
-                                                    id="http_method"
-                                                    required
-                                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                                >
-                                                    <option value="POST" <?php echo (!$edit_function || $edit_function['http_method'] === 'POST') ? 'selected' : ''; ?>>POST</option>
-                                                    <option value="GET" <?php echo ($edit_function && $edit_function['http_method'] === 'GET') ? 'selected' : ''; ?>>GET</option>
-                                                    <option value="PUT" <?php echo ($edit_function && $edit_function['http_method'] === 'PUT') ? 'selected' : ''; ?>>PUT</option>
-                                                    <option value="DELETE" <?php echo ($edit_function && $edit_function['http_method'] === 'DELETE') ? 'selected' : ''; ?>>DELETE</option>
-                                                </select>
-                                            </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-1.5">
+                                                Fonksiyon Adı *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="function_name"
+                                                id="function_name"
+                                                value="<?php echo htmlspecialchars($edit_function['name'] ?? ''); ?>"
+                                                required
+                                                class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                                placeholder="my-function"
+                                            />
+                                            <input type="hidden" name="http_method" value="POST">
                                         </div>
                                         
                                         <div>
