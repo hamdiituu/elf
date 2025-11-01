@@ -198,20 +198,89 @@ include '../includes/header.php';
 <div class="flex h-screen overflow-hidden">
     <?php include '../includes/admin-sidebar.php'; ?>
 
-    <main class="flex-1 overflow-y-auto">
+    <main class="flex-1 overflow-y-auto bg-muted/30">
         <div class="py-6">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-                <div class="flex items-center justify-between mb-6">
-                    <h1 class="text-3xl font-bold text-foreground">Cloud Middlewares</h1>
-                    <button
-                        onclick="showCreateForm()"
-                        class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 transition-colors"
-                    >
-                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Yeni Middleware
-                    </button>
+            <div class="mx-auto max-w-[1600px] px-4 sm:px-6 md:px-8">
+                <!-- Header -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h1 class="text-3xl font-bold text-foreground">Cloud Middlewares</h1>
+                            <p class="mt-2 text-sm text-muted-foreground">Create and manage request middlewares</p>
+                        </div>
+                        <button
+                            onclick="showCreateForm()"
+                            class="inline-flex items-center justify-center rounded-md text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2.5 transition-colors shadow-sm"
+                        >
+                            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            New Middleware
+                        </button>
+                    </div>
+                    
+                    <!-- Stats Dashboard -->
+                    <div class="grid gap-4 md:grid-cols-4 mb-6">
+                        <?php 
+                        $total_mw = count($middlewares);
+                        $active_mw = count(array_filter($middlewares, fn($m) => $m['enabled']));
+                        $php_mw = count(array_filter($middlewares, fn($m) => ($m['language'] ?? 'php') === 'php'));
+                        $js_mw = count(array_filter($middlewares, fn($m) => ($m['language'] ?? 'php') === 'js'));
+                        $used_mw = count(array_filter($middlewares, fn($m) => ($m['usage_count'] ?? 0) > 0));
+                        ?>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $total_mw; ?></p>
+                                </div>
+                                <div class="rounded-full bg-blue-100 p-3">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $active_mw; ?></p>
+                                </div>
+                                <div class="rounded-full bg-green-100 p-3">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">In Use</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $used_mw; ?></p>
+                                </div>
+                                <div class="rounded-full bg-purple-100 p-3">
+                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">JS/Total</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $js_mw; ?>/<?php echo $total_mw; ?></p>
+                                </div>
+                                <div class="rounded-full bg-yellow-100 p-3">
+                                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <?php if ($error_message): ?>
@@ -239,47 +308,85 @@ include '../includes/header.php';
                 <div class="grid gap-6 lg:grid-cols-3">
                     <!-- Middlewares List -->
                     <div class="lg:col-span-1">
-                        <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Middleware'ler</h3>
-                                <div class="space-y-2 max-h-[600px] overflow-y-auto">
+                        <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm sticky top-6">
+                            <div class="p-4 border-b border-border bg-muted/30">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight">Middlewares</h3>
+                                    <span class="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                                        <?php echo count($middlewares); ?>
+                                    </span>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    id="middleware-search"
+                                    placeholder="Search middlewares..."
+                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                    oninput="filterMiddlewares(this.value)"
+                                >
+                            </div>
+                            <div class="p-4">
+                                <div class="space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto" id="middlewares-list">
                                     <?php if (empty($middlewares)): ?>
-                                        <div class="text-center py-8 text-muted-foreground text-sm">
-                                            Henüz middleware yok.
+                                        <div class="text-center py-12 text-muted-foreground">
+                                            <svg class="mx-auto h-12 w-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                            </svg>
+                                            <p class="text-sm font-medium">No middlewares yet</p>
+                                            <p class="text-xs mt-1">Create your first middleware to get started</p>
                                         </div>
                                     <?php else: ?>
-                                        <?php foreach ($middlewares as $mw): ?>
-                                            <div class="rounded-md border border-border p-3 bg-muted/30 hover:bg-muted/50 transition-colors">
-                                                <div class="flex items-center justify-between mb-2">
-                                                    <div class="flex-1">
-                                                        <h4 class="font-medium text-sm text-foreground">
-                                                            <?php echo htmlspecialchars($mw['name']); ?>
+                                        <?php foreach ($middlewares as $mw): 
+                                            $lang = ($mw['language'] ?? 'php') === 'js' ? 'js' : 'php';
+                                            $langColor = $lang === 'js' ? 'text-yellow-600 bg-yellow-100' : 'text-purple-600 bg-purple-100';
+                                        ?>
+                                            <div class="rounded-lg border border-border p-4 bg-gradient-to-br from-background to-muted/30 hover:border-primary/50 hover:shadow-md transition-all middleware-item group <?php echo (isset($edit_id) && $edit_id == $mw['id']) ? 'border-primary bg-primary/5 shadow-md' : ''; ?>" 
+                                                 data-middleware-id="<?php echo $mw['id']; ?>"
+                                                 data-middleware-name="<?php echo strtolower(htmlspecialchars($mw['name'])); ?>"
+                                                 onclick="selectMiddleware(<?php echo $mw['id']; ?>)"
+                                            >
+                                                <div class="flex items-start justify-between gap-3 mb-3">
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                                            <h4 class="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate">
+                                                                <?php echo htmlspecialchars($mw['name']); ?>
+                                                            </h4>
+                                                            <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-semibold <?php echo $langColor; ?>">
+                                                                <?php echo strtoupper($lang); ?>
+                                                            </span>
                                                             <?php if (!$mw['enabled']): ?>
-                                                                <span class="ml-2 text-xs text-muted-foreground">(Pasif)</span>
+                                                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
+                                                                    Inactive
+                                                                </span>
                                                             <?php endif; ?>
-                                                        </h4>
+                                                        </div>
                                                         <?php if ($mw['description']): ?>
-                                                            <p class="text-xs text-muted-foreground mt-1"><?php echo htmlspecialchars($mw['description']); ?></p>
+                                                            <p class="text-xs text-muted-foreground line-clamp-2"><?php echo htmlspecialchars($mw['description']); ?></p>
                                                         <?php endif; ?>
-                                                        <?php if ($mw['usage_count'] > 0): ?>
-                                                            <p class="text-xs text-purple-600 mt-1 font-medium">
-                                                                🔒 <?php echo $mw['usage_count']; ?> fonksiyon tarafından kullanılıyor
-                                                            </p>
+                                                        <?php if (($mw['usage_count'] ?? 0) > 0): ?>
+                                                            <div class="flex items-center gap-1 mt-2 text-xs text-purple-600 font-medium">
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                                </svg>
+                                                                Used by <?php echo $mw['usage_count']; ?> function<?php echo $mw['usage_count'] > 1 ? 's' : ''; ?>
+                                                            </div>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
-                                                <div class="flex items-center gap-2 mt-3">
+                                                <div class="flex items-center gap-2 pt-3 border-t border-border">
                                                     <a
                                                         href="?edit=<?php echo $mw['id']; ?>"
-                                                        class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-2 py-1 transition-colors"
+                                                        class="flex-1 inline-flex items-center justify-center rounded-md text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-3 py-1.5 transition-colors"
+                                                        onclick="event.stopPropagation()"
                                                     >
-                                                        Düzenle
+                                                        Edit
                                                     </a>
                                                     <button
-                                                        onclick="deleteMiddleware(<?php echo $mw['id']; ?>, '<?php echo htmlspecialchars(addslashes($mw['name'])); ?>')"
-                                                        class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 px-2 py-1 transition-colors"
+                                                        onclick="event.stopPropagation(); deleteMiddleware(<?php echo $mw['id']; ?>, '<?php echo htmlspecialchars(addslashes($mw['name'])); ?>')"
+                                                        class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1.5 transition-colors"
                                                     >
-                                                        Sil
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
                                                     </button>
                                                 </div>
                                             </div>
@@ -668,8 +775,27 @@ include '../includes/header.php';
         window.location.href = 'cloud-middlewares.php';
     }
     
+    function filterMiddlewares(searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+        const items = document.querySelectorAll('.middleware-item');
+        
+        items.forEach(item => {
+            const name = item.dataset.middlewareName || '';
+            
+            if (term === '' || name.includes(term)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    function selectMiddleware(id) {
+        window.location.href = '?edit=' + id;
+    }
+    
     function deleteMiddleware(id, name) {
-        if (confirm('Middleware "' + name + '" silinecek. Emin misiniz?')) {
+        if (confirm('Are you sure you want to delete "' + name + '"? This action cannot be undone.')) {
             const form = document.createElement('form');
             form.method = 'POST';
             form.innerHTML = '<input type="hidden" name="action" value="delete_middleware"><input type="hidden" name="middleware_id" value="' + id + '">';
