@@ -128,3 +128,140 @@
 [Sat Nov  1 18:38:09 2025] [::1]:49269 Accepted
 [Sat Nov  1 18:38:09 2025] [::1]:49269 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
 [Sat Nov  1 18:38:09 2025] [::1]:49269 Closing
+[Sat Nov  1 18:38:27 2025] [::1]:49284 Accepted
+[Sat Nov  1 18:38:27 2025] [::1]:49285 Accepted
+[Sat Nov  1 18:38:27 2025] [::1]:49284 [200]: GET /admin/cron-manager.php?success=Cron+daemon+durduruldu%21
+[Sat Nov  1 18:38:27 2025] [::1]:49284 Closing
+[Sat Nov  1 18:38:27 2025] [::1]:49285 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:38:27 2025] [::1]:49285 Closing
+[Sat Nov  1 18:38:27 2025] [::1]:49287 Accepted
+[Sat Nov  1 18:38:27 2025] [::1]:49287 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:27 2025] [::1]:49287 Closing
+[Sat Nov  1 18:38:27 2025] [::1]:49288 Accepted
+[Sat Nov  1 18:38:27 2025] [::1]:49288 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:27 2025] [::1]:49288 Closing
+[Sat Nov  1 18:38:32 2025] [::1]:49291 Accepted
+[Sat Nov  1 18:38:32 2025] [::1]:49292 Accepted
+[Sat Nov  1 18:38:32 2025] [::1]:49291 [302]: GET /admin/cron-manager.php?daemon_action=start
+[Sat Nov  1 18:38:32 2025] [::1]:49291 Closing
+[Sat Nov  1 18:38:32 2025] [::1]:49292 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:38:32 2025] [::1]:49292 Closing
+[Sat Nov  1 18:38:32 2025] [::1]:49294 Accepted
+[Sat Nov  1 18:38:32 2025] [::1]:49294 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:38:32 2025] [::1]:49294 Closing
+[Sat Nov  1 18:38:34 2025] [::1]:49297 Accepted
+[Sat Nov  1 18:38:34 2025] [::1]:49298 Accepted
+[Sat Nov  1 18:38:34 2025] [::1]:49297 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:38:34 2025] [::1]:49297 Closing
+[Sat Nov  1 18:38:34 2025] [::1]:49298 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:38:34 2025] [::1]:49298 Closing
+[Sat Nov  1 18:38:34 2025] [::1]:49299 Accepted
+[Sat Nov  1 18:38:34 2025] [::1]:49299 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:34 2025] [::1]:49299 Closing
+[Sat Nov  1 18:38:34 2025] [::1]:49300 Accepted
+[Sat Nov  1 18:38:34 2025] [::1]:49300 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:34 2025] [::1]:49300 Closing
+[Sat Nov  1 18:38:34 2025] [::1]:49301 Accepted
+[Sat Nov  1 18:38:34 2025] [::1]:49302 Accepted
+[Sat Nov  1 18:38:34 2025] [::1]:49301 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:38:34 2025] [::1]:49301 Closing
+[Sat Nov  1 18:38:34 2025] [::1]:49302 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:38:34 2025] [::1]:49302 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49303 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49303 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:35 2025] [::1]:49303 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49304 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49304 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:35 2025] [::1]:49304 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49305 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49305 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:38:35 2025] [::1]:49305 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49306 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49306 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:38:35 2025] [::1]:49306 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49307 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49307 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:35 2025] [::1]:49307 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49308 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49308 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:35 2025] [::1]:49308 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49309 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49310 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49309 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:38:35 2025] [::1]:49309 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49310 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:38:35 2025] [::1]:49310 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49311 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49311 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:35 2025] [::1]:49311 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49312 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49312 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:35 2025] [::1]:49312 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49313 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49314 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49313 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:38:35 2025] [::1]:49313 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49314 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:38:35 2025] [::1]:49314 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49315 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49315 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:35 2025] [::1]:49315 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49316 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49316 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:35 2025] [::1]:49316 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49317 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49318 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49317 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:38:35 2025] [::1]:49317 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49318 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:38:35 2025] [::1]:49318 Closing
+[Sat Nov  1 18:38:35 2025] [::1]:49319 Accepted
+[Sat Nov  1 18:38:35 2025] [::1]:49319 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:35 2025] [::1]:49319 Closing
+[Sat Nov  1 18:38:36 2025] [::1]:49320 Accepted
+[Sat Nov  1 18:38:36 2025] [::1]:49320 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:36 2025] [::1]:49320 Closing
+[Sat Nov  1 18:38:42 2025] [::1]:49340 Accepted
+[Sat Nov  1 18:38:42 2025] PHP Parse error:  syntax error, unexpected token "endif", expecting end of file in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 927
+[Sat Nov  1 18:38:42 2025] [::1]:49340 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21 - syntax error, unexpected token "endif", expecting end of file in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 927
+[Sat Nov  1 18:38:42 2025] [::1]:49340 Closing
+[Sat Nov  1 18:38:42 2025] [::1]:49341 Accepted
+[Sat Nov  1 18:38:47 2025] [::1]:49341 Closed without sending a request; it was probably just an unused speculative preconnection
+[Sat Nov  1 18:38:47 2025] [::1]:49341 Closing
+[Sat Nov  1 18:38:49 2025] [::1]:49346 Accepted
+[Sat Nov  1 18:38:49 2025] [::1]:49347 Accepted
+[Sat Nov  1 18:38:49 2025] PHP Parse error:  syntax error, unexpected token "endif", expecting end of file in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 927
+[Sat Nov  1 18:38:49 2025] [::1]:49346 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21 - syntax error, unexpected token "endif", expecting end of file in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 927
+[Sat Nov  1 18:38:49 2025] [::1]:49346 Closing
+[Sat Nov  1 18:38:49 2025] PHP Parse error:  syntax error, unexpected token "endif", expecting end of file in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 927
+[Sat Nov  1 18:38:49 2025] [::1]:49347 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21 - syntax error, unexpected token "endif", expecting end of file in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 927
+[Sat Nov  1 18:38:49 2025] [::1]:49347 Closing
+[Sat Nov  1 18:38:49 2025] [::1]:49348 Accepted
+[Sat Nov  1 18:38:52 2025] [::1]:49348 Closed without sending a request; it was probably just an unused speculative preconnection
+[Sat Nov  1 18:38:52 2025] [::1]:49348 Closing
+[Sat Nov  1 18:39:01 2025] [::1]:49355 Accepted
+[Sat Nov  1 18:39:01 2025] [::1]:49356 Accepted
+[Sat Nov  1 18:39:01 2025] PHP Parse error:  syntax error, unexpected token "endif", expecting end of file in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 927
+[Sat Nov  1 18:39:01 2025] [::1]:49355 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21 - syntax error, unexpected token "endif", expecting end of file in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 927
+[Sat Nov  1 18:39:01 2025] [::1]:49355 Closing
+[Sat Nov  1 18:39:02 2025] [::1]:49356 Closed without sending a request; it was probably just an unused speculative preconnection
+[Sat Nov  1 18:39:02 2025] [::1]:49356 Closing
+[Sat Nov  1 18:39:02 2025] [::1]:49357 Accepted
+[Sat Nov  1 18:39:02 2025] [::1]:49358 Accepted
+[Sat Nov  1 18:39:02 2025] PHP Parse error:  syntax error, unexpected token "endif", expecting end of file in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 927
+[Sat Nov  1 18:39:02 2025] [::1]:49357 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21 - syntax error, unexpected token "endif", expecting end of file in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 927
+[Sat Nov  1 18:39:02 2025] [::1]:49357 Closing
+[Sat Nov  1 18:39:07 2025] [::1]:49358 Closed without sending a request; it was probably just an unused speculative preconnection
+[Sat Nov  1 18:39:07 2025] [::1]:49358 Closing
+[Sat Nov  1 18:39:36 2025] [::1]:49365 Accepted
+[Sat Nov  1 18:39:36 2025] [::1]:49366 Accepted
+[Sat Nov  1 18:39:36 2025] [::1]:49365 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:39:36 2025] [::1]:49365 Closing
+[Sat Nov  1 18:39:36 2025] [::1]:49366 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:39:36 2025] [::1]:49366 Closing
+[Sat Nov  1 18:39:36 2025] [::1]:49367 Accepted
+[Sat Nov  1 18:39:36 2025] [::1]:49367 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:39:36 2025] [::1]:49367 Closing
+[Sat Nov  1 18:39:36 2025] [::1]:49368 Accepted
+[Sat Nov  1 18:39:36 2025] [::1]:49368 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:39:36 2025] [::1]:49368 Closing

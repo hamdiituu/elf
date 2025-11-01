@@ -27,3 +27,10 @@ Cron Daemon started at 2025-11-01 15:36:46 (PID: 78737)
 [2025-11-01 15:37:46] Running cron job: deneme_cron
 [2025-11-01 15:37:46] Daemon running - Active jobs: 1
 Received SIGTERM, shutting down gracefully...
+
+
+Cron Daemon started at 2025-11-01 15:38:32 (PID: 78971)
+[2025-11-01 15:38:32] Daemon running - Active jobs: 1
+[2025-11-01 15:38:47] Running cron job: deneme_cron
+[2025-11-01 15:39:32] Daemon running - Active jobs: 1
+[2025-11-01 15:39:47] Running cron job: deneme_cron
