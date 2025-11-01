@@ -1,38 +1,130 @@
-[Sat Nov  1 18:31:59 2025] PHP 8.1.32 Development Server (http://localhost:8000) started
-[Sat Nov  1 18:32:07 2025] [::1]:65350 Accepted
-[Sat Nov  1 18:32:07 2025] [::1]:65350 [200]: GET /
-[Sat Nov  1 18:32:07 2025] [::1]:65350 Closing
-[Sat Nov  1 18:32:09 2025] [::1]:65352 Accepted
-[Sat Nov  1 18:32:09 2025] [::1]:65353 Accepted
-[Sat Nov  1 18:32:09 2025] [::1]:65352 [200]: GET /admin/cloud-functions.php?success=Fonksiyon+ba%C5%9Far%C4%B1yla+g%C3%BCncellendi%21
-[Sat Nov  1 18:32:09 2025] [::1]:65352 Closing
-[Sat Nov  1 18:32:09 2025] [::1]:65353 [200]: GET /uploads/logo_1762000180.png
-[Sat Nov  1 18:32:09 2025] [::1]:65353 Closing
-[Sat Nov  1 18:32:10 2025] [::1]:65355 Accepted
-[Sat Nov  1 18:32:10 2025] [::1]:65355 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
-[Sat Nov  1 18:32:10 2025] [::1]:65355 Closing
-[Sat Nov  1 18:32:10 2025] [::1]:65356 Accepted
-[Sat Nov  1 18:32:10 2025] [::1]:65356 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
-[Sat Nov  1 18:32:10 2025] [::1]:65356 Closing
-[Sat Nov  1 18:32:12 2025] [::1]:65358 Accepted
-[Sat Nov  1 18:32:12 2025] [::1]:65359 Accepted
-[Sat Nov  1 18:32:12 2025] [::1]:65358 [200]: GET /admin/cloud-functions.php
-[Sat Nov  1 18:32:12 2025] [::1]:65358 Closing
-[Sat Nov  1 18:32:12 2025] [::1]:65359 [200]: GET /uploads/logo_1762000180.png
-[Sat Nov  1 18:32:12 2025] [::1]:65359 Closing
-[Sat Nov  1 18:32:12 2025] [::1]:65362 Accepted
-[Sat Nov  1 18:32:12 2025] [::1]:65362 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
-[Sat Nov  1 18:32:12 2025] [::1]:65362 Closing
-[Sat Nov  1 18:32:12 2025] [::1]:65363 Accepted
-[Sat Nov  1 18:32:12 2025] [::1]:65363 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
-[Sat Nov  1 18:32:12 2025] [::1]:65363 Closing
-[Sat Nov  1 18:32:19 2025] [::1]:65368 Accepted
-[Sat Nov  1 18:32:19 2025] [::1]:65369 Accepted
-[Sat Nov  1 18:32:19 2025] [::1]:65368 [200]: GET /admin/cron-manager.php
-[Sat Nov  1 18:32:19 2025] [::1]:65368 Closing
-[Sat Nov  1 18:32:19 2025] [::1]:65369 [200]: GET /uploads/logo_1762000180.png
-[Sat Nov  1 18:32:19 2025] [::1]:65369 Closing
-[Sat Nov  1 18:32:22 2025] [::1]:65371 Accepted
-[Sat Nov  1 18:32:22 2025] [::1]:65372 Accepted
-
-Fatal error: Maximum execution time of 30+2 seconds exceeded (terminated) in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 361
+[Sat Nov  1 18:36:19 2025] PHP 8.1.32 Development Server (http://localhost:8000) started
+[Sat Nov  1 18:36:26 2025] [::1]:49158 Accepted
+[Sat Nov  1 18:36:26 2025] [::1]:49158 [200]: GET /
+[Sat Nov  1 18:36:26 2025] [::1]:49158 Closing
+[Sat Nov  1 18:36:43 2025] [::1]:49165 Accepted
+[Sat Nov  1 18:36:44 2025] [::1]:49165 [200]: GET /admin/cron-manager.php
+[Sat Nov  1 18:36:44 2025] [::1]:49165 Closing
+[Sat Nov  1 18:36:44 2025] [::1]:49166 Accepted
+[Sat Nov  1 18:36:44 2025] [::1]:49166 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:36:44 2025] [::1]:49166 Closing
+[Sat Nov  1 18:36:44 2025] [::1]:49168 Accepted
+[Sat Nov  1 18:36:44 2025] [::1]:49168 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:36:44 2025] [::1]:49168 Closing
+[Sat Nov  1 18:36:44 2025] [::1]:49169 Accepted
+[Sat Nov  1 18:36:44 2025] [::1]:49169 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:36:44 2025] [::1]:49169 Closing
+[Sat Nov  1 18:36:46 2025] [::1]:49171 Accepted
+[Sat Nov  1 18:36:46 2025] [::1]:49172 Accepted
+[Sat Nov  1 18:36:46 2025] [::1]:49171 [302]: GET /admin/cron-manager.php?daemon_action=start
+[Sat Nov  1 18:36:46 2025] [::1]:49171 Closing
+[Sat Nov  1 18:36:46 2025] [::1]:49172 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:36:46 2025] [::1]:49172 Closing
+[Sat Nov  1 18:36:46 2025] [::1]:49173 Accepted
+[Sat Nov  1 18:36:46 2025] [::1]:49173 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:36:46 2025] [::1]:49173 Closing
+[Sat Nov  1 18:36:49 2025] [::1]:49176 Accepted
+[Sat Nov  1 18:36:49 2025] [::1]:49177 Accepted
+[Sat Nov  1 18:36:49 2025] [::1]:49176 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:36:49 2025] [::1]:49176 Closing
+[Sat Nov  1 18:36:49 2025] [::1]:49177 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:36:49 2025] [::1]:49177 Closing
+[Sat Nov  1 18:36:49 2025] [::1]:49179 Accepted
+[Sat Nov  1 18:36:49 2025] [::1]:49179 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:36:49 2025] [::1]:49179 Closing
+[Sat Nov  1 18:36:49 2025] [::1]:49180 Accepted
+[Sat Nov  1 18:36:49 2025] [::1]:49180 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:36:49 2025] [::1]:49180 Closing
+[Sat Nov  1 18:37:04 2025] [::1]:49202 Accepted
+[Sat Nov  1 18:37:04 2025] [::1]:49203 Accepted
+[Sat Nov  1 18:37:04 2025] [::1]:49202 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:37:04 2025] [::1]:49202 Closing
+[Sat Nov  1 18:37:04 2025] [::1]:49203 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:37:04 2025] [::1]:49203 Closing
+[Sat Nov  1 18:37:04 2025] [::1]:49205 Accepted
+[Sat Nov  1 18:37:04 2025] [::1]:49205 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:37:04 2025] [::1]:49205 Closing
+[Sat Nov  1 18:37:04 2025] [::1]:49206 Accepted
+[Sat Nov  1 18:37:04 2025] [::1]:49206 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:37:04 2025] [::1]:49206 Closing
+[Sat Nov  1 18:37:47 2025] [::1]:49221 Accepted
+[Sat Nov  1 18:37:47 2025] [::1]:49222 Accepted
+[Sat Nov  1 18:37:47 2025] [::1]:49221 [200]: GET /admin/cron-manager.php?success=Cron+daemon+ba%C5%9Flat%C4%B1ld%C4%B1%21
+[Sat Nov  1 18:37:47 2025] [::1]:49221 Closing
+[Sat Nov  1 18:37:47 2025] [::1]:49222 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:37:47 2025] [::1]:49222 Closing
+[Sat Nov  1 18:37:47 2025] [::1]:49224 Accepted
+[Sat Nov  1 18:37:47 2025] [::1]:49224 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:37:47 2025] [::1]:49224 Closing
+[Sat Nov  1 18:37:47 2025] [::1]:49225 Accepted
+[Sat Nov  1 18:37:47 2025] [::1]:49225 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:37:47 2025] [::1]:49225 Closing
+[Sat Nov  1 18:37:53 2025] [::1]:49233 Accepted
+[Sat Nov  1 18:37:53 2025] [::1]:49234 Accepted
+[Sat Nov  1 18:37:53 2025] [::1]:49233 [302]: GET /admin/cron-manager.php?daemon_action=stop
+[Sat Nov  1 18:37:53 2025] [::1]:49233 Closing
+[Sat Nov  1 18:37:53 2025] [::1]:49234 [200]: GET /admin/cron-manager.php?success=Cron+daemon+durduruldu%21
+[Sat Nov  1 18:37:53 2025] [::1]:49234 Closing
+[Sat Nov  1 18:37:53 2025] [::1]:49236 Accepted
+[Sat Nov  1 18:37:53 2025] [::1]:49236 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:37:53 2025] [::1]:49236 Closing
+[Sat Nov  1 18:37:54 2025] [::1]:49239 Accepted
+[Sat Nov  1 18:37:54 2025] [::1]:49240 Accepted
+[Sat Nov  1 18:37:54 2025] [::1]:49239 [200]: GET /admin/cron-manager.php?success=Cron+daemon+durduruldu%21
+[Sat Nov  1 18:37:54 2025] [::1]:49239 Closing
+[Sat Nov  1 18:37:54 2025] [::1]:49240 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:37:54 2025] [::1]:49240 Closing
+[Sat Nov  1 18:37:54 2025] [::1]:49241 Accepted
+[Sat Nov  1 18:37:54 2025] [::1]:49241 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:37:54 2025] [::1]:49241 Closing
+[Sat Nov  1 18:37:54 2025] [::1]:49242 Accepted
+[Sat Nov  1 18:37:54 2025] [::1]:49242 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:37:54 2025] [::1]:49242 Closing
+[Sat Nov  1 18:37:55 2025] [::1]:49247 Accepted
+[Sat Nov  1 18:37:55 2025] [::1]:49247 [200]: GET /admin/cron-manager.php?success=Cron+daemon+durduruldu%21
+[Sat Nov  1 18:37:55 2025] [::1]:49247 Closing
+[Sat Nov  1 18:37:55 2025] [::1]:49248 Accepted
+[Sat Nov  1 18:37:55 2025] [::1]:49248 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:37:55 2025] [::1]:49248 Closing
+[Sat Nov  1 18:37:55 2025] [::1]:49250 Accepted
+[Sat Nov  1 18:37:55 2025] [::1]:49250 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:37:55 2025] [::1]:49250 Closing
+[Sat Nov  1 18:37:55 2025] [::1]:49251 Accepted
+[Sat Nov  1 18:37:55 2025] [::1]:49251 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:37:55 2025] [::1]:49251 Closing
+[Sat Nov  1 18:38:06 2025] [::1]:49256 Accepted
+[Sat Nov  1 18:38:06 2025] [::1]:49256 [200]: GET /admin/cron-manager.php?success=Cron+daemon+durduruldu%21
+[Sat Nov  1 18:38:06 2025] [::1]:49256 Closing
+[Sat Nov  1 18:38:06 2025] [::1]:49257 Accepted
+[Sat Nov  1 18:38:06 2025] [::1]:49257 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:38:06 2025] [::1]:49257 Closing
+[Sat Nov  1 18:38:06 2025] [::1]:49259 Accepted
+[Sat Nov  1 18:38:06 2025] [::1]:49259 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:06 2025] [::1]:49259 Closing
+[Sat Nov  1 18:38:06 2025] [::1]:49260 Accepted
+[Sat Nov  1 18:38:06 2025] [::1]:49260 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:06 2025] [::1]:49260 Closing
+[Sat Nov  1 18:38:06 2025] [::1]:49261 Accepted
+[Sat Nov  1 18:38:06 2025] [::1]:49262 Accepted
+[Sat Nov  1 18:38:06 2025] [::1]:49261 [200]: GET /admin/cron-manager.php?success=Cron+daemon+durduruldu%21
+[Sat Nov  1 18:38:06 2025] [::1]:49261 Closing
+[Sat Nov  1 18:38:07 2025] [::1]:49262 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:38:07 2025] [::1]:49262 Closing
+[Sat Nov  1 18:38:07 2025] [::1]:49263 Accepted
+[Sat Nov  1 18:38:07 2025] [::1]:49263 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:07 2025] [::1]:49263 Closing
+[Sat Nov  1 18:38:07 2025] [::1]:49264 Accepted
+[Sat Nov  1 18:38:07 2025] [::1]:49264 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:07 2025] [::1]:49264 Closing
+[Sat Nov  1 18:38:09 2025] [::1]:49265 Accepted
+[Sat Nov  1 18:38:09 2025] [::1]:49266 Accepted
+[Sat Nov  1 18:38:09 2025] [::1]:49265 [200]: GET /admin/cron-manager.php?success=Cron+daemon+durduruldu%21
+[Sat Nov  1 18:38:09 2025] [::1]:49265 Closing
+[Sat Nov  1 18:38:09 2025] [::1]:49266 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:38:09 2025] [::1]:49266 Closing
+[Sat Nov  1 18:38:09 2025] [::1]:49268 Accepted
+[Sat Nov  1 18:38:09 2025] [::1]:49268 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:09 2025] [::1]:49268 Closing
+[Sat Nov  1 18:38:09 2025] [::1]:49269 Accepted
+[Sat Nov  1 18:38:09 2025] [::1]:49269 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:38:09 2025] [::1]:49269 Closing

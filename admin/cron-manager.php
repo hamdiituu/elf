@@ -157,23 +157,8 @@ try {
     // Table might not exist yet
 }
 
-// Get available cron jobs from cron directory
-$cron_dir = __DIR__ . '/../cron';
+// File-based cron jobs are no longer supported - all cron jobs are web-based
 $file_cron_jobs = [];
-
-if (is_dir($cron_dir)) {
-    $files = scandir($cron_dir);
-    foreach ($files as $file) {
-        if ($file !== '.' && $file !== '..' && $file !== 'common' && pathinfo($file, PATHINFO_EXTENSION) === 'php') {
-            $file_cron_jobs[] = [
-                'name' => basename($file, '.php'),
-                'file' => $file,
-                'path' => realpath($cron_dir . '/' . $file),
-                'type' => 'file'
-            ];
-        }
-    }
-}
 
 // Function to calculate next run time from cron expression
 function calculateNextRunTime($db) {
@@ -420,28 +405,7 @@ if ($daemon_action === 'start') {
     }
 }
 
-// Handle cron execution
-$run_cron = $_GET['run'] ?? null;
-if ($run_cron) {
-    $cron_file = $cron_dir . '/' . $run_cron . '.php';
-    
-    if (file_exists($cron_file)) {
-        // Execute cron job in background or capture output
-        $output = [];
-        $return_var = 0;
-        
-        // Run cron and capture output
-        exec("php " . escapeshellarg($cron_file) . " 2>&1", $output, $return_var);
-        
-        if ($return_var === 0) {
-            $success_message = "Cron job '{$run_cron}' başarıyla çalıştırıldı!";
-        } else {
-            $error_message = "Cron job '{$run_cron}' çalıştırılırken hata oluştu: " . implode("\n", $output);
-        }
-    } else {
-        $error_message = "Cron job dosyası bulunamadı: {$run_cron}";
-    }
-}
+// File-based cron execution is no longer supported
 
 // Get cron logs
 $cron_logs = [];
@@ -451,16 +415,8 @@ try {
     $error_message = "Cron log'ları yüklenirken hata: " . $e->getMessage();
 }
 
-// Get latest log for each cron
-$latest_logs = [];
-foreach ($file_cron_jobs as $cron) {
-    $latest = getLatestCronLog($cron['name']);
-    if ($latest) {
-        $latest_logs[$cron['name']] = $latest;
-    }
-}
-
 // Get latest logs for web-based cron jobs
+$latest_logs = [];
 foreach ($web_cron_jobs as $cron) {
     $latest = getLatestCronLog($cron['name']);
     if ($latest) {
