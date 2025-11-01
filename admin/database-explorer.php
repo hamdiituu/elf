@@ -73,6 +73,143 @@ if ($delete_query_id) {
     }
 }
 
+// Handle edit table (add column, drop column, etc.)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_table') {
+    $edit_table_name = trim($_POST['edit_table_name'] ?? '');
+    $edit_action = $_POST['edit_action'] ?? '';
+    
+    if (empty($edit_table_name)) {
+        $error_message = "Table name is required!";
+    } else {
+        try {
+            $settings = getSettings();
+            $dbType = $settings['db_type'] ?? 'sqlite';
+            $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $edit_table_name);
+            
+            if ($edit_action === 'add_column') {
+                $new_column_name = trim($_POST['new_column_name'] ?? '');
+                $new_column_type = trim($_POST['new_column_type'] ?? 'TEXT');
+                $new_column_nullable = isset($_POST['new_column_nullable']) && $_POST['new_column_nullable'] === '1';
+                
+                if (empty($new_column_name)) {
+                    throw new Exception("Column name is required!");
+                }
+                
+                if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $new_column_name)) {
+                    throw new Exception("Invalid column name! Only letters, numbers and underscore allowed.");
+                }
+                
+                // Check if column already exists
+                $existing_columns = [];
+                if ($dbType === 'mysql') {
+                    $result = $db->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$escaped_table_name' AND COLUMN_NAME = " . $db->quote($new_column_name))->fetchAll(PDO::FETCH_COLUMN);
+                    $existing_columns = $result;
+                } else {
+                    $result = $db->query("PRAGMA table_info(\"$escaped_table_name\")")->fetchAll(PDO::FETCH_ASSOC);
+                    foreach ($result as $col) {
+                        if (strtolower($col['name']) === strtolower($new_column_name)) {
+                            $existing_columns[] = $col['name'];
+                            break;
+                        }
+                    }
+                }
+                
+                if (!empty($existing_columns)) {
+                    throw new Exception("Column '{$new_column_name}' already exists!");
+                }
+                
+                // Convert types for SQLite
+                if ($new_column_type === 'BOOLEAN') {
+                    $sql_type = 'INTEGER';
+                } elseif ($new_column_type === 'IMAGE') {
+                    $sql_type = 'TEXT';
+                } elseif ($new_column_type === 'RELATION') {
+                    $sql_type = 'INTEGER';
+                } else {
+                    $sql_type = $new_column_type;
+                }
+                
+                // Build ALTER TABLE ADD COLUMN statement
+                $column_def = "`$new_column_name` $sql_type";
+                
+                if ($new_column_type === 'BOOLEAN') {
+                    if ($new_column_nullable) {
+                        $column_def .= " DEFAULT 0";
+                    } else {
+                        $column_def .= " NOT NULL DEFAULT 0";
+                    }
+                } elseif (!$new_column_nullable) {
+                    $column_def .= " NOT NULL";
+                }
+                
+                if ($dbType === 'mysql') {
+                    $sql = "ALTER TABLE `$escaped_table_name` ADD COLUMN $column_def";
+                } else {
+                    // SQLite
+                    $sql = "ALTER TABLE \"$escaped_table_name\" ADD COLUMN $column_def";
+                }
+                
+                $db->exec($sql);
+                
+                // Save relation metadata if type is RELATION
+                $new_relation_target = trim($_POST['new_relation_target'] ?? '');
+                if ($new_column_type === 'RELATION' && !empty($new_relation_target)) {
+                    try {
+                        $db->exec("CREATE TABLE IF NOT EXISTS relation_metadata (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            table_name TEXT NOT NULL,
+                            column_name TEXT NOT NULL,
+                            target_table TEXT NOT NULL,
+                            UNIQUE(table_name, column_name)
+                        )");
+                        
+                        $stmt = $db->prepare("INSERT OR REPLACE INTO relation_metadata (table_name, column_name, target_table) VALUES (?, ?, ?)");
+                        $stmt->execute([$edit_table_name, $new_column_name, $new_relation_target]);
+                    } catch (PDOException $e) {
+                        error_log("Failed to save relation metadata: " . $e->getMessage());
+                    }
+                }
+                
+                $success_message = "Column '{$new_column_name}' added successfully to table '{$edit_table_name}'!";
+                header('Location: database-explorer.php?table=' . urlencode($edit_table_name) . '&success=' . urlencode($success_message));
+                exit;
+                
+            } elseif ($edit_action === 'drop_column') {
+                $drop_column_name = trim($_POST['drop_column_name'] ?? '');
+                
+                if (empty($drop_column_name)) {
+                    throw new Exception("Column name is required!");
+                }
+                
+                // SQLite doesn't support DROP COLUMN directly - need to recreate table
+                if ($dbType === 'mysql') {
+                    $sql = "ALTER TABLE `$escaped_table_name` DROP COLUMN `$drop_column_name`";
+                    $db->exec($sql);
+                    
+                    // Remove relation metadata if exists
+                    try {
+                        $stmt = $db->prepare("DELETE FROM relation_metadata WHERE table_name = ? AND column_name = ?");
+                        $stmt->execute([$edit_table_name, $drop_column_name]);
+                    } catch (PDOException $e) {
+                        // Ignore if relation_metadata doesn't exist
+                    }
+                    
+                    $success_message = "Column '{$drop_column_name}' dropped successfully from table '{$edit_table_name}'!";
+                    header('Location: database-explorer.php?table=' . urlencode($edit_table_name) . '&success=' . urlencode($success_message));
+                    exit;
+                } else {
+                    // SQLite: Need to recreate table without the column
+                    throw new Exception("SQLite doesn't support DROP COLUMN directly. This feature requires MySQL or manual table recreation.");
+                }
+            }
+        } catch (PDOException $e) {
+            $error_message = "Error editing table: " . $e->getMessage();
+        } catch (Exception $e) {
+            $error_message = $e->getMessage();
+        }
+    }
+}
+
 // Handle create table
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_table') {
     $table_name = trim($_POST['table_name'] ?? '');
@@ -1465,9 +1602,275 @@ include '../includes/header.php';
     </div>
 </div>
 
+<!-- Edit Table Modal -->
+<div id="edit-table-dialog" class="fixed inset-0 hidden items-center justify-center z-50" onclick="if(event.target === this && typeof window.hideEditTableModal === 'function') window.hideEditTableModal()" style="background-color: rgba(0, 0, 0, 0.3) !important;">
+    <div class="border border-border rounded-lg shadow-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()" style="background-color: hsl(var(--background)) !important; z-index: 51;">
+        <h3 class="text-lg font-semibold mb-4">Edit Table: <?php echo htmlspecialchars($selected_table ?? ''); ?></h3>
+        <form method="POST" action="" id="edit-table-form">
+            <input type="hidden" name="action" value="edit_table">
+            <input type="hidden" name="edit_table_name" value="<?php echo htmlspecialchars($selected_table ?? ''); ?>">
+            
+            <div class="space-y-4">
+                <!-- Current Columns -->
+                <div class="border border-input rounded-md p-4 bg-muted/30">
+                    <h4 class="text-sm font-semibold mb-3">Current Columns</h4>
+                    <div class="space-y-2">
+                        <?php if (isset($table_info) && !empty($table_info)): ?>
+                            <?php foreach ($table_info as $col): ?>
+                                <div class="flex items-center justify-between p-2 bg-background rounded border border-input">
+                                    <div class="flex-1">
+                                        <span class="font-mono text-sm font-medium"><?php echo htmlspecialchars($col['name']); ?></span>
+                                        <span class="text-xs text-muted-foreground ml-2"><?php echo htmlspecialchars($col['type']); ?></span>
+                                        <?php 
+                                        $notnull = isset($col['notnull']) ? (int)$col['notnull'] : 0;
+                                        $pk = isset($col['pk']) ? (int)$col['pk'] : 0;
+                                        ?>
+                                        <?php if ($notnull === 1): ?><span class="text-xs text-muted-foreground ml-2">NOT NULL</span><?php endif; ?>
+                                        <?php if ($pk === 1): ?><span class="text-xs text-primary ml-2">PRIMARY KEY</span><?php endif; ?>
+                                    </div>
+                                    <?php 
+                                    // Don't allow dropping primary key or if only one column
+                                    $can_drop = (count($table_info) > 1 && $pk !== 1);
+                                    $settings = getSettings();
+                                    $dbType = $settings['db_type'] ?? 'sqlite';
+                                    // SQLite doesn't support DROP COLUMN easily
+                                    $can_drop = $can_drop && ($dbType === 'mysql');
+                                    ?>
+                                    <?php if ($can_drop): ?>
+                                        <button
+                                            type="button"
+                                            onclick="dropColumn('<?php echo htmlspecialchars(addslashes($selected_table ?? '')); ?>', '<?php echo htmlspecialchars(addslashes($col['name'])); ?>')"
+                                            class="ml-2 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+                                            title="Drop Column"
+                                        >
+                                            Delete
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <!-- Add New Column -->
+                <div class="border border-input rounded-md p-4 bg-muted/30">
+                    <h4 class="text-sm font-semibold mb-3">Add New Column</h4>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-12 gap-2 items-end">
+                            <div class="col-span-4">
+                                <label class="block text-xs font-medium mb-1">Column Name:</label>
+                                <input
+                                    type="text"
+                                    name="new_column_name"
+                                    required
+                                    pattern="[a-zA-Z_][a-zA-Z0-9_]*"
+                                    class="w-full px-2 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring font-mono"
+                                    placeholder="column_name"
+                                >
+                            </div>
+                            <div class="col-span-3">
+                                <label class="block text-xs font-medium mb-1">Type:</label>
+                                <select
+                                    name="new_column_type"
+                                    id="edit_new_column_type"
+                                    class="w-full px-2 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
+                                    onchange="updateEditFieldTypeHint(this)"
+                                >
+                                    <option value="TEXT">TEXT</option>
+                                    <option value="INTEGER">INTEGER</option>
+                                    <option value="REAL">REAL</option>
+                                    <option value="BLOB">BLOB</option>
+                                    <option value="NUMERIC">NUMERIC</option>
+                                    <option value="BOOLEAN">BOOLEAN</option>
+                                    <option value="IMAGE">IMAGE (Image - TEXT)</option>
+                                    <option value="RELATION">RELATION (Foreign Key - INTEGER)</option>
+                                </select>
+                                <span class="field-type-hint text-xs text-muted-foreground mt-1 hidden"></span>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="flex items-center gap-1 text-xs font-medium cursor-pointer">
+                                    <input
+                                        type="hidden"
+                                        name="new_column_nullable"
+                                        value="0"
+                                        class="edit-field-nullable-hidden"
+                                    >
+                                    <input
+                                        type="checkbox"
+                                        name="new_column_nullable_checkbox"
+                                        value="1"
+                                        checked
+                                        class="rounded border-input edit-field-nullable-checkbox"
+                                        onchange="updateEditNullableCheckbox(this)"
+                                    >
+                                    <span>Nullable</span>
+                                </label>
+                            </div>
+                            <div class="col-span-3">
+                                <div class="edit-field-relation-target hidden">
+                                    <label class="block text-xs font-medium mb-1">Reference Table:</label>
+                                    <select
+                                        name="new_relation_target"
+                                        class="w-full px-2 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
+                                    >
+                                        <option value="">-- Select Table --</option>
+                                        <?php foreach ($tables as $tbl): 
+                                            // Skip system tables and current table
+                                            if (in_array($tbl, ['sqlite_sequence', 'sqlite_master', 'relation_metadata']) || $tbl === $selected_table) continue;
+                                        ?>
+                                            <option value="<?php echo htmlspecialchars($tbl); ?>"><?php echo htmlspecialchars($tbl); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2 justify-end">
+                    <button
+                        type="button"
+                        id="btn-cancel-edit-table"
+                        class="px-4 py-2 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 rounded-md transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        name="edit_action"
+                        value="add_column"
+                        class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
+                    >
+                        Add Column
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 // Create Table Modal functions - Define early so they're available when button is clicked
 let fieldCounter = 0;
+
+// Edit Table Modal functions - Define early so they're available when button is clicked
+window.showEditTableModal = function() {
+    try {
+        const dialog = document.getElementById('edit-table-dialog');
+        if (!dialog) {
+            console.error('edit-table-dialog element not found');
+            return;
+        }
+        
+        dialog.classList.remove('hidden');
+        dialog.classList.add('flex');
+        
+        // Initialize nullable checkbox
+        const nullableCheckbox = dialog.querySelector('.edit-field-nullable-checkbox');
+        const nullableHidden = dialog.querySelector('.edit-field-nullable-hidden');
+        if (nullableCheckbox && nullableHidden) {
+            nullableHidden.value = nullableCheckbox.checked ? '1' : '0';
+        }
+        
+        // Initialize relation target dropdown
+        const typeSelect = dialog.querySelector('#edit_new_column_type');
+        if (typeSelect) {
+            updateEditFieldTypeHint(typeSelect);
+        }
+    } catch (error) {
+        console.error('Error in showEditTableModal:', error);
+        alert('Error opening edit modal: ' + error.message);
+    }
+};
+
+window.hideEditTableModal = function() {
+    const dialog = document.getElementById('edit-table-dialog');
+    if (dialog) {
+        dialog.classList.add('hidden');
+        dialog.classList.remove('flex');
+        // Reset form
+        const form = document.getElementById('edit-table-form');
+        if (form) {
+            form.reset();
+        }
+    }
+};
+
+function updateEditFieldTypeHint(select) {
+    const fieldContainer = select.closest('.col-span-3');
+    const hintSpan = fieldContainer ? fieldContainer.querySelector('.field-type-hint') : null;
+    const relationTargetDiv = fieldContainer ? fieldContainer.parentElement.querySelector('.edit-field-relation-target') : null;
+    const relationTargetSelect = relationTargetDiv ? relationTargetDiv.querySelector('select[name="new_relation_target"]') : null;
+    
+    if (hintSpan) {
+        const fieldType = select.value;
+        
+        if (fieldType === 'IMAGE') {
+            hintSpan.textContent = 'This field will store image path (saved as TEXT)';
+            hintSpan.classList.remove('hidden');
+            if (relationTargetDiv) {
+                relationTargetDiv.classList.add('hidden');
+            }
+        } else if (fieldType === 'RELATION') {
+            hintSpan.textContent = 'This field will store foreign key ID (saved as INTEGER)';
+            hintSpan.classList.remove('hidden');
+            
+            if (relationTargetDiv && relationTargetSelect) {
+                relationTargetDiv.classList.remove('hidden');
+            }
+        } else {
+            hintSpan.classList.add('hidden');
+            if (relationTargetDiv) {
+                relationTargetDiv.classList.add('hidden');
+            }
+        }
+    }
+}
+
+function updateEditNullableCheckbox(checkbox) {
+    const hiddenInput = checkbox.closest('.col-span-2')?.querySelector('.edit-field-nullable-hidden');
+    if (hiddenInput) {
+        hiddenInput.value = checkbox.checked ? '1' : '0';
+    }
+}
+
+function dropColumn(tableName, columnName) {
+    if (!confirm(`Are you sure you want to drop column "${columnName}" from table "${tableName}"? This action cannot be undone!`)) {
+        return;
+    }
+    
+    // Create form and submit
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '';
+    
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = 'edit_table';
+    form.appendChild(actionInput);
+    
+    const tableInput = document.createElement('input');
+    tableInput.type = 'hidden';
+    tableInput.name = 'edit_table_name';
+    tableInput.value = tableName;
+    form.appendChild(tableInput);
+    
+    const editActionInput = document.createElement('input');
+    editActionInput.type = 'hidden';
+    editActionInput.name = 'edit_action';
+    editActionInput.value = 'drop_column';
+    form.appendChild(editActionInput);
+    
+    const columnInput = document.createElement('input');
+    columnInput.type = 'hidden';
+    columnInput.name = 'drop_column_name';
+    columnInput.value = columnName;
+    form.appendChild(columnInput);
+    
+    document.body.appendChild(form);
+    form.submit();
+}
 
 // Define functions globally immediately
 window.showCreateTableModal = function() {
@@ -1968,6 +2371,40 @@ document.addEventListener('DOMContentLoaded', function() {
         modalDialog.addEventListener('click', function(e) {
             if (e.target === modalDialog && typeof window.hideCreateTableModal === 'function') {
                 window.hideCreateTableModal();
+            }
+        });
+    }
+    
+    // Add event listener to Edit Table button
+    const editTableBtn = document.getElementById('btn-edit-table');
+    if (editTableBtn) {
+        editTableBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof window.showEditTableModal === 'function') {
+                window.showEditTableModal();
+            }
+        });
+    }
+    
+    // Add event listener to Cancel button in edit modal
+    const cancelEditBtn = document.getElementById('btn-cancel-edit-table');
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof window.hideEditTableModal === 'function') {
+                window.hideEditTableModal();
+            }
+        });
+    }
+    
+    // Add event listener to edit modal backdrop (click outside to close)
+    const editModalDialog = document.getElementById('edit-table-dialog');
+    if (editModalDialog) {
+        editModalDialog.addEventListener('click', function(e) {
+            if (e.target === editModalDialog && typeof window.hideEditTableModal === 'function') {
+                window.hideEditTableModal();
             }
         });
     }
