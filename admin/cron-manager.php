@@ -286,7 +286,7 @@ try {
         // Ignore update errors
     }
     
-    // Don\'t rethrow - just log the error
+    // Do not rethrow - just log the error
     error_log("Cron job failed: " . $e->getMessage());
 }
 ?>';
