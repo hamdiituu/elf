@@ -137,6 +137,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $endpoint = strtolower(preg_replace('/[^a-z0-9]+/', '-', $function_name));
                     $endpoint = trim($endpoint, '-');
                     
+                    // Check if function name already exists (for both create and update)
+                    $check_stmt = $db->prepare("SELECT id, name FROM cloud_functions WHERE name = ?");
+                    $check_stmt->execute([$function_name]);
+                    $existing_function = $check_stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($existing_function) {
+                        // If updating, allow same name for same function
+                        if ($function_id > 0 && $existing_function['id'] == $function_id) {
+                            // Same function, name can stay the same
+                        } else {
+                            // Name exists for different function
+                            $error_message = "Function name '{$function_name}' is already in use! Please choose a different name.";
+                            // Redirect with error
+                            header('Location: cloud-functions.php?error=' . urlencode($error_message));
+                            exit;
+                        }
+                    }
+                    
+                    // Check if endpoint already exists
+                    $endpoint_check_stmt = $db->prepare("SELECT id, name, endpoint FROM cloud_functions WHERE endpoint = ?");
+                    $endpoint_check_stmt->execute([$endpoint]);
+                    $existing_endpoint = $endpoint_check_stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($existing_endpoint) {
+                        // If updating, allow same endpoint for same function
+                        if ($function_id > 0 && $existing_endpoint['id'] == $function_id) {
+                            // Same function, endpoint can stay the same
+                        } else {
+                            // Endpoint exists for different function
+                            $error_message = "Endpoint '{$endpoint}' is already in use by function '{$existing_endpoint['name']}'! Please choose a different function name.";
+                            // Redirect with error
+                            header('Location: cloud-functions.php?error=' . urlencode($error_message));
+                            exit;
+                        }
+                    }
+                    
                     if ($function_id > 0) {
                         // Update existing function
                         $stmt = $db->prepare("
@@ -156,8 +192,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $success_message = "Function created successfully!";
                     }
                 } catch (PDOException $e) {
-                    if (strpos($e->getMessage(), 'UNIQUE constraint') !== false) {
-                        $error_message = "This function name or endpoint is already in use!";
+                    if (strpos($e->getMessage(), 'UNIQUE constraint') !== false || strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                        $error_message = "This function name or endpoint is already in use! Please choose a different name.";
                     } else {
                         $error_message = "Error: " . $e->getMessage();
                     }
@@ -203,21 +239,60 @@ if ($edit_id) {
     $edit_function = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
+// Get filter for functions (my functions or all functions)
+$show_my_functions = isset($_GET['filter']) && $_GET['filter'] === 'my';
+$user_id_filter = $_SESSION['user_id'] ?? null;
+
 // Get all functions (handle middleware_id column safely)
+$functions = [];
 try {
-    $functions = $db->query("SELECT cf.*, u.username as created_by_name, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id ORDER BY cf.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    // If middleware_id column doesn't exist, use simpler query
-    try {
-        $functions = $db->query("SELECT cf.*, u.username as created_by_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id ORDER BY cf.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-        // Add middleware_name as null for each function
-        foreach ($functions as &$func) {
-            $func['middleware_name'] = null;
-            $func['middleware_id'] = null;
+    if ($show_my_functions && $user_id_filter) {
+        // Show only user's functions
+        try {
+            $stmt = $db->prepare("SELECT cf.*, u.username as created_by_name, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id WHERE cf.created_by = ? ORDER BY cf.created_at DESC");
+            $stmt->execute([$user_id_filter]);
+            $functions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // If join fails, try simpler query
+            $stmt = $db->prepare("SELECT cf.*, u.username as created_by_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id WHERE cf.created_by = ? ORDER BY cf.created_at DESC");
+            $stmt->execute([$user_id_filter]);
+            $functions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($functions as &$func) {
+                $func['middleware_name'] = null;
+                $func['middleware_id'] = null;
+            }
         }
-    } catch (PDOException $e2) {
-        $functions = [];
+    } else {
+        // Show all functions
+        try {
+            $functions = $db->query("SELECT cf.*, u.username as created_by_name, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id ORDER BY cf.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // If join fails, try simpler query
+            try {
+                $functions = $db->query("SELECT cf.*, u.username as created_by_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id ORDER BY cf.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($functions as &$func) {
+                    $func['middleware_name'] = null;
+                    $func['middleware_id'] = null;
+                }
+            } catch (PDOException $e2) {
+                // If even simpler query fails, try basic query
+                try {
+                    $functions = $db->query("SELECT * FROM cloud_functions ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+                    foreach ($functions as &$func) {
+                        $func['created_by_name'] = null;
+                        $func['middleware_name'] = null;
+                        $func['middleware_id'] = null;
+                    }
+                } catch (PDOException $e3) {
+                    error_log("Error fetching cloud functions: " . $e3->getMessage());
+                    $functions = [];
+                }
+            }
+        }
     }
+} catch (Exception $e) {
+    error_log("Error fetching cloud functions: " . $e->getMessage());
+    $functions = [];
 }
 
 // Get all middlewares for dropdown (both enabled and disabled)
@@ -405,6 +480,22 @@ include '../includes/header.php';
                                         <?php echo count($functions); ?>
                                     </span>
                                 </div>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <a
+                                        href="?filter=my"
+                                        class="px-2 py-1 text-xs font-medium rounded-md border transition-colors <?php echo $show_my_functions ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-input hover:bg-accent'; ?>"
+                                        title="Show my functions"
+                                    >
+                                        My Functions
+                                    </a>
+                                    <a
+                                        href="cloud-functions.php"
+                                        class="px-2 py-1 text-xs font-medium rounded-md border transition-colors <?php echo !$show_my_functions ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-input hover:bg-accent'; ?>"
+                                        title="Show all functions"
+                                    >
+                                        All
+                                    </a>
+                                </div>
                                 <input 
                                     type="text" 
                                     id="function-search"
@@ -415,7 +506,13 @@ include '../includes/header.php';
                             </div>
                             <div class="p-4">
                                 <div class="space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto" id="functions-list">
-                                    <?php if (empty($functions)): ?>
+                                    <?php 
+                                    // Debug: Check if functions array is set and not empty
+                                    if (!isset($functions)) {
+                                        $functions = [];
+                                    }
+                                    if (empty($functions)): 
+                                    ?>
                                         <div class="text-center py-12 text-muted-foreground">
                                             <svg class="mx-auto h-12 w-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
