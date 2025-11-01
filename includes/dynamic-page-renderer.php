@@ -437,67 +437,134 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                     </div>
 
                     <!-- Pagination -->
-                    <?php if ($total_pages > 1): ?>
-                        <div class="mt-6 flex items-center justify-between border-t border-border pt-4">
+                    <?php if ($total_records > 0): ?>
+                        <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-4">
                             <div class="text-sm text-muted-foreground">
-                                Sayfa <span class="font-medium text-foreground"><?php echo $current_page_num; ?></span> / <span class="font-medium text-foreground"><?php echo $total_pages; ?></span>
-                                (Gösterilen: <?php echo min($offset + 1, $total_records); ?> - <?php echo min($offset + $per_page, $total_records); ?> / <?php echo $total_records; ?>)
-                            </div>
-                            <div class="flex gap-2">
-                                <?php if ($current_page_num > 1): ?>
-                                    <a
-                                        href="?<?php
-                                            $params = $_GET;
-                                            $params['page'] = $page_name;
-                                            $params['page_num'] = $current_page_num - 1;
-                                            echo http_build_query($params);
-                                        ?>"
-                                        class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                    >
-                                        Önceki
-                                    </a>
-                                <?php else: ?>
-                                    <span class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground opacity-50 cursor-not-allowed">
-                                        Önceki
-                                    </span>
-                                <?php endif; ?>
-
-                                <?php
-                                $start_page = max(1, $current_page_num - 2);
-                                $end_page = min($total_pages, $current_page_num + 2);
-                                for ($i = $start_page; $i <= $end_page; $i++):
-                                ?>
-                                    <a
-                                        href="?<?php
-                                            $params = $_GET;
-                                            $params['page'] = $page_name;
-                                            $params['page_num'] = $i;
-                                            echo http_build_query($params);
-                                        ?>"
-                                        class="inline-flex items-center justify-center rounded-md border <?php echo $i == $current_page_num ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background text-foreground hover:bg-accent'; ?> px-3 py-2 text-sm font-medium transition-colors"
-                                    >
-                                        <?php echo $i; ?>
-                                    </a>
-                                <?php endfor; ?>
-
-                                <?php if ($current_page_num < $total_pages): ?>
-                                    <a
-                                        href="?<?php
-                                            $params = $_GET;
-                                            $params['page'] = $page_name;
-                                            $params['page_num'] = $current_page_num + 1;
-                                            echo http_build_query($params);
-                                        ?>"
-                                        class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                    >
-                                        Sonraki
-                                    </a>
-                                <?php else: ?>
-                                    <span class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground opacity-50 cursor-not-allowed">
-                                        Sonraki
-                                    </span>
+                                <span class="font-medium text-foreground"><?php echo $total_records; ?></span> kayıttan
+                                <span class="font-medium text-foreground"><?php echo min($offset + 1, $total_records); ?> - <?php echo min($offset + $per_page, $total_records); ?></span>
+                                gösteriliyor
+                                <?php if ($total_pages > 1): ?>
+                                    (Sayfa <span class="font-medium text-foreground"><?php echo $current_page_num; ?></span> / <span class="font-medium text-foreground"><?php echo $total_pages; ?></span>)
                                 <?php endif; ?>
                             </div>
+                            <?php if ($total_pages > 1): ?>
+                                <div class="flex items-center gap-1 flex-wrap justify-center">
+                                    <!-- First Page -->
+                                    <?php if ($current_page_num > 3): ?>
+                                        <a
+                                            href="?<?php
+                                                $params = $_GET;
+                                                $params['page'] = $page_name;
+                                                $params['page_num'] = 1;
+                                                echo http_build_query($params);
+                                            ?>"
+                                            class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                            title="İlk Sayfa"
+                                        >
+                                            1
+                                        </a>
+                                        <?php if ($current_page_num > 4): ?>
+                                            <span class="px-2 text-muted-foreground">...</span>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+
+                                    <!-- Previous Button -->
+                                    <?php if ($current_page_num > 1): ?>
+                                        <a
+                                            href="?<?php
+                                                $params = $_GET;
+                                                $params['page'] = $page_name;
+                                                $params['page_num'] = $current_page_num - 1;
+                                                echo http_build_query($params);
+                                            ?>"
+                                            class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                            title="Önceki Sayfa"
+                                        >
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground opacity-50 cursor-not-allowed">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </span>
+                                    <?php endif; ?>
+
+                                    <!-- Page Numbers -->
+                                    <?php
+                                    $start_page = max(1, $current_page_num - 2);
+                                    $end_page = min($total_pages, $current_page_num + 2);
+                                    
+                                    // Ensure we show at least 5 pages if possible
+                                    if ($end_page - $start_page < 4 && $total_pages > 5) {
+                                        if ($start_page == 1) {
+                                            $end_page = min($total_pages, 5);
+                                        } elseif ($end_page == $total_pages) {
+                                            $start_page = max(1, $total_pages - 4);
+                                        }
+                                    }
+                                    
+                                    for ($i = $start_page; $i <= $end_page; $i++):
+                                    ?>
+                                        <a
+                                            href="?<?php
+                                                $params = $_GET;
+                                                $params['page'] = $page_name;
+                                                $params['page_num'] = $i;
+                                                echo http_build_query($params);
+                                            ?>"
+                                            class="inline-flex items-center justify-center rounded-md min-w-[40px] border <?php echo $i == $current_page_num ? 'border-primary bg-primary text-primary-foreground font-semibold' : 'border-input bg-background text-foreground hover:bg-accent'; ?> px-3 py-2 text-sm font-medium transition-colors"
+                                        >
+                                            <?php echo $i; ?>
+                                        </a>
+                                    <?php endfor; ?>
+
+                                    <!-- Next Button -->
+                                    <?php if ($current_page_num < $total_pages): ?>
+                                        <a
+                                            href="?<?php
+                                                $params = $_GET;
+                                                $params['page'] = $page_name;
+                                                $params['page_num'] = $current_page_num + 1;
+                                                echo http_build_query($params);
+                                            ?>"
+                                            class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                            title="Sonraki Sayfa"
+                                        >
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground opacity-50 cursor-not-allowed">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </span>
+                                    <?php endif; ?>
+
+                                    <!-- Last Page -->
+                                    <?php if ($current_page_num < $total_pages - 2): ?>
+                                        <?php if ($current_page_num < $total_pages - 3): ?>
+                                            <span class="px-2 text-muted-foreground">...</span>
+                                        <?php endif; ?>
+                                        <a
+                                            href="?<?php
+                                                $params = $_GET;
+                                                $params['page'] = $page_name;
+                                                $params['page_num'] = $total_pages;
+                                                echo http_build_query($params);
+                                            ?>"
+                                            class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                            title="Son Sayfa"
+                                        >
+                                            <?php echo $total_pages; ?>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 <?php endif; ?>
