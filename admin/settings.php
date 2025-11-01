@@ -78,6 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         if (empty($error_message)) {
+            // Check if this is first setup BEFORE saving
+            $is_first_setup = !isSettingsConfigured();
+            
             // Preserve existing logo and favicon if not uploaded
             $final_logo = $logo_path ?: ($current_settings['logo'] ?? '');
             $final_favicon = $favicon_path ?: ($current_settings['favicon'] ?? '');
@@ -121,8 +124,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $testDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                         
                         if (saveSettings($settings)) {
-                            $success_message = 'Settings saved successfully!';
-                            $current_settings = getSettings();
+                            if ($is_first_setup) {
+                                try {
+                                    // Initialize database
+                                    require_once __DIR__ . '/../scripts/init_db.php';
+                                    
+                                    // Get admin credentials from form or use defaults
+                                    $admin_username = trim($_POST['admin_username'] ?? 'admin');
+                                    $admin_password = trim($_POST['admin_password'] ?? 'admin123');
+                                    
+                                    if (!empty($admin_username) && !empty($admin_password)) {
+                                        // Create or update admin user
+                                        $db = getDB();
+                                        $stmt = $db->prepare("SELECT id FROM users WHERE username = ?");
+                                        $stmt->execute([$admin_username]);
+                                        $existing_user = $stmt->fetch(PDO::FETCH_ASSOC);
+                                        
+                                        $hashed_password = password_hash($admin_password, PASSWORD_DEFAULT);
+                                        
+                                        if ($existing_user) {
+                                            // Update existing user
+                                            $stmt = $db->prepare("UPDATE users SET password = ?, user_type = 'developer' WHERE id = ?");
+                                            $stmt->execute([$hashed_password, $existing_user['id']]);
+                                        } else {
+                                            // Create new user
+                                            $stmt = $db->prepare("INSERT INTO users (username, password, user_type) VALUES (?, ?, 'developer')");
+                                            $stmt->execute([$admin_username, $hashed_password]);
+                                        }
+                                        
+                                        // Redirect to login page
+                                        header('Location: ../index.php?setup=complete');
+                                        exit;
+                                    }
+                                } catch (Exception $e) {
+                                    $error_message = 'Error initializing database: ' . $e->getMessage();
+                                }
+                            } else {
+                                $success_message = 'Settings saved successfully!';
+                                $current_settings = getSettings();
+                            }
                         } else {
                             $error_message = 'Error saving settings!';
                         }
@@ -147,8 +187,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $testDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                         
                         if (saveSettings($settings)) {
-                            $success_message = 'Settings saved successfully!';
-                            $current_settings = getSettings();
+                            if ($is_first_setup) {
+                                try {
+                                    // Initialize database
+                                    require_once __DIR__ . '/../scripts/init_db.php';
+                                    
+                                    // Get admin credentials from form or use defaults
+                                    $admin_username = trim($_POST['admin_username'] ?? 'admin');
+                                    $admin_password = trim($_POST['admin_password'] ?? 'admin123');
+                                    
+                                    if (!empty($admin_username) && !empty($admin_password)) {
+                                        // Create or update admin user
+                                        $db = getDB();
+                                        $stmt = $db->prepare("SELECT id FROM users WHERE username = ?");
+                                        $stmt->execute([$admin_username]);
+                                        $existing_user = $stmt->fetch(PDO::FETCH_ASSOC);
+                                        
+                                        $hashed_password = password_hash($admin_password, PASSWORD_DEFAULT);
+                                        
+                                        if ($existing_user) {
+                                            // Update existing user
+                                            $stmt = $db->prepare("UPDATE users SET password = ?, user_type = 'developer' WHERE id = ?");
+                                            $stmt->execute([$hashed_password, $existing_user['id']]);
+                                        } else {
+                                            // Create new user
+                                            $stmt = $db->prepare("INSERT INTO users (username, password, user_type) VALUES (?, ?, 'developer')");
+                                            $stmt->execute([$admin_username, $hashed_password]);
+                                        }
+                                        
+                                        // Redirect to login page
+                                        header('Location: ../index.php?setup=complete');
+                                        exit;
+                                    }
+                                } catch (Exception $e) {
+                                    $error_message = 'Error initializing database: ' . $e->getMessage();
+                                }
+                            } else {
+                                $success_message = 'Settings saved successfully!';
+                                $current_settings = getSettings();
+                            }
                         } else {
                             $error_message = 'Error saving settings!';
                         }
@@ -392,13 +469,58 @@ $show_minimal_layout = !isSettingsConfigured();
                     </div>
                 </div>
                 
+                <?php if ($show_minimal_layout): ?>
+                <!-- Admin User Setup (First Installation Only) -->
+                <div class="rounded-lg border border-border bg-background p-6">
+                    <h2 class="text-lg font-semibold text-foreground mb-4">Admin User Account</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="admin_username" class="block text-sm font-medium text-foreground mb-2">
+                                Admin Username
+                            </label>
+                            <input
+                                type="text"
+                                id="admin_username"
+                                name="admin_username"
+                                value="admin"
+                                required
+                                class="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent sm:text-sm"
+                                placeholder="Enter admin username"
+                            >
+                            <p class="mt-1 text-xs text-muted-foreground">
+                                Default: admin
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label for="admin_password" class="block text-sm font-medium text-foreground mb-2">
+                                Admin Password
+                            </label>
+                            <input
+                                type="password"
+                                id="admin_password"
+                                name="admin_password"
+                                value="admin123"
+                                required
+                                class="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent sm:text-sm"
+                                placeholder="Enter admin password"
+                            >
+                            <p class="mt-1 text-xs text-muted-foreground">
+                                Default: admin123 (Please change this after first login)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
                 <!-- Submit Button -->
                 <div class="flex justify-end">
                     <button
                         type="submit"
                         class="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
                     >
-                        Save Settings
+                        <?php echo $show_minimal_layout ? 'Complete Setup' : 'Save Settings'; ?>
                     </button>
                 </div>
             </form>

@@ -15,6 +15,12 @@ if (isLoggedIn()) {
 
 $page_title = 'Sign In - ' . getAppName();
 $error = '';
+$setup_message = '';
+
+// Show setup completion message
+if (isset($_GET['setup']) && $_GET['setup'] === 'complete') {
+    $setup_message = 'Setup completed successfully! Please sign in with your admin credentials.';
+}
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'] ?? '';
@@ -70,6 +76,14 @@ include 'includes/header.php';
                 Sign in to your account
             </p>
         </div>
+        
+        <?php if ($setup_message): ?>
+            <div class="rounded-md bg-green-50 p-4 border border-green-200">
+                <div class="text-sm text-green-800">
+                    <?php echo htmlspecialchars($setup_message); ?>
+                </div>
+            </div>
+        <?php endif; ?>
         
         <?php if ($error): ?>
             <div class="rounded-md bg-red-50 p-4 border border-red-200">
