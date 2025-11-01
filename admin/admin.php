@@ -5,24 +5,82 @@ requireLogin();
 $page_title = 'Ana Sayfa - Vira Stok Sistemi';
 $db = getDB();
 
-// Get statistics
-$total_sayimlar = $db->query("SELECT COUNT(*) FROM sayimlar")->fetchColumn();
-$aktif_sayimlar_count = $db->query("SELECT COUNT(*) FROM sayimlar WHERE aktif = 1")->fetchColumn();
-$total_icerikler = $db->query("SELECT COUNT(*) FROM sayim_icerikleri WHERE deleted_at IS NULL")->fetchColumn();
-$total_kullanicilar = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
+// Ensure dashboard_widgets table exists
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS dashboard_widgets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        widget_type TEXT NOT NULL,
+        widget_config TEXT NOT NULL,
+        position INTEGER DEFAULT 0,
+        width TEXT DEFAULT 'md:col-span-1',
+        enabled INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )");
+} catch (PDOException $e) {
+    // Table might already exist
+}
 
-// Get recent sayimlar
-$recent_sayimlar = $db->query("SELECT * FROM sayimlar ORDER BY created_at DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+// Get user's enabled widgets
+$widgets_stmt = $db->prepare("SELECT * FROM dashboard_widgets WHERE user_id = ? AND enabled = 1 ORDER BY position ASC, created_at ASC");
+$widgets_stmt->execute([$_SESSION['user_id']]);
+$user_widgets = $widgets_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get recent icerikler (excluding soft deleted)
-$recent_icerikler = $db->query("
-    SELECT si.*, s.sayim_no
-    FROM sayim_icerikleri si
-    JOIN sayimlar s ON si.sayim_id = s.id
-    WHERE si.deleted_at IS NULL
-    ORDER BY si.okutulma_zamani DESC
-    LIMIT 5
-")->fetchAll(PDO::FETCH_ASSOC);
+// Process widgets and execute queries
+$processed_widgets = [];
+foreach ($user_widgets as $widget) {
+    try {
+        $config = $widget['widget_config'];
+        $type = $widget['widget_type'];
+        $result = null;
+        $error = null;
+        
+        switch ($type) {
+            case 'sql_count':
+                $stmt = $db->prepare($config);
+                $stmt->execute();
+                $result = $stmt->fetchColumn();
+                break;
+                
+            case 'sql_query':
+                $stmt = $db->prepare($config);
+                $stmt->execute();
+                $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                break;
+                
+            case 'sql_single':
+                $stmt = $db->prepare($config);
+                $stmt->execute();
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($row) {
+                    // Get first column value
+                    $result = reset($row);
+                }
+                break;
+        }
+        
+        $processed_widgets[] = [
+            'id' => $widget['id'],
+            'title' => $widget['title'],
+            'type' => $type,
+            'width' => $widget['width'],
+            'result' => $result,
+            'error' => $error
+        ];
+    } catch (PDOException $e) {
+        $processed_widgets[] = [
+            'id' => $widget['id'],
+            'title' => $widget['title'],
+            'type' => $type,
+            'width' => $widget['width'],
+            'result' => null,
+            'error' => $e->getMessage()
+        ];
+    }
+}
 
 include '../includes/header.php';
 ?>
@@ -32,146 +90,90 @@ include '../includes/header.php';
     <main class="flex-1 overflow-y-auto">
         <div class="py-6">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-                <h1 class="text-3xl font-bold text-foreground mb-8">Dashboard</h1>
-                
-                <!-- Statistics Cards -->
-                <div class="grid gap-4 md:grid-cols-4 mb-8">
-                    <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-muted-foreground">Toplam Sayım</p>
-                                <p class="text-2xl font-bold mt-1"><?php echo $total_sayimlar; ?></p>
-                            </div>
-                            <div class="rounded-full bg-primary/10 p-3">
-                                <svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-muted-foreground">Aktif Sayım</p>
-                                <p class="text-2xl font-bold mt-1"><?php echo $aktif_sayimlar_count; ?></p>
-                            </div>
-                            <div class="rounded-full bg-green-100 p-3">
-                                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-muted-foreground">Toplam Ürün</p>
-                                <p class="text-2xl font-bold mt-1"><?php echo $total_icerikler; ?></p>
-                            </div>
-                            <div class="rounded-full bg-blue-100 p-3">
-                                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-muted-foreground">Kullanıcılar</p>
-                                <p class="text-2xl font-bold mt-1"><?php echo $total_kullanicilar; ?></p>
-                            </div>
-                            <div class="rounded-full bg-purple-100 p-3">
-                                <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
+                <div class="flex items-center justify-between mb-8">
+                    <h1 class="text-3xl font-bold text-foreground">Dashboard</h1>
+                    <a
+                        href="dashboard-widgets.php"
+                        class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
+                    >
+                        Widget Yönetimi
+                    </a>
                 </div>
                 
-                <div class="grid gap-6 md:grid-cols-2">
-                    <!-- Recent Sayımlar -->
-                    <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
-                        <div class="p-6 pb-0">
-                            <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Son Sayımlar</h3>
+                <?php if (empty($processed_widgets)): ?>
+                    <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-8">
+                        <div class="text-center">
+                            <svg class="mx-auto h-12 w-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            <h3 class="mt-4 text-lg font-semibold text-foreground">Widget bulunamadı</h3>
+                            <p class="mt-2 text-sm text-muted-foreground">
+                                Dashboard'a widget eklemek için "Widget Yönetimi" butonuna tıklayın.
+                            </p>
+                            <div class="mt-6">
+                                <a
+                                    href="dashboard-widgets.php"
+                                    class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
+                                >
+                                    İlk Widget'ı Oluştur
+                                </a>
+                            </div>
                         </div>
-                        <div class="p-6 pt-0">
-                            <?php if (empty($recent_sayimlar)): ?>
-                                <div class="text-center py-8 text-muted-foreground">
-                                    Henüz sayım eklenmemiş.
-                                </div>
-                            <?php else: ?>
-                                <div class="space-y-3">
-                                    <?php foreach ($recent_sayimlar as $sayim): ?>
-                                        <div class="flex items-center justify-between p-3 rounded-md border border-border hover:bg-muted/50 transition-colors">
-                                            <div>
-                                                <p class="font-medium text-sm"><?php echo htmlspecialchars($sayim['sayim_no']); ?></p>
-                                                <p class="text-xs text-muted-foreground mt-1">
-                                                    <?php echo date('d.m.Y H:i', strtotime($sayim['created_at'])); ?>
+                    </div>
+                <?php else: ?>
+                    <!-- Dynamic Widgets Grid -->
+                    <div class="grid gap-4 md:grid-cols-4">
+                        <?php foreach ($processed_widgets as $widget): ?>
+                            <div class="<?php echo htmlspecialchars($widget['width']); ?>">
+                                <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
+                                    <div class="p-6 pb-0">
+                                        <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">
+                                            <?php echo htmlspecialchars($widget['title']); ?>
+                                        </h3>
+                                    </div>
+                                    <div class="p-6 pt-0">
+                                        <?php if ($widget['error']): ?>
+                                            <div class="rounded-md bg-red-50 p-3 border border-red-200">
+                                                <p class="text-sm text-red-800">
+                                                    <strong>Hata:</strong> <?php echo htmlspecialchars($widget['error']); ?>
                                                 </p>
                                             </div>
-                                            <?php if ($sayim['aktif']): ?>
-                                                <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                                    Aktif
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
-                                                    Pasif
-                                                </span>
+                                        <?php else: ?>
+                                            <?php if ($widget['type'] === 'sql_count'): ?>
+                                                <p class="text-3xl font-bold text-foreground"><?php echo number_format($widget['result']); ?></p>
+                                            <?php elseif ($widget['type'] === 'sql_single'): ?>
+                                                <p class="text-2xl font-semibold text-foreground"><?php echo htmlspecialchars($widget['result'] ?? 'N/A'); ?></p>
+                                            <?php elseif ($widget['type'] === 'sql_query' && is_array($widget['result'])): ?>
+                                                <?php if (empty($widget['result'])): ?>
+                                                    <div class="text-center py-4 text-muted-foreground">
+                                                        Sonuç bulunamadı.
+                                                    </div>
+                                                <?php else: ?>
+                                                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                                                        <?php foreach ($widget['result'] as $row): ?>
+                                                            <div class="p-3 rounded-md border border-border hover:bg-muted/50 transition-colors">
+                                                                <?php if (count($row) == 1): ?>
+                                                                    <p class="text-sm font-medium text-foreground"><?php echo htmlspecialchars(reset($row)); ?></p>
+                                                                <?php else: ?>
+                                                                    <?php foreach ($row as $key => $value): ?>
+                                                                        <div class="flex justify-between items-start mb-1 last:mb-0">
+                                                                            <span class="text-xs font-medium text-muted-foreground mr-2"><?php echo htmlspecialchars($key); ?>:</span>
+                                                                            <span class="text-sm text-foreground text-right"><?php echo htmlspecialchars($value ?? 'NULL'); ?></span>
+                                                                        </div>
+                                                                    <?php endforeach; ?>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                <?php endif; ?>
                                             <?php endif; ?>
-                                        </div>
-                                    <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
-                                <div class="mt-4">
-                                    <a href="sayimlar.php" class="text-sm text-primary hover:underline">
-                                        Tümünü gör →
-                                    </a>
-                                </div>
-                            <?php endif; ?>
-                        </div>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
-                    
-                    <!-- Recent İçerikler -->
-                    <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
-                        <div class="p-6 pb-0">
-                            <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Son Eklenen Ürünler</h3>
-                        </div>
-                        <div class="p-6 pt-0">
-                            <?php if (empty($recent_icerikler)): ?>
-                                <div class="text-center py-8 text-muted-foreground">
-                                    Henüz ürün eklenmemiş.
-                                </div>
-                            <?php else: ?>
-                                <div class="space-y-3">
-                                    <?php foreach ($recent_icerikler as $icerik): ?>
-                                        <div class="p-3 rounded-md border border-border hover:bg-muted/50 transition-colors">
-                                            <div class="flex items-center justify-between">
-                                                <div class="flex-1">
-                                                    <p class="font-medium text-sm"><?php echo htmlspecialchars($icerik['sayim_no']); ?></p>
-                                                    <p class="text-xs text-muted-foreground mt-1 font-mono">
-                                                        <?php echo htmlspecialchars($icerik['barkod']); ?>
-                                                    </p>
-                                                </div>
-                                                <p class="text-xs text-muted-foreground ml-4">
-                                                    <?php echo date('H:i', strtotime($icerik['okutulma_zamani'])); ?>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <div class="mt-4">
-                                    <a href="sayim-icerikleri.php" class="text-sm text-primary hover:underline">
-                                        Tümünü gör →
-                                    </a>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
     </main>
