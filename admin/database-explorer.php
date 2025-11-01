@@ -78,32 +78,129 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $table_name = trim($_POST['table_name'] ?? '');
     $table_sql = trim($_POST['table_sql'] ?? '');
     
-    if (empty($table_name)) {
-        $error_message = "Tablo adı gereklidir!";
-    } elseif (empty($table_sql)) {
-        $error_message = "SQL sorgusu gereklidir!";
+    // Check if form-based or SQL-based creation
+    if (isset($_POST['fields']) && is_array($_POST['fields'])) {
+        // Form-based creation
+        $fields = $_POST['fields'];
+        $field_names = $_POST['field_names'] ?? [];
+        $field_types = $_POST['field_types'] ?? [];
+        $field_nullable = $_POST['field_nullable'] ?? [];
+        $field_primary = $_POST['field_primary'] ?? [];
+        
+        if (empty($table_name)) {
+            $error_message = "Tablo adı gereklidir!";
+        } elseif (empty($fields)) {
+            $error_message = "En az bir alan eklemelisiniz!";
+        } else {
+            try {
+                // Validate table name (SQLite identifier rules)
+                if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table_name)) {
+                    throw new Exception("Geçersiz tablo adı! Sadece harf, rakam ve alt çizgi kullanılabilir.");
+                }
+                
+                // Check if table already exists
+                $existing_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name = " . $db->quote($table_name))->fetchAll(PDO::FETCH_COLUMN);
+                if (!empty($existing_tables)) {
+                    throw new Exception("Tablo '{$table_name}' zaten mevcut!");
+                }
+                
+                // Build SQL from form data
+                $columns = [];
+                $primary_keys = [];
+                
+                foreach ($fields as $index => $field_id) {
+                    if (!isset($field_names[$index])) continue;
+                    
+                    $field_name = trim($field_names[$index] ?? '');
+                    $field_type = $field_types[$index] ?? 'TEXT';
+                    $is_nullable = isset($field_nullable[$index]) && $field_nullable[$index] === '1';
+                    $is_primary = isset($field_primary[$index]) && $field_primary[$index] === '1';
+                    
+                    if (empty($field_name)) {
+                        continue; // Skip empty fields
+                    }
+                    
+                    // Validate field name
+                    if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $field_name)) {
+                        throw new Exception("Geçersiz alan adı: '$field_name'");
+                    }
+                    
+                    $column_def = "`$field_name` $field_type";
+                    
+                    if ($is_primary) {
+                        $primary_keys[] = $field_name;
+                        if ($field_type === 'INTEGER') {
+                            $column_def .= " PRIMARY KEY AUTOINCREMENT";
+                        }
+                    } elseif (!$is_nullable) {
+                        $column_def .= " NOT NULL";
+                    }
+                    
+                    $columns[] = $column_def;
+                }
+                
+                if (empty($columns)) {
+                    throw new Exception("En az bir geçerli alan eklemelisiniz!");
+                }
+                
+                // Build SQL statement
+                $sql = "CREATE TABLE `$table_name` (\n  " . implode(",\n  ", $columns);
+                
+                // Add PRIMARY KEY constraint for non-INTEGER primary keys
+                $non_integer_primary_keys = [];
+                foreach ($primary_keys as $pk) {
+                    $pk_index = array_search($pk, $field_names);
+                    if ($pk_index !== false && ($field_types[$pk_index] ?? 'TEXT') !== 'INTEGER') {
+                        $non_integer_primary_keys[] = $pk;
+                    }
+                }
+                
+                if (!empty($non_integer_primary_keys)) {
+                    $sql .= ",\n  PRIMARY KEY (`" . implode("`, `", $non_integer_primary_keys) . "`)";
+                }
+                
+                $sql .= "\n);";
+                
+                // Execute CREATE TABLE
+                $db->exec($sql);
+                $success_message = "Tablo '{$table_name}' başarıyla oluşturuldu!";
+                header('Location: database-explorer.php?table=' . urlencode($table_name) . '&success=' . urlencode($success_message));
+                exit;
+            } catch (PDOException $e) {
+                $error_message = "Tablo oluşturulurken hata: " . $e->getMessage();
+            } catch (Exception $e) {
+                $error_message = $e->getMessage();
+            }
+        }
     } else {
-        try {
-            // Validate table name (SQLite identifier rules)
-            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table_name)) {
-                throw new Exception("Geçersiz tablo adı. Sadece harf, rakam ve alt çizgi kullanılabilir.");
+        // SQL-based creation (backward compatibility)
+        if (empty($table_name)) {
+            $error_message = "Tablo adı gereklidir!";
+        } elseif (empty($table_sql)) {
+            $error_message = "SQL sorgusu gereklidir!";
+        } else {
+            try {
+                // Validate table name (SQLite identifier rules)
+                if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table_name)) {
+                    throw new Exception("Geçersiz tablo adı. Sadece harf, rakam ve alt çizgi kullanılabilir.");
+                }
+                
+                // Check if table already exists
+                $existing_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name = " . $db->quote($table_name))->fetchAll(PDO::FETCH_COLUMN);
+                if (!empty($existing_tables)) {
+                    throw new Exception("Tablo '{$table_name}' zaten mevcut!");
+                }
+                
+                // Execute CREATE TABLE statement
+                $db->exec($table_sql);
+                $success_message = "Tablo '{$table_name}' başarıyla oluşturuldu!";
+                
+                // Redirect to avoid form resubmission
+                header('Location: database-explorer.php?table=' . urlencode($table_name) . '&success=' . urlencode($success_message));
+                exit;
+            } catch (Exception $e) {
+                $error_message = "Tablo oluşturulurken hata: " . $e->getMessage();
             }
-            
-            // Check if table already exists
-            $existing_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name = " . $db->quote($table_name))->fetchAll(PDO::FETCH_COLUMN);
-            if (!empty($existing_tables)) {
-                throw new Exception("Tablo '{$table_name}' zaten mevcut!");
-            }
-            
-            // Execute CREATE TABLE statement
-            $db->exec($table_sql);
-            $success_message = "Tablo '{$table_name}' başarıyla oluşturuldu!";
-            
-            // Redirect to avoid form resubmission
-            header('Location: database-explorer.php?table=' . urlencode($table_name) . '&success=' . urlencode($success_message));
-            exit;
-        } catch (Exception $e) {
-            $error_message = "Tablo oluşturulurken hata: " . $e->getMessage();
         }
     }
 }
@@ -853,9 +950,9 @@ include '../includes/header.php';
 
 <!-- Create Table Modal -->
 <div id="create-table-dialog" class="fixed inset-0 hidden items-center justify-center z-50" onclick="if(event.target === this) hideCreateTableModal()" style="background-color: rgba(0, 0, 0, 0.3) !important;">
-    <div class="border border-border rounded-lg shadow-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()" style="background-color: hsl(var(--background)) !important; z-index: 51;">
+    <div class="border border-border rounded-lg shadow-lg p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()" style="background-color: hsl(var(--background)) !important; z-index: 51;">
         <h3 class="text-lg font-semibold mb-4">Yeni Tablo Oluştur</h3>
-        <form method="POST" action="">
+        <form method="POST" action="" id="create-table-form">
             <input type="hidden" name="action" value="create_table">
             <div class="space-y-4">
                 <div>
@@ -872,33 +969,23 @@ include '../includes/header.php';
                     >
                     <p class="text-xs text-muted-foreground mt-1">Sadece harf, rakam ve alt çizgi kullanılabilir</p>
                 </div>
+                
                 <div>
-                    <label for="table_sql" class="block text-sm font-medium mb-2">CREATE TABLE SQL:</label>
-                    <textarea
-                        name="table_sql"
-                        id="table_sql"
-                        required
-                        rows="10"
-                        class="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring font-mono text-sm"
-                        placeholder="CREATE TABLE ornek_tablo (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);"
-                    ></textarea>
-                    <p class="text-xs text-muted-foreground mt-1">CREATE TABLE SQL sorgusunu buraya yazın</p>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium">Alanlar:</label>
+                        <button
+                            type="button"
+                            onclick="addTableField()"
+                            class="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
+                        >
+                            + Alan Ekle
+                        </button>
+                    </div>
+                    <div id="table-fields-container" class="space-y-3">
+                        <!-- Fields will be added here -->
+                    </div>
                 </div>
-                <div class="rounded-md bg-blue-50 border border-blue-200 p-3">
-                    <p class="text-xs text-blue-800">
-                        <strong>Örnek:</strong><br>
-                        <code class="block mt-1">CREATE TABLE users (<br>
-&nbsp;&nbsp;id INTEGER PRIMARY KEY AUTOINCREMENT,<br>
-&nbsp;&nbsp;username TEXT NOT NULL UNIQUE,<br>
-&nbsp;&nbsp;email TEXT,<br>
-&nbsp;&nbsp;created_at DATETIME DEFAULT CURRENT_TIMESTAMP<br>
-);</code>
-                    </p>
-                </div>
+                
                 <div class="flex items-center gap-2 justify-end">
                     <button
                         type="button"
@@ -986,9 +1073,130 @@ function hideSaveDialog() {
 }
 
 // Create Table Modal functions
+let fieldCounter = 0;
+
+function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, isPrimary = false) {
+    const container = document.getElementById('table-fields-container');
+    const fieldId = 'field_' + (fieldCounter++);
+    
+    const fieldHtml = `
+        <div class="border border-input rounded-md p-3 bg-muted/30" data-field-id="${fieldId}">
+            <div class="grid grid-cols-12 gap-2 items-end">
+                <div class="col-span-4">
+                    <label class="block text-xs font-medium mb-1">Alan Adı:</label>
+                    <input
+                        type="text"
+                        name="field_names[]"
+                        value="${fieldName}"
+                        required
+                        pattern="[a-zA-Z_][a-zA-Z0-9_]*"
+                        class="w-full px-2 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring font-mono"
+                        placeholder="alan_adi"
+                    >
+                </div>
+                <div class="col-span-3">
+                    <label class="block text-xs font-medium mb-1">Tip:</label>
+                    <select
+                        name="field_types[]"
+                        class="w-full px-2 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                        <option value="TEXT" ${fieldType === 'TEXT' ? 'selected' : ''}>TEXT</option>
+                        <option value="INTEGER" ${fieldType === 'INTEGER' ? 'selected' : ''}>INTEGER</option>
+                        <option value="REAL" ${fieldType === 'REAL' ? 'selected' : ''}>REAL</option>
+                        <option value="BLOB" ${fieldType === 'BLOB' ? 'selected' : ''}>BLOB</option>
+                        <option value="NUMERIC" ${fieldType === 'NUMERIC' ? 'selected' : ''}>NUMERIC</option>
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="flex items-center gap-1 text-xs font-medium cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="field_nullable[]"
+                            value="1"
+                            ${isNullable ? 'checked' : ''}
+                            class="rounded border-input"
+                            onchange="updateNullableCheckbox(this)"
+                        >
+                        <span>Nullable</span>
+                    </label>
+                </div>
+                <div class="col-span-2">
+                    <label class="flex items-center gap-1 text-xs font-medium cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="field_primary[]"
+                            value="1"
+                            ${isPrimary ? 'checked' : ''}
+                            class="rounded border-input"
+                        >
+                        <span>Primary Key</span>
+                    </label>
+                </div>
+                <div class="col-span-1">
+                    <button
+                        type="button"
+                        onclick="removeTableField('${fieldId}')"
+                        class="w-full px-2 py-1.5 text-xs font-medium bg-red-500 text-white hover:bg-red-600 rounded-md transition-colors"
+                        title="Alanı Sil"
+                    >
+                        ✕
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', fieldHtml);
+    
+    // Update field IDs for form submission
+    updateFieldIds();
+}
+
+function removeTableField(fieldId) {
+    const field = document.querySelector(`[data-field-id="${fieldId}"]`);
+    if (field) {
+        field.remove();
+        updateFieldIds();
+    }
+}
+
+function updateFieldIds() {
+    const container = document.getElementById('table-fields-container');
+    const fields = container.querySelectorAll('[data-field-id]');
+    fields.forEach((field, index) => {
+        field.setAttribute('data-field-id', 'field_' + index);
+        const hiddenInput = field.querySelector('input[type="hidden"][name="fields[]"]');
+        if (hiddenInput) {
+            hiddenInput.value = 'field_' + index;
+        } else {
+            const hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = 'fields[]';
+            hiddenField.value = 'field_' + index;
+            field.appendChild(hiddenField);
+        }
+    });
+}
+
+function updateNullableCheckbox(checkbox) {
+    // Update hidden field for nullable
+    const field = checkbox.closest('[data-field-id]');
+    if (field) {
+        // The checkbox value is already in the form, no need for hidden field
+    }
+}
+
 function showCreateTableModal() {
     document.getElementById('create-table-dialog').classList.remove('hidden');
     document.getElementById('create-table-dialog').classList.add('flex');
+    
+    // Reset form and add first field
+    document.getElementById('table_name').value = '';
+    const container = document.getElementById('table-fields-container');
+    container.innerHTML = '';
+    fieldCounter = 0;
+    addTableField(); // Add first empty field
+    
     document.getElementById('table_name').focus();
 }
 
@@ -997,7 +1205,9 @@ function hideCreateTableModal() {
     document.getElementById('create-table-dialog').classList.remove('flex');
     // Reset form
     document.getElementById('table_name').value = '';
-    document.getElementById('table_sql').value = '';
+    const container = document.getElementById('table-fields-container');
+    container.innerHTML = '';
+    fieldCounter = 0;
 }
 
 // Delete Table function
