@@ -203,9 +203,12 @@ try {
                     </div>
                     
                     <?php foreach ($pages as $page): ?>
+                        <?php
+                        $is_active = ($current_page == 'dynamic-page.php' && isset($_GET['page']) && $_GET['page'] == $page['page_name']);
+                        ?>
                         <a
-                            href="<?php echo htmlspecialchars($page['page_name']); ?>.php"
-                            class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == $page['page_name'] . '.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
+                            href="dynamic-page.php?page=<?php echo urlencode($page['page_name']); ?>"
+                            class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $is_active ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
                         >
                             <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -217,9 +220,12 @@ try {
                 
                 <?php if ($ungrouped && !empty($ungrouped)): ?>
                     <?php foreach ($ungrouped as $page): ?>
+                        <?php
+                        $is_active = ($current_page == 'dynamic-page.php' && isset($_GET['page']) && $_GET['page'] == $page['page_name']);
+                        ?>
                         <a
-                            href="<?php echo htmlspecialchars($page['page_name']); ?>.php"
-                            class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == $page['page_name'] . '.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
+                            href="dynamic-page.php?page=<?php echo urlencode($page['page_name']); ?>"
+                            class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $is_active ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
                         >
                             <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
