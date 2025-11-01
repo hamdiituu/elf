@@ -126,7 +126,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     }
                     
                     // Convert BOOLEAN to INTEGER for SQLite
-                    $sql_type = $field_type === 'BOOLEAN' ? 'INTEGER' : $field_type;
+                    // Convert IMAGE to TEXT for SQLite (stores file path)
+                    if ($field_type === 'BOOLEAN') {
+                        $sql_type = 'INTEGER';
+                    } elseif ($field_type === 'IMAGE') {
+                        $sql_type = 'TEXT';
+                    } else {
+                        $sql_type = $field_type;
+                    }
                     
                     $column_def = "`$field_name` $sql_type";
                     
@@ -1129,6 +1136,7 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
                     <select
                         name="field_types[]"
                         class="w-full px-2 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
+                        onchange="updateFieldTypeHint(this)"
                     >
                         <option value="TEXT" ${fieldType === 'TEXT' ? 'selected' : ''}>TEXT</option>
                         <option value="INTEGER" ${fieldType === 'INTEGER' ? 'selected' : ''}>INTEGER</option>
@@ -1136,7 +1144,9 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
                         <option value="BLOB" ${fieldType === 'BLOB' ? 'selected' : ''}>BLOB</option>
                         <option value="NUMERIC" ${fieldType === 'NUMERIC' ? 'selected' : ''}>NUMERIC</option>
                         <option value="BOOLEAN" ${fieldType === 'BOOLEAN' ? 'selected' : ''}>BOOLEAN</option>
+                        <option value="IMAGE" ${fieldType === 'IMAGE' ? 'selected' : ''}>IMAGE (Görsel - TEXT)</option>
                     </select>
+                    <span class="field-type-hint text-xs text-muted-foreground mt-1 hidden"></span>
                 </div>
                 <div class="col-span-2">
                     <label class="flex items-center gap-1 text-xs font-medium cursor-pointer">
@@ -1181,6 +1191,15 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
     
     // Update field IDs for form submission
     updateFieldIds();
+    
+    // Update hint for the new field
+    const newField = container.querySelector('[data-field-id="' + fieldId + '"]');
+    if (newField) {
+        const typeSelect = newField.querySelector('select[name="field_types[]"]');
+        if (typeSelect) {
+            updateFieldTypeHint(typeSelect);
+        }
+    }
 }
 
 function removeTableField(fieldId) {
@@ -1300,6 +1319,56 @@ document.addEventListener('keydown', function(e) {
         } else if (!saveDialog.classList.contains('hidden')) {
             hideSaveDialog();
         }
+    }
+});
+
+// Update field type hint based on selection
+function updateFieldTypeHint(select) {
+    const fieldContainer = select.closest('[data-field-id]');
+    const hintSpan = fieldContainer ? fieldContainer.querySelector('.field-type-hint') : null;
+    const fieldNameInput = fieldContainer ? fieldContainer.querySelector('input[name="field_names[]"]') : null;
+    const fieldName = fieldNameInput ? fieldNameInput.value.toLowerCase() : '';
+    
+    if (hintSpan) {
+        const fieldType = select.value;
+        
+        // Check if field name suggests image
+        const isImageField = /(image|img|photo|picture|resim|foto)/i.test(fieldName);
+        
+        if (fieldType === 'IMAGE') {
+            hintSpan.textContent = 'Bu alan görsel yolu saklayacak (TEXT olarak kaydedilir)';
+            hintSpan.classList.remove('hidden');
+        } else if (isImageField && fieldType !== 'IMAGE') {
+            hintSpan.textContent = '💡 İpucu: Bu alan adı görsel gibi görünüyor. IMAGE tipini seçebilirsiniz!';
+            hintSpan.classList.remove('hidden');
+        } else {
+            hintSpan.classList.add('hidden');
+        }
+    }
+}
+
+// Auto-detect image fields when name is entered
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('table-fields-container');
+    if (container) {
+        container.addEventListener('input', function(e) {
+            if (e.target.name === 'field_names[]') {
+                const fieldContainer = e.target.closest('[data-field-id]');
+                const typeSelect = fieldContainer ? fieldContainer.querySelector('select[name="field_types[]"]') : null;
+                if (typeSelect && /(image|img|photo|picture|resim|foto)/i.test(e.target.value)) {
+                    // Auto-select IMAGE type
+                    typeSelect.value = 'IMAGE';
+                    updateFieldTypeHint(typeSelect);
+                } else if (typeSelect) {
+                    updateFieldTypeHint(typeSelect);
+                }
+            }
+        });
+        
+        // Update hints on initial load
+        container.querySelectorAll('select[name="field_types[]"]').forEach(function(select) {
+            updateFieldTypeHint(select);
+        });
     }
 });
 </script>
