@@ -26,6 +26,8 @@ config/settings.json
 *.log
 logs/
 server.log
+**/*.log
+cron/*.log
 cron/cron-daemon.log
 
 # Node.js
@@ -78,6 +80,8 @@ build/
 *.min.css
 
 # Server files
+*.pid
+**/*.pid
 api/nodejs-server.pid
 api/nodejs-server.secret
 api/nodejs-server.secret.read
