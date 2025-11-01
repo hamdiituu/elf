@@ -1,6 +1,31 @@
 <?php
 // Get current page for active menu highlighting
 $current_page = basename($_SERVER['PHP_SELF']);
+
+// Get dynamic pages from database
+$dynamic_pages_list = [];
+try {
+    require_once __DIR__ . '/../config/config.php';
+    $db = getDB();
+    // Ensure dynamic_pages table exists
+    $db->exec("CREATE TABLE IF NOT EXISTS dynamic_pages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        page_name TEXT NOT NULL UNIQUE,
+        page_title TEXT NOT NULL,
+        table_name TEXT NOT NULL,
+        enable_list INTEGER DEFAULT 1,
+        enable_create INTEGER DEFAULT 1,
+        enable_update INTEGER DEFAULT 1,
+        enable_delete INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )");
+    
+    $stmt = $db->query("SELECT page_name, page_title FROM dynamic_pages ORDER BY created_at ASC");
+    $dynamic_pages_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    // Ignore errors if table doesn't exist or DB not available
+}
 ?>
 <aside class="hidden md:flex md:flex-shrink-0">
     <div class="flex flex-col w-64 border-r border-border bg-background">
@@ -126,6 +151,37 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </svg>
                 Cloud Functions
             </a>
+            <a
+                href="pages-builder.php"
+                class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == 'pages-builder.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
+            >
+                <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Pages Builder
+            </a>
+            
+            <?php if (!empty($dynamic_pages_list)): ?>
+                <!-- Divider - Dinamik Sayfalar -->
+                <div class="px-3 py-2">
+                    <div class="border-t border-border"></div>
+                    <div class="mt-2 px-2">
+                        <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dinamik Sayfalar</span>
+                    </div>
+                </div>
+                
+                <?php foreach ($dynamic_pages_list as $page): ?>
+                    <a
+                        href="<?php echo htmlspecialchars($page['page_name']); ?>.php"
+                        class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == $page['page_name'] . '.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
+                    >
+                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <?php echo htmlspecialchars($page['page_title']); ?>
+                    </a>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </nav>
         <div class="border-t border-border px-3 py-4 mt-auto">
             <div class="flex items-center justify-between">
