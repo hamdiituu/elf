@@ -30,60 +30,7 @@ $cloud_functions = $db->query("SELECT * FROM cloud_functions WHERE enabled = 1 O
 
 // Define available APIs
 $apis = [
-    [
-        'id' => 'hello',
-        'name' => 'Hello API',
-        'description' => 'Test API endpoint - returns hello message',
-        'methods' => ['GET', 'POST'],
-        'endpoint' => '../api/hello.php',
-        'parameters' => [
-            ['name' => 'name', 'type' => 'string', 'required' => false, 'description' => 'Name parameter']
-        ]
-    ],
-    [
-        'id' => 'check-counting',
-        'name' => 'Check Counting',
-        'description' => 'Check if an active counting (sayım) exists with given sayım number',
-        'methods' => ['GET', 'POST'],
-        'endpoint' => '../api/counting/check-counting.php',
-        'parameters' => [
-            ['name' => 'sayim_no', 'type' => 'string', 'required' => true, 'description' => 'Sayım numarası (GET: query, POST: body)']
-        ]
-    ],
-    [
-        'id' => 'product-count',
-        'name' => 'Product Count',
-        'description' => 'Add or remove product from counting (sayım)',
-        'methods' => ['POST', 'DELETE'],
-        'endpoint' => '../api/counting/product-count.php',
-        'parameters' => [
-            ['name' => 'sayim_no', 'type' => 'string', 'required' => true, 'description' => 'Sayım numarası (GET: query, POST/DELETE: body)'],
-            ['name' => 'barkod', 'type' => 'string', 'required' => false, 'description' => 'Ürün barkodu (GET: optional query, POST/DELETE: required in body)']
-        ]
-    ],
-    [
-        'id' => 'list-counting',
-        'name' => 'List Counting',
-        'description' => 'List counting contents for a given sayım number',
-        'methods' => ['GET'],
-        'endpoint' => '../api/counting/list-counting.php',
-        'parameters' => [
-            ['name' => 'sayim_no', 'type' => 'string', 'required' => true, 'description' => 'Sayım numarası (query parameter)'],
-            ['name' => 'barkod', 'type' => 'string', 'required' => false, 'description' => 'Ürün barkodu (optional - filter by barkod)']
-        ]
-    ],
-    [
-        'id' => 'product-record',
-        'name' => 'Product Record',
-        'description' => 'Create, read, update, and delete product records (urun_tanimi)',
-        'methods' => ['GET', 'POST', 'PUT', 'DELETE'],
-        'endpoint' => '../api/integration/product-record.php',
-        'parameters' => [
-            ['name' => 'barkod', 'type' => 'string', 'required' => false, 'description' => 'Ürün barkodu (GET: optional query, POST/PUT/DELETE: required in body)'],
-            ['name' => 'include_deleted', 'type' => 'boolean', 'required' => false, 'description' => 'Silinen ürünleri de dahil et (GET only - query parameter)'],
-            ['name' => 'urun_aciklamasi', 'type' => 'string', 'required' => false, 'description' => 'Ürün açıklaması (POST/PUT: optional in body)']
-        ]
-    ]
+  
 ];
 
 // Add cloud functions to API list
