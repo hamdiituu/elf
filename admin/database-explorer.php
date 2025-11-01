@@ -99,7 +99,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 }
                 
                 // Check if table already exists
-                $existing_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name = " . $db->quote($table_name))->fetchAll(PDO::FETCH_COLUMN);
+                $settings = getSettings();
+                $dbType = $settings['db_type'] ?? 'sqlite';
+                
+                if ($dbType === 'mysql') {
+                    $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+                    $existing_tables = $db->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$escaped_table_name'")->fetchAll(PDO::FETCH_COLUMN);
+                } else {
+                    $existing_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name = " . $db->quote($table_name))->fetchAll(PDO::FETCH_COLUMN);
+                }
+                
                 if (!empty($existing_tables)) {
                     throw new Exception("Table '{$table_name}' already exists!");
                 }
@@ -146,8 +155,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         }
                     } elseif ($is_primary) {
                         $primary_keys[] = $field_name;
-                        if ($field_type === 'INTEGER') {
+                        $settings = getSettings();
+                        $dbType = $settings['db_type'] ?? 'sqlite';
+                        if ($field_type === 'INTEGER' && $dbType === 'sqlite') {
                             $column_def .= " PRIMARY KEY AUTOINCREMENT";
+                        } elseif ($field_type === 'INTEGER' && $dbType === 'mysql') {
+                            $column_def .= " PRIMARY KEY AUTO_INCREMENT";
                         }
                     } elseif (!$is_nullable) {
                         $column_def .= " NOT NULL";
@@ -203,7 +216,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 }
                 
                 // Check if table already exists
-                $existing_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name = " . $db->quote($table_name))->fetchAll(PDO::FETCH_COLUMN);
+                $settings = getSettings();
+                $dbType = $settings['db_type'] ?? 'sqlite';
+                
+                if ($dbType === 'mysql') {
+                    $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+                    $existing_tables = $db->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$escaped_table_name'")->fetchAll(PDO::FETCH_COLUMN);
+                } else {
+                    $existing_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name = " . $db->quote($table_name))->fetchAll(PDO::FETCH_COLUMN);
+                }
+                
                 if (!empty($existing_tables)) {
                     throw new Exception("Table '{$table_name}' already exists!");
                 }
@@ -473,7 +495,16 @@ try {
 
 // Get all tables
 try {
-    $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
+    $settings = getSettings();
+    $dbType = $settings['db_type'] ?? 'sqlite';
+    
+    if ($dbType === 'mysql') {
+        // MySQL: Get tables from INFORMATION_SCHEMA
+        $tables = $db->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME")->fetchAll(PDO::FETCH_COLUMN);
+    } else {
+        // SQLite: Get tables from sqlite_master
+        $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
+    }
 } catch (PDOException $e) {
     $tables = [];
     $error_message = "Error loading tables: " . $e->getMessage();
@@ -520,11 +551,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $custom_query) {
 
 // Get table statistics for all tables
 $table_stats = [];
+$settings = getSettings();
+$dbType = $settings['db_type'] ?? 'sqlite';
+
 foreach ($tables as $tbl) {
     try {
-        $row_count = $db->query("SELECT COUNT(*) FROM \"$tbl\"")->fetchColumn();
-        $table_info_temp = $db->query("PRAGMA table_info(\"$tbl\")")->fetchAll(PDO::FETCH_ASSOC);
-        $col_count = count($table_info_temp);
+        $escaped_tbl = preg_replace('/[^a-zA-Z0-9_]/', '', $tbl);
+        $row_count = $db->query("SELECT COUNT(*) FROM `$escaped_tbl`")->fetchColumn();
+        
+        if ($dbType === 'mysql') {
+            $col_count = $db->query("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$escaped_tbl'")->fetchColumn();
+        } else {
+            $table_info_temp = $db->query("PRAGMA table_info(\"$escaped_tbl\")")->fetchAll(PDO::FETCH_ASSOC);
+            $col_count = count($table_info_temp);
+        }
+        
         $table_stats[$tbl] = [
             'row_count' => $row_count,
             'col_count' => $col_count
@@ -553,9 +594,39 @@ if ($table_name && in_array($table_name, $tables)) {
     
     try {
         // Get table info (columns)
-        $table_info = $db->query("PRAGMA table_info(\"$table_name\")")->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($table_info as $col) {
-            $table_columns[] = $col['name'];
+        $settings = getSettings();
+        $dbType = $settings['db_type'] ?? 'sqlite';
+        
+        if ($dbType === 'mysql') {
+            // MySQL: Get column info from INFORMATION_SCHEMA
+            $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+            $table_info = $db->query("
+                SELECT 
+                    COLUMN_NAME as name,
+                    DATA_TYPE as type,
+                    IS_NULLABLE as nullable,
+                    COLUMN_DEFAULT as dflt_value,
+                    COLUMN_KEY as pk_indicator,
+                    ORDINAL_POSITION as cid
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$escaped_table_name'
+                ORDER BY ORDINAL_POSITION
+            ")->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Normalize MySQL result to match SQLite PRAGMA format
+            foreach ($table_info as &$col) {
+                $col['type'] = strtoupper($col['type']);
+                $col['notnull'] = ($col['nullable'] === 'NO') ? 1 : 0;
+                $col['dflt_value'] = $col['dflt_value'];
+                $col['pk'] = ($col['pk_indicator'] === 'PRI') ? 1 : 0;
+                $table_columns[] = $col['name'];
+            }
+        } else {
+            // SQLite: Use PRAGMA table_info
+            $table_info = $db->query("PRAGMA table_info(\"$table_name\")")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($table_info as $col) {
+                $table_columns[] = $col['name'];
+            }
         }
         
         // Build WHERE clause for search
@@ -956,9 +1027,18 @@ include '../includes/header.php';
                                                     <tr class="hover:bg-muted/30">
                                                         <td class="px-3 py-2 text-xs font-mono text-foreground"><?php echo htmlspecialchars($col['name']); ?></td>
                                                         <td class="px-3 py-2 text-xs text-foreground"><?php echo htmlspecialchars($col['type']); ?></td>
-                                                        <td class="px-3 py-2 text-xs text-foreground"><?php echo $col['notnull'] ? 'NO' : 'YES'; ?></td>
+                                                        <td class="px-3 py-2 text-xs text-foreground"><?php 
+                                                            // Type-safe check: notnull is 1 (integer or string "1") = NOT NULL = "NO"
+                                                            // notnull is 0 (integer or string "0") = NULLABLE = "YES"
+                                                            $notnull = isset($col['notnull']) ? (int)$col['notnull'] : 0;
+                                                            echo $notnull === 1 ? 'NO' : 'YES'; 
+                                                        ?></td>
                                                         <td class="px-3 py-2 text-xs text-muted-foreground font-mono"><?php echo $col['dflt_value'] !== null ? htmlspecialchars($col['dflt_value']) : '-'; ?></td>
-                                                        <td class="px-3 py-2 text-xs text-foreground"><?php echo $col['pk'] ? '✓' : '-'; ?></td>
+                                                        <td class="px-3 py-2 text-xs text-foreground"><?php 
+                                                            // Type-safe check for primary key
+                                                            $pk = isset($col['pk']) ? (int)$col['pk'] : 0;
+                                                            echo $pk === 1 ? '✓' : '-'; 
+                                                        ?></td>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
