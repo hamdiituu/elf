@@ -86,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $field_types = $_POST['field_types'] ?? [];
         $field_nullable = $_POST['field_nullable'] ?? [];
         $field_primary = $_POST['field_primary'] ?? [];
+        $field_relation_target = $_POST['field_relation_target'] ?? [];
         
         if (empty($table_name)) {
             $error_message = "Table name is required!";
@@ -136,10 +137,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     
                     // Convert BOOLEAN to INTEGER for SQLite
                     // Convert IMAGE to TEXT for SQLite (stores file path)
+                    // Convert RELATION to INTEGER (stores foreign key ID)
                     if ($field_type === 'BOOLEAN') {
                         $sql_type = 'INTEGER';
                     } elseif ($field_type === 'IMAGE') {
                         $sql_type = 'TEXT';
+                    } elseif ($field_type === 'RELATION') {
+                        $sql_type = 'INTEGER';
                     } else {
                         $sql_type = $field_type;
                     }
@@ -193,6 +197,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 
                 // Execute CREATE TABLE
                 $db->exec($sql);
+                
+                // Store relation metadata if any RELATION fields exist
+                try {
+                    // Create relation_metadata table if it doesn't exist
+                    $db->exec("CREATE TABLE IF NOT EXISTS relation_metadata (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        table_name TEXT NOT NULL,
+                        column_name TEXT NOT NULL,
+                        target_table TEXT NOT NULL,
+                        UNIQUE(table_name, column_name)
+                    )");
+                    
+                    // Save relation metadata
+                    foreach ($fields as $index => $field_id) {
+                        if (!isset($field_names[$index])) continue;
+                        
+                        $field_name = trim($field_names[$index] ?? '');
+                        $field_type = $field_types[$index] ?? 'TEXT';
+                        $relation_target = trim($field_relation_target[$index] ?? '');
+                        
+                        if ($field_type === 'RELATION' && !empty($relation_target)) {
+                            // Validate target table exists
+                            $settings = getSettings();
+                            $dbType = $settings['db_type'] ?? 'sqlite';
+                            
+                            $target_exists = false;
+                            if ($dbType === 'mysql') {
+                                $escaped_target = preg_replace('/[^a-zA-Z0-9_]/', '', $relation_target);
+                                $result = $db->query("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$escaped_target'")->fetchColumn();
+                                $target_exists = ($result > 0);
+                            } else {
+                                $result = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name = " . $db->quote($relation_target))->fetchAll(PDO::FETCH_COLUMN);
+                                $target_exists = !empty($result);
+                            }
+                            
+                            if ($target_exists) {
+                                $stmt = $db->prepare("INSERT OR REPLACE INTO relation_metadata (table_name, column_name, target_table) VALUES (?, ?, ?)");
+                                $stmt->execute([$table_name, $field_name, $relation_target]);
+                            }
+                        }
+                    }
+                } catch (PDOException $e) {
+                    // Metadata save failed, but table creation succeeded - log error but continue
+                    error_log("Failed to save relation metadata: " . $e->getMessage());
+                }
+                
                 $success_message = "Table '{$table_name}' created successfully!";
                 header('Location: database-explorer.php?table=' . urlencode($table_name) . '&success=' . urlencode($success_message));
                 exit;
@@ -795,7 +845,8 @@ include '../includes/header.php';
                             <div class="p-4 pt-2" id="tables-content">
                                 <div class="mb-3">
                                     <button
-                                        onclick="showCreateTableModal()"
+                                        type="button"
+                                        id="btn-create-table"
                                         class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 transition-colors mb-2"
                                     >
                                         <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1347,7 +1398,7 @@ include '../includes/header.php';
 </div>
 
 <!-- Create Table Modal -->
-<div id="create-table-dialog" class="fixed inset-0 hidden items-center justify-center z-50" onclick="if(event.target === this) hideCreateTableModal()" style="background-color: rgba(0, 0, 0, 0.3) !important;">
+<div id="create-table-dialog" class="fixed inset-0 hidden items-center justify-center z-50" onclick="if(event.target === this && typeof window.hideCreateTableModal === 'function') window.hideCreateTableModal()" style="background-color: rgba(0, 0, 0, 0.3) !important;">
     <div class="border border-border rounded-lg shadow-lg p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()" style="background-color: hsl(var(--background)) !important; z-index: 51;">
         <h3 class="text-lg font-semibold mb-4">Create New Table</h3>
         <form method="POST" action="" id="create-table-form">
@@ -1397,7 +1448,7 @@ include '../includes/header.php';
                 <div class="flex items-center gap-2 justify-end">
                     <button
                         type="button"
-                        onclick="hideCreateTableModal()"
+                        id="btn-cancel-create-table"
                         class="px-4 py-2 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 rounded-md transition-colors"
                     >
                         Cancel
@@ -1415,6 +1466,71 @@ include '../includes/header.php';
 </div>
 
 <script>
+// Create Table Modal functions - Define early so they're available when button is clicked
+let fieldCounter = 0;
+
+// Define functions globally immediately
+window.showCreateTableModal = function() {
+    try {
+        console.log('showCreateTableModal called');
+        const dialog = document.getElementById('create-table-dialog');
+        if (!dialog) {
+            console.error('create-table-dialog element not found');
+            alert('Modal element not found. Please refresh the page.');
+            return;
+        }
+        
+        console.log('Dialog found, showing modal');
+        dialog.classList.remove('hidden');
+        dialog.classList.add('flex');
+        
+        // Reset form and add first field
+        const tableNameInput = document.getElementById('table_name');
+        if (tableNameInput) {
+            tableNameInput.value = '';
+        }
+        
+        const container = document.getElementById('table-fields-container');
+        if (container) {
+            container.innerHTML = '';
+            fieldCounter = 0;
+            
+            if (typeof addTableField === 'function') {
+                addTableField(); // Add first empty field
+            } else {
+                console.error('addTableField function not found');
+            }
+            
+            if (tableNameInput) {
+                setTimeout(() => tableNameInput.focus(), 100);
+            }
+        } else {
+            console.error('table-fields-container not found');
+        }
+    } catch (error) {
+        console.error('Error in showCreateTableModal:', error);
+        alert('Error opening modal: ' + error.message);
+    }
+};
+
+window.hideCreateTableModal = function() {
+    const dialog = document.getElementById('create-table-dialog');
+    if (dialog) {
+        dialog.classList.add('hidden');
+        dialog.classList.remove('flex');
+        // Reset form
+        const tableNameInput = document.getElementById('table_name');
+        if (tableNameInput) {
+            tableNameInput.value = '';
+        }
+        const container = document.getElementById('table-fields-container');
+        if (container) {
+            container.innerHTML = '';
+            fieldCounter = 0;
+        }
+    }
+}
+
 // Toggle tables panel
 let tablesCollapsed = localStorage.getItem('tablesCollapsed') === 'true';
 const panel = document.getElementById('tables-panel');
@@ -1481,8 +1597,6 @@ function hideSaveDialog() {
 }
 
 // Create Table Modal functions
-let fieldCounter = 0;
-
 function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, isPrimary = false) {
     const container = document.getElementById('table-fields-container');
     const fieldId = 'field_' + (fieldCounter++);
@@ -1516,8 +1630,18 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
                         <option value="NUMERIC" ${fieldType === 'NUMERIC' ? 'selected' : ''}>NUMERIC</option>
                         <option value="BOOLEAN" ${fieldType === 'BOOLEAN' ? 'selected' : ''}>BOOLEAN</option>
                         <option value="IMAGE" ${fieldType === 'IMAGE' ? 'selected' : ''}>IMAGE (Image - TEXT)</option>
+                        <option value="RELATION" ${fieldType === 'RELATION' ? 'selected' : ''}>RELATION (Foreign Key - INTEGER)</option>
                     </select>
                     <span class="field-type-hint text-xs text-muted-foreground mt-1 hidden"></span>
+                    <div class="field-relation-target hidden mt-2">
+                        <label class="block text-xs font-medium mb-1">Reference Table:</label>
+                        <select
+                            name="field_relation_target[]"
+                            class="w-full px-2 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                            <option value="">-- Select Table --</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="col-span-2">
                     <label class="flex items-center gap-1 text-xs font-medium cursor-pointer">
@@ -1575,6 +1699,11 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
         const typeSelect = newField.querySelector('select[name="field_types[]"]');
         if (typeSelect) {
             updateFieldTypeHint(typeSelect);
+            
+            // Initialize relation target dropdown if field type is RELATION
+            if (typeSelect.value === 'RELATION') {
+                updateFieldTypeHint(typeSelect);
+            }
         }
         
         // Initialize nullable hidden input based on checkbox state
@@ -1622,30 +1751,6 @@ function updateNullableCheckbox(checkbox) {
             hiddenInput.value = checkbox.checked ? '1' : '0';
         }
     }
-}
-
-function showCreateTableModal() {
-    document.getElementById('create-table-dialog').classList.remove('hidden');
-    document.getElementById('create-table-dialog').classList.add('flex');
-    
-    // Reset form and add first field
-    document.getElementById('table_name').value = '';
-    const container = document.getElementById('table-fields-container');
-    container.innerHTML = '';
-    fieldCounter = 0;
-    addTableField(); // Add first empty field
-    
-    document.getElementById('table_name').focus();
-}
-
-function hideCreateTableModal() {
-    document.getElementById('create-table-dialog').classList.add('hidden');
-    document.getElementById('create-table-dialog').classList.remove('flex');
-    // Reset form
-    document.getElementById('table_name').value = '';
-    const container = document.getElementById('table-fields-container');
-    container.innerHTML = '';
-    fieldCounter = 0;
 }
 
 function addTimestamps() {
@@ -1710,10 +1815,21 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// Global variable to store available tables for relation dropdowns
+const availableTables = <?php 
+    if (isset($tables) && is_array($tables)) {
+        echo json_encode($tables, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    } else {
+        echo '[]';
+    }
+?>;
+
 // Update field type hint based on selection
 function updateFieldTypeHint(select) {
     const fieldContainer = select.closest('[data-field-id]');
     const hintSpan = fieldContainer ? fieldContainer.querySelector('.field-type-hint') : null;
+    const relationTargetDiv = fieldContainer ? fieldContainer.querySelector('.field-relation-target') : null;
+    const relationTargetSelect = fieldContainer ? fieldContainer.querySelector('select[name="field_relation_target[]"]') : null;
     const fieldNameInput = fieldContainer ? fieldContainer.querySelector('input[name="field_names[]"]') : null;
     const fieldName = fieldNameInput ? fieldNameInput.value.toLowerCase() : '';
     
@@ -1726,11 +1842,44 @@ function updateFieldTypeHint(select) {
         if (fieldType === 'IMAGE') {
             hintSpan.textContent = 'This field will store image path (saved as TEXT)';
             hintSpan.classList.remove('hidden');
+            // Hide relation target dropdown
+            if (relationTargetDiv) {
+                relationTargetDiv.classList.add('hidden');
+            }
+        } else if (fieldType === 'RELATION') {
+            hintSpan.textContent = 'This field will store foreign key ID (saved as INTEGER)';
+            hintSpan.classList.remove('hidden');
+            
+            // Show relation target dropdown
+            if (relationTargetDiv && relationTargetSelect) {
+                relationTargetDiv.classList.remove('hidden');
+                
+                // Populate dropdown with available tables
+                relationTargetSelect.innerHTML = '<option value="">-- Select Table --</option>';
+                availableTables.forEach(function(table) {
+                    // Skip system tables and current table if creating new table
+                    if (table === 'sqlite_sequence' || table === 'sqlite_master' || table === 'relation_metadata') {
+                        return;
+                    }
+                    const option = document.createElement('option');
+                    option.value = table;
+                    option.textContent = table;
+                    relationTargetSelect.appendChild(option);
+                });
+            }
         } else if (isImageField && fieldType !== 'IMAGE') {
             hintSpan.textContent = '💡 Tip: This field name looks like an image. You can select IMAGE type!';
             hintSpan.classList.remove('hidden');
+            // Hide relation target dropdown
+            if (relationTargetDiv) {
+                relationTargetDiv.classList.add('hidden');
+            }
         } else {
             hintSpan.classList.add('hidden');
+            // Hide relation target dropdown for non-RELATION types
+            if (relationTargetDiv) {
+                relationTargetDiv.classList.add('hidden');
+            }
         }
     }
 }
@@ -1779,6 +1928,47 @@ document.addEventListener('DOMContentLoaded', function() {
     if (createTableForm) {
         createTableForm.addEventListener('submit', function(e) {
             updateAllNullableInputs();
+        });
+    }
+    
+    // Add event listener to New Table button
+    const newTableBtn = document.getElementById('btn-create-table');
+    if (newTableBtn) {
+        console.log('New Table button found');
+        newTableBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('New Table button clicked');
+            if (typeof window.showCreateTableModal === 'function') {
+                window.showCreateTableModal();
+            } else {
+                console.error('showCreateTableModal function not found');
+                alert('Modal function not loaded. Please refresh the page.');
+            }
+        });
+    } else {
+        console.warn('New Table button not found');
+    }
+    
+    // Add event listener to Cancel button in modal
+    const cancelBtn = document.getElementById('btn-cancel-create-table');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof window.hideCreateTableModal === 'function') {
+                window.hideCreateTableModal();
+            }
+        });
+    }
+    
+    // Add event listener to modal backdrop (click outside to close)
+    const modalDialog = document.getElementById('create-table-dialog');
+    if (modalDialog) {
+        modalDialog.addEventListener('click', function(e) {
+            if (e.target === modalDialog && typeof window.hideCreateTableModal === 'function') {
+                window.hideCreateTableModal();
+            }
         });
     }
 });

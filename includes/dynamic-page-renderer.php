@@ -2,7 +2,7 @@
 // Dynamic page renderer helper
 // This function renders the UI for dynamic pages based on configuration
 
-function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_list, $enable_create, $enable_update, $enable_delete, $edit_record, $records, $total_records, $total_pages, $current_page_num, $per_page, $offset, $sort_column, $sort_order, $page_name) {
+function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_list, $enable_create, $enable_update, $enable_delete, $edit_record, $records, $total_records, $total_pages, $current_page_num, $per_page, $offset, $sort_column, $sort_order, $page_name, $relation_metadata = []) {
     // Add/Edit form
     if ($enable_create || $enable_update) {
         $is_edit_mode = !empty($edit_record);
@@ -63,6 +63,10 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                         $col_name = $col['name'];
                         $col_label = ucfirst(str_replace('_', ' ', $col_name));
                         $col_type = strtolower($col['type']);
+                        
+                        // Check if this column has a relation
+                        $is_relation = isset($relation_metadata[$col_name]) && !empty($relation_metadata[$col_name]);
+                        $relation_target_table = $is_relation ? $relation_metadata[$col_name] : null;
                         ?>
                         <div class="mb-4">
                             <label for="<?php echo $col_name; ?>" class="block text-sm font-medium text-foreground mb-1.5">
@@ -73,6 +77,65 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                             </label>
                             
                             <?php 
+                            // Check if field is relation (foreign key)
+                            if ($is_relation && $relation_target_table):
+                                // Get relation target table records
+                                $relation_records = [];
+                                $relation_display_column = 'name'; // Default display column
+                                try {
+                                    // Try to find a display column (name, title, label, etc.)
+                                    $escaped_target = preg_replace('/[^a-zA-Z0-9_]/', '', $relation_target_table);
+                                    $target_stmt = $db->query("PRAGMA table_info(\"$escaped_target\")");
+                                    $target_columns = $target_stmt->fetchAll(PDO::FETCH_ASSOC);
+                                    
+                                    // Find suitable display column
+                                    $display_candidates = ['name', 'title', 'label', 'title_en', 'name_en'];
+                                    foreach ($display_candidates as $candidate) {
+                                        foreach ($target_columns as $target_col) {
+                                            if (strtolower($target_col['name']) === $candidate) {
+                                                $relation_display_column = $target_col['name'];
+                                                break 2;
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Get primary key of target table
+                                    $target_pk = 'id';
+                                    foreach ($target_columns as $target_col) {
+                                        if ($target_col['pk']) {
+                                            $target_pk = $target_col['name'];
+                                            break;
+                                        }
+                                    }
+                                    
+                                    // Fetch all records from target table
+                                    $escaped_display = preg_replace('/[^a-zA-Z0-9_]/', '', $relation_display_column);
+                                    $escaped_pk = preg_replace('/[^a-zA-Z0-9_]/', '', $target_pk);
+                                    $relation_query = $db->query("SELECT `$escaped_pk`, `$escaped_display` FROM `$escaped_target` ORDER BY `$escaped_display`");
+                                    $relation_records = $relation_query->fetchAll(PDO::FETCH_ASSOC);
+                                } catch (PDOException $e) {
+                                    // Target table might not exist, show empty dropdown
+                                    error_log("Failed to load relation records: " . $e->getMessage());
+                                }
+                                ?>
+                                <select
+                                    id="<?php echo $col_name; ?>"
+                                    name="<?php echo $col_name; ?>"
+                                    <?php if ($col['notnull'] == 1 && $col['dflt_value'] === null): ?>required<?php endif; ?>
+                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                >
+                                    <option value="">-- Select <?php echo ucfirst(str_replace('_', ' ', $relation_target_table)); ?> --</option>
+                                    <?php foreach ($relation_records as $rel_record): 
+                                        $rel_id = $rel_record[$target_pk] ?? null;
+                                        $rel_display = $rel_record[$relation_display_column] ?? 'ID: ' . $rel_id;
+                                        $selected = ($edit_record && isset($edit_record[$col_name]) && intval($edit_record[$col_name]) === intval($rel_id)) ? 'selected' : '';
+                                    ?>
+                                        <option value="<?php echo htmlspecialchars($rel_id); ?>" <?php echo $selected; ?>>
+                                            <?php echo htmlspecialchars($rel_display); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            <?php else:
                             // Check if field is image (column name contains 'image' or 'img' or 'photo' or 'picture' or 'avatar' or 'thumbnail')
                             $is_image = false;
                             if (preg_match('/\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i', $col_name)) {
@@ -111,7 +174,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                     <?php endif; ?>
                                     <input
                                         type="file"
-                                        id="<?php echo $col_name; ?>"
+                                        id="<?php echo $col_name; ?>" 
                                         name="<?php echo $col_name; ?>"
                                         accept="image/*"
                                         <?php if ($col['notnull'] == 1 && $col['dflt_value'] === null && empty($current_image)): ?>required<?php endif; ?>
@@ -163,10 +226,11 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                                     placeholder="Enter <?php echo $col_label; ?>"
                                 >
-                            <?php endif; ?>
+                            <?php endif; // End of if-elseif-else for non-relation fields ?>
+                            <?php endif; // End of if-else block (relation vs non-relation) ?>
                         </div>
                         <?php
-                    }
+                    } // End of foreach columns
                     ?>
 
                     <div class="flex gap-2">
@@ -462,6 +526,10 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                 $col_type = strtolower($col['type']);
                                                 $value = $record[$col_name] ?? null;
                                                 
+                                                // Check if this column has a relation
+                                                $is_relation = isset($relation_metadata[$col_name]) && !empty($relation_metadata[$col_name]);
+                                                $relation_target_table = $is_relation ? $relation_metadata[$col_name] : null;
+                                                
                                                 // Check if field is boolean
                                                 $is_boolean = false;
                                                 if ($col_type === 'integer') {
@@ -474,43 +542,89 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                 ?>
                                                 <td class="p-4 align-middle text-sm">
                                                     <?php 
-                                                    // Check if field is image (support profile_picture, avatar, thumbnail, etc.)
-                                                    $is_image_col = preg_match('/\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i', $col_name);
-                                                    
-                                                    if ($is_boolean && $value !== null): ?>
-                                                        <?php if (intval($value) === 1): ?>
-                                                            <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Yes</span>
-                                                        <?php else: ?>
-                                                            <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">No</span>
-                                                        <?php endif; ?>
-                                                    <?php elseif ($is_image_col && !empty($value) && file_exists(__DIR__ . '/../' . $value)): ?>
-                                                        <div class="flex items-center gap-2">
-                                                            <img 
-                                                                src="../<?php echo htmlspecialchars($value); ?>" 
-                                                                alt="<?php echo htmlspecialchars($col_name); ?>"
-                                                                class="w-16 h-16 object-cover rounded border border-input"
-                                                                onerror="this.style.display='none'"
-                                                            >
-                                                            <a 
-                                                                href="../<?php echo htmlspecialchars($value); ?>" 
-                                                                target="_blank" 
-                                                                class="text-xs text-primary hover:underline"
-                                                            >
-                                                                View
-                                                            </a>
-                                                        </div>
-                                                    <?php elseif ($value === null): ?>
-                                                        <span class="text-muted-foreground italic">NULL</span>
-                                                    <?php else: ?>
-                                                        <?php 
-                                                        // Truncate long values
-                                                        $display_value = htmlspecialchars($value);
-                                                        if (strlen($display_value) > 50) {
-                                                            echo '<span title="' . htmlspecialchars($value) . '">' . htmlspecialchars(substr($value, 0, 50)) . '...</span>';
-                                                        } else {
-                                                            echo $display_value;
+                                                    // Check if field is relation - show related record name
+                                                    if ($is_relation && $relation_target_table && $value !== null):
+                                                        try {
+                                                            $escaped_target = preg_replace('/[^a-zA-Z0-9_]/', '', $relation_target_table);
+                                                            $target_stmt = $db->query("PRAGMA table_info(\"$escaped_target\")");
+                                                            $target_columns = $target_stmt->fetchAll(PDO::FETCH_ASSOC);
+                                                            
+                                                            // Find display column
+                                                            $relation_display_column = 'name';
+                                                            $display_candidates = ['name', 'title', 'label', 'title_en', 'name_en'];
+                                                            foreach ($display_candidates as $candidate) {
+                                                                foreach ($target_columns as $target_col) {
+                                                                    if (strtolower($target_col['name']) === $candidate) {
+                                                                        $relation_display_column = $target_col['name'];
+                                                                        break 2;
+                                                                    }
+                                                                }
+                                                            }
+                                                            
+                                                            // Get primary key
+                                                            $target_pk = 'id';
+                                                            foreach ($target_columns as $target_col) {
+                                                                if ($target_col['pk']) {
+                                                                    $target_pk = $target_col['name'];
+                                                                    break;
+                                                                }
+                                                            }
+                                                            
+                                                            // Fetch related record
+                                                            $escaped_pk = preg_replace('/[^a-zA-Z0-9_]/', '', $target_pk);
+                                                            $escaped_display = preg_replace('/[^a-zA-Z0-9_]/', '', $relation_display_column);
+                                                            $rel_stmt = $db->prepare("SELECT `$escaped_display` FROM `$escaped_target` WHERE `$escaped_pk` = ?");
+                                                            $rel_stmt->execute([$value]);
+                                                            $rel_record = $rel_stmt->fetch(PDO::FETCH_ASSOC);
+                                                            
+                                                            if ($rel_record) {
+                                                                echo '<span class="text-primary font-medium">' . htmlspecialchars($rel_record[$relation_display_column] ?? 'ID: ' . $value) . '</span>';
+                                                                echo '<span class="text-muted-foreground text-xs ml-2">(ID: ' . htmlspecialchars($value) . ')</span>';
+                                                            } else {
+                                                                echo '<span class="text-muted-foreground italic">ID: ' . htmlspecialchars($value) . ' (not found)</span>';
+                                                            }
+                                                        } catch (PDOException $e) {
+                                                            echo '<span class="text-muted-foreground italic">ID: ' . htmlspecialchars($value) . '</span>';
                                                         }
-                                                        ?>
+                                                    // Check if field is image (support profile_picture, avatar, thumbnail, etc.)
+                                                    elseif (!$is_relation):
+                                                        $is_image_col = preg_match('/\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i', $col_name);
+                                                        
+                                                        if ($is_boolean && $value !== null): ?>
+                                                            <?php if (intval($value) === 1): ?>
+                                                                <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Yes</span>
+                                                            <?php else: ?>
+                                                                <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">No</span>
+                                                            <?php endif; ?>
+                                                        <?php elseif ($is_image_col && !empty($value) && file_exists(__DIR__ . '/../' . $value)): ?>
+                                                            <div class="flex items-center gap-2">
+                                                                <img 
+                                                                    src="../<?php echo htmlspecialchars($value); ?>" 
+                                                                    alt="<?php echo htmlspecialchars($col_name); ?>"
+                                                                    class="w-16 h-16 object-cover rounded border border-input"
+                                                                    onerror="this.style.display='none'"
+                                                                >
+                                                                <a 
+                                                                    href="../<?php echo htmlspecialchars($value); ?>" 
+                                                                    target="_blank" 
+                                                                    class="text-xs text-primary hover:underline"
+                                                                >
+                                                                    View
+                                                                </a>
+                                                            </div>
+                                                        <?php elseif ($value === null): ?>
+                                                            <span class="text-muted-foreground italic">NULL</span>
+                                                        <?php else: ?>
+                                                            <?php 
+                                                            // Truncate long values
+                                                            $display_value = htmlspecialchars($value);
+                                                            if (strlen($display_value) > 50) {
+                                                                echo '<span title="' . htmlspecialchars($value) . '">' . htmlspecialchars(substr($value, 0, 50)) . '...</span>';
+                                                            } else {
+                                                                echo $display_value;
+                                                            }
+                                                            ?>
+                                                        <?php endif; ?>
                                                     <?php endif; ?>
                                                 </td>
                                             <?php endforeach; ?>

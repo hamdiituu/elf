@@ -31,9 +31,24 @@ $enable_delete = $page_config['enable_delete'];
 // Get table structure with error handling
 $columns = [];
 $primary_key = 'id'; // Default
+$relation_metadata = []; // Store relation metadata for each column
+
 try {
     // Escape table name to prevent SQL injection
     $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+    
+    // Get relation metadata
+    try {
+        $stmt = $db->prepare("SELECT column_name, target_table FROM relation_metadata WHERE table_name = ?");
+        $stmt->execute([$table_name]);
+        $relation_rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($relation_rows as $row) {
+            $relation_metadata[$row['column_name']] = $row['target_table'];
+        }
+    } catch (PDOException $e) {
+        // relation_metadata table might not exist yet, ignore
+    }
+    
     $stmt = $db->query("PRAGMA table_info(\"$escaped_table_name\")");
     $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
@@ -668,7 +683,7 @@ include '../includes/header.php';
                 // Include the page template rendering
                 // For now, we'll use a helper function to render the page
                 require_once __DIR__ . '/../includes/dynamic-page-renderer.php';
-                renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_list, $enable_create, $enable_update, $enable_delete, $edit_record, $records ?? [], $total_records ?? 0, $total_pages ?? 0, $current_page_num ?? 1, $per_page ?? 20, $offset ?? 0, $sort_column ?? $primary_key, $sort_order ?? 'DESC', $page_name, $page_config);
+                renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_list, $enable_create, $enable_update, $enable_delete, $edit_record, $records ?? [], $total_records ?? 0, $total_pages ?? 0, $current_page_num ?? 1, $per_page ?? 20, $offset ?? 0, $sort_column ?? $primary_key, $sort_order ?? 'DESC', $page_name, $relation_metadata);
                 ?>
             </div>
         </div>
