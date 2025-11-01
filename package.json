@@ -1,7 +1,7 @@
 {
   "name": "elf-cms",
   "version": "1.0.0",
-  "description": "ELF (Enterprise Content Management Framework) - A powerful, extensible Content Management System for building custom web applications with dynamic pages, cloud functions, database explorer, and comprehensive developer tools. Supports SQLite and MySQL with Docker deployment.",
+  "description": "ELF (Enterprise Content Management Framework) - A powerful CMS for building custom web apps with dynamic pages, cloud functions, database explorer, and developer tools. Supports SQLite/MySQL with Docker deployment.",
   "scripts": {
     "start": "npm run start:node && npm run start:php",
     "start:node": "node api/nodejs-server.js",
