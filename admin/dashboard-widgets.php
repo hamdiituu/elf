@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $width = trim($_POST['width'] ?? 'md:col-span-1');
                 
                 if (empty($title) || empty($widget_type) || empty($widget_config)) {
-                    $error_message = "Başlık, widget tipi ve konfigürasyon gereklidir!";
+                    $error_message = "Title, widget type and configuration are required!";
                 } else {
                     try {
                         // Get max position
@@ -48,9 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         $stmt = $db->prepare("INSERT INTO dashboard_widgets (user_id, title, widget_type, widget_config, position, width) VALUES (?, ?, ?, ?, ?, ?)");
                         $stmt->execute([$_SESSION['user_id'], $title, $widget_type, $widget_config, $position, $width]);
-                        $success_message = "Widget başarıyla oluşturuldu!";
+                        $success_message = "Widget created successfully!";
                     } catch (PDOException $e) {
-                        $error_message = "Widget oluşturulurken hata: " . $e->getMessage();
+                        $error_message = "Error creating widget: " . $e->getMessage();
                     }
                 }
                 break;
@@ -66,9 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     try {
                         $stmt = $db->prepare("UPDATE dashboard_widgets SET title = ?, widget_type = ?, widget_config = ?, width = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?");
                         $stmt->execute([$title, $widget_type, $widget_config, $width, $widget_id, $_SESSION['user_id']]);
-                        $success_message = "Widget başarıyla güncellendi!";
+                        $success_message = "Widget updated successfully!";
                     } catch (PDOException $e) {
-                        $error_message = "Widget güncellenirken hata: " . $e->getMessage();
+                        $error_message = "Error updating widget: " . $e->getMessage();
                     }
                 }
                 break;
@@ -79,9 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     try {
                         $stmt = $db->prepare("DELETE FROM dashboard_widgets WHERE id = ? AND user_id = ?");
                         $stmt->execute([$widget_id, $_SESSION['user_id']]);
-                        $success_message = "Widget başarıyla silindi!";
+                        $success_message = "Widget deleted successfully!";
                     } catch (PDOException $e) {
-                        $error_message = "Widget silinirken hata: " . $e->getMessage();
+                        $error_message = "Error deleting widget: " . $e->getMessage();
                     }
                 }
                 break;
@@ -92,9 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     try {
                         $stmt = $db->prepare("UPDATE dashboard_widgets SET enabled = NOT enabled, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?");
                         $stmt->execute([$widget_id, $_SESSION['user_id']]);
-                        $success_message = "Widget durumu güncellendi!";
+                        $success_message = "Widget status updated!";
                     } catch (PDOException $e) {
-                        $error_message = "Widget durumu güncellenirken hata: " . $e->getMessage();
+                        $error_message = "Error updating widget status: " . $e->getMessage();
                     }
                 }
                 break;

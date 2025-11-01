@@ -44,11 +44,11 @@ if ($delete_id) {
     try {
         $stmt = $db->prepare("DELETE FROM cron_jobs WHERE id = ?");
         $stmt->execute([$delete_id]);
-        $success_message = "Cron job başarıyla silindi!";
+        $success_message = "Cron job deleted successfully!";
         header('Location: cron-manager.php?success=' . urlencode($success_message));
         exit;
     } catch (PDOException $e) {
-        $error_message = "Cron job silinirken hata: " . $e->getMessage();
+        $error_message = "Error deleting cron job: " . $e->getMessage();
     }
 }
 
@@ -60,12 +60,12 @@ if ($toggle_id) {
         $current = $db->prepare("SELECT enabled FROM cron_jobs WHERE id = ?");
         $current->execute([$toggle_id]);
         $enabled = $current->fetchColumn();
-        $status = $enabled ? 'aktif' : 'pasif';
-        $success_message = "Cron job başarıyla {$status} hale getirildi!";
+        $status = $enabled ? 'enabled' : 'disabled';
+        $success_message = "Cron job {$status} successfully!";
         header('Location: cron-manager.php?success=' . urlencode($success_message));
         exit;
     } catch (PDOException $e) {
-        $error_message = "Cron job durumu değiştirilirken hata: " . $e->getMessage();
+        $error_message = "Error updating cron job status: " . $e->getMessage();
     }
 }
 
@@ -79,17 +79,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $enabled = isset($_POST['enabled']) ? 1 : 0;
     
     if (empty($name)) {
-        $error_message = "Cron job adı gereklidir!";
+        $error_message = "Cron job name is required!";
     } elseif (empty($code)) {
-        $error_message = "Cron job kodu gereklidir!";
+        $error_message = "Cron job code is required!";
     } elseif (empty($schedule)) {
-        $error_message = "Zamanlama (schedule) gereklidir!";
+        $error_message = "Schedule is required!";
     } else {
         try {
             // Validate schedule format (basic cron expression: * * * * *)
             $schedule_parts = explode(' ', $schedule);
             if (count($schedule_parts) !== 5) {
-                throw new Exception("Geçersiz zamanlama formatı! Örnek: * * * * * (dakika saat gün ay hafta)");
+                throw new Exception("Invalid schedule format! Example: * * * * * (minute hour day month weekday)");
             }
             
             if ($action === 'create') {
@@ -97,28 +97,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $check = $db->prepare("SELECT id FROM cron_jobs WHERE name = ?");
                 $check->execute([$name]);
                 if ($check->fetch()) {
-                    throw new Exception("Bu isimde bir cron job zaten mevcut!");
+                    throw new Exception("A cron job with this name already exists!");
                 }
                 
                 $stmt = $db->prepare("INSERT INTO cron_jobs (name, description, code, schedule, enabled) VALUES (?, ?, ?, ?, ?)");
                 $stmt->execute([$name, $description, $code, $schedule, $enabled]);
-                $success_message = "Cron job başarıyla oluşturuldu!";
+                $success_message = "Cron job created successfully!";
             } elseif ($action === 'update') {
                 $id = intval($_POST['id'] ?? 0);
                 if ($id <= 0) {
-                    throw new Exception("Geçersiz cron job ID!");
+                    throw new Exception("Invalid cron job ID!");
                 }
                 
                 // Check if name already exists (excluding current)
                 $check = $db->prepare("SELECT id FROM cron_jobs WHERE name = ? AND id != ?");
                 $check->execute([$name, $id]);
                 if ($check->fetch()) {
-                    throw new Exception("Bu isimde bir cron job zaten mevcut!");
+                    throw new Exception("A cron job with this name already exists!");
                 }
                 
                 $stmt = $db->prepare("UPDATE cron_jobs SET name = ?, description = ?, code = ?, schedule = ?, enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
                 $stmt->execute([$name, $description, $code, $schedule, $enabled, $id]);
-                $success_message = "Cron job başarıyla güncellendi!";
+                $success_message = "Cron job updated successfully!";
             }
             
             // Calculate next run time for all enabled jobs
@@ -144,7 +144,7 @@ if ($cron_id) {
         $stmt->execute([$cron_id]);
         $edit_cron = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        $error_message = "Cron job yüklenirken hata: " . $e->getMessage();
+        $error_message = "Error loading cron job: " . $e->getMessage();
     }
 }
 
@@ -233,10 +233,10 @@ if ($run_web_cron) {
                 
                 if ($result['success']) {
                     cronLog($cron_job['name'], "success", "Cron job completed successfully", $execution_time);
-                    $success_message = "Cron job başarıyla çalıştırıldı!";
+                    $success_message = "Cron job executed successfully!";
                 } else {
                     cronLog($cron_job['name'], "failed", "Cron job failed: " . ($result['message'] ?? 'Unknown error'), $execution_time, $result['error'] ?? null);
-                    $error_message = "Cron job hatası: " . ($result['message'] ?? 'Unknown error');
+                    $error_message = "Cron job error: " . ($result['message'] ?? 'Unknown error');
                 }
                 
                 // Update last run time
@@ -321,11 +321,11 @@ try {
             if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
                 // Windows
                 pclose(popen("start /B php " . escapeshellarg($temp_file) . " > NUL 2>&1", "r"));
-                $success_message = "Cron job '{$cron_job['name']}' arka planda çalıştırılıyor...";
+                $success_message = "Cron job '{$cron_job['name']}' is running in background...";
             } else {
                 // Unix/Linux - non-blocking
                 exec("php " . escapeshellarg($temp_file) . " > /dev/null 2>&1 &", $output, $return_var);
-                $success_message = "Cron job '{$cron_job['name']}' arka planda çalıştırılıyor...";
+                $success_message = "Cron job '{$cron_job['name']}' is running in background...";
             }
             
             // Clean up temp file after a delay (let it execute first)
@@ -334,7 +334,7 @@ try {
             @unlink($temp_file);
             }
         } else {
-            $error_message = "Cron job bulunamadı!";
+            $error_message = "Cron job not found!";
         }
     } catch (Exception $e) {
         $error_message = "Cron job çalıştırılırken hata: " . $e->getMessage();

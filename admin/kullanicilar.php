@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireLogin();
 
-$page_title = 'Kullanıcılar';
+$page_title = 'Users';
 $db = getDB();
 
 // Handle user operations
@@ -31,12 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
                         $stmt = $db->prepare("INSERT INTO users (username, password, user_type) VALUES (?, ?, ?)");
                         $stmt->execute([$username, $hashed_password, $user_type]);
-                        $success_message = "Kullanıcı başarıyla eklendi!";
+                        $success_message = "User added successfully!";
                     } catch (PDOException $e) {
-                        $error_message = "Kullanıcı eklenirken hata oluştu: " . $e->getMessage();
+                        $error_message = "Error adding user: " . $e->getMessage();
                     }
                 } else {
-                    $error_message = "Lütfen kullanıcı adı ve şifre girin!";
+                    $error_message = "Please enter username and password!";
                 }
                 break;
                 
@@ -46,12 +46,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     try {
                         $stmt = $db->prepare("DELETE FROM users WHERE id = ?");
                         $stmt->execute([$user_id]);
-                        $success_message = "Kullanıcı başarıyla silindi!";
+                        $success_message = "User deleted successfully!";
                     } catch (PDOException $e) {
-                        $error_message = "Kullanıcı silinirken hata oluştu: " . $e->getMessage();
+                        $error_message = "Error deleting user: " . $e->getMessage();
                     }
                 } else {
-                    $error_message = "Kendi hesabınızı silemezsiniz!";
+                    $error_message = "You cannot delete your own account!";
                 }
                 header('Location: kullanicilar.php');
                 exit;
@@ -77,7 +77,7 @@ include '../includes/header.php';
     <main class="flex-1 overflow-y-auto">
         <div class="py-6">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-                <h1 class="text-3xl font-bold text-foreground mb-8">Kullanıcılar</h1>
+                <h1 class="text-3xl font-bold text-foreground mb-8">Users</h1>
                 
                 <?php if (isset($success_message)): ?>
                     <div class="mb-6 rounded-md bg-green-50 p-4 border border-green-200">
@@ -98,7 +98,7 @@ include '../includes/header.php';
                 <!-- Add New User -->
                 <div class="mb-8 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                     <div class="p-6 pb-0">
-                        <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Yeni Kullanıcı Ekle</h3>
+                        <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Add New User</h3>
                     </div>
                     <div class="p-6 pt-0">
                         <form method="POST" action="">
@@ -106,7 +106,7 @@ include '../includes/header.php';
                             <div class="grid gap-4 md:grid-cols-3">
                                 <div>
                                     <label for="username" class="block text-sm font-medium text-foreground mb-1.5">
-                                        Kullanıcı Adı
+                                        Username
                                     </label>
                                     <input
                                         type="text"
@@ -115,12 +115,12 @@ include '../includes/header.php';
                                         required
                                         autofocus
                                         class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                                        placeholder="Kullanıcı adı"
+                                        placeholder="Username"
                                     >
                                 </div>
                                 <div>
                                     <label for="password" class="block text-sm font-medium text-foreground mb-1.5">
-                                        Şifre
+                                        Password
                                     </label>
                                     <input
                                         type="password"
@@ -128,12 +128,12 @@ include '../includes/header.php';
                                         name="password"
                                         required
                                         class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                                        placeholder="Şifre"
+                                        placeholder="Password"
                                     >
                                 </div>
                                 <div>
                                     <label for="user_type" class="block text-sm font-medium text-foreground mb-1.5">
-                                        Kullanıcı Tipi
+                                        User Type
                                     </label>
                                     <select
                                         id="user_type"
@@ -150,7 +150,7 @@ include '../includes/header.php';
                                         type="submit"
                                         class="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
                                     >
-                                        Kullanıcı Ekle
+                                        Add User
                                     </button>
                                 </div>
                             </div>
@@ -161,12 +161,12 @@ include '../includes/header.php';
                 <!-- Users List -->
                 <div class="mb-8 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                     <div class="p-6 pb-0">
-                        <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Tüm Kullanıcılar</h3>
+                        <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">All Users</h3>
                     </div>
                     <div class="p-6 pt-0">
                         <?php if (empty($users)): ?>
                             <div class="text-center py-8 text-muted-foreground">
-                                Henüz kullanıcı eklenmemiş.
+                                No users added yet.
                             </div>
                         <?php else: ?>
                             <div class="overflow-x-auto">
@@ -174,10 +174,10 @@ include '../includes/header.php';
                                     <thead>
                                         <tr class="border-b border-border">
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">ID</th>
-                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Kullanıcı Adı</th>
-                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Tip</th>
-                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Oluşturulma Tarihi</th>
-                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">İşlemler</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Username</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Type</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Created At</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -188,7 +188,7 @@ include '../includes/header.php';
                                                     <?php echo htmlspecialchars($user['username']); ?>
                                                     <?php if ($user['id'] == $_SESSION['user_id']): ?>
                                                         <span class="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                                                            Sen
+                                                            You
                                                         </span>
                                                     <?php endif; ?>
                                                 </td>
@@ -214,10 +214,10 @@ include '../includes/header.php';
                                                             <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
                                                             <button
                                                                 type="submit"
-                                                                onclick="return confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?');"
+                                                                onclick="return confirm('Are you sure you want to delete this user?');"
                                                                 class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-red-100 text-red-800 hover:bg-red-200 h-9 px-3"
                                                             >
-                                                                Sil
+                                                                Delete
                                                             </button>
                                                         </form>
                                                     <?php else: ?>

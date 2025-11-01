@@ -8,7 +8,7 @@ if (isSettingsConfigured()) {
     requireDeveloper();
 }
 
-$page_title = 'Ayarlar - ' . getAppName();
+$page_title = 'Settings - ' . getAppName();
 $current_settings = getSettings();
 $success_message = '';
 $error_message = '';
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $db_type = $_POST['db_type'] ?? 'sqlite';
     
     if (empty($app_name)) {
-        $error_message = 'Uygulama adı boş olamaz!';
+        $error_message = 'Application name cannot be empty!';
     } else {
         // Handle logo upload
         $logo_path = $current_settings['logo'] ?? '';
@@ -45,10 +45,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         @unlink(__DIR__ . '/../' . $current_settings['logo']);
                     }
                 } else {
-                    $error_message = 'Logo yüklenirken bir hata oluştu!';
+                    $error_message = 'Error uploading logo!';
                 }
             } else {
-                $error_message = 'Logo için sadece JPG, PNG, GIF, SVG veya WEBP formatları desteklenir!';
+                $error_message = 'Logo supports only JPG, PNG, GIF, SVG or WEBP formats!';
             }
         }
         
@@ -70,10 +70,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         @unlink(__DIR__ . '/../' . $current_settings['favicon']);
                     }
                 } else {
-                    $error_message = 'Favicon yüklenirken bir hata oluştu!';
+                    $error_message = 'Error uploading favicon!';
                 }
             } else {
-                $error_message = 'Favicon için sadece ICO, PNG, JPG, JPEG veya SVG formatları desteklenir!';
+                $error_message = 'Favicon supports only ICO, PNG, JPG, JPEG or SVG formats!';
             }
         }
         
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if (empty($settings['db_config']['mysql']['host']) || 
                     empty($settings['db_config']['mysql']['database']) || 
                     empty($settings['db_config']['mysql']['username'])) {
-                    $error_message = 'MySQL için host, veritabanı adı ve kullanıcı adı zorunludur!';
+                    $error_message = 'MySQL requires host, database name and username!';
                 } else {
                     // Test MySQL connection
                     try {
@@ -121,19 +121,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $testDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                         
                         if (saveSettings($settings)) {
-                            $success_message = 'Ayarlar başarıyla kaydedildi!';
+                            $success_message = 'Settings saved successfully!';
                             $current_settings = getSettings();
                         } else {
-                            $error_message = 'Ayarlar kaydedilirken bir hata oluştu!';
+                            $error_message = 'Error saving settings!';
                         }
                     } catch (PDOException $e) {
-                        $error_message = 'MySQL bağlantı hatası: ' . $e->getMessage();
+                        $error_message = 'MySQL connection error: ' . $e->getMessage();
                     }
                 }
             } else {
                 // SQLite
                 if (empty($settings['db_config']['sqlite']['path'])) {
-                    $error_message = 'SQLite için veritabanı yolu zorunludur!';
+                    $error_message = 'SQLite requires database path!';
                 } else {
                     // Test SQLite connection
                     try {
@@ -147,13 +147,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $testDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                         
                         if (saveSettings($settings)) {
-                            $success_message = 'Ayarlar başarıyla kaydedildi!';
+                            $success_message = 'Settings saved successfully!';
                             $current_settings = getSettings();
                         } else {
-                            $error_message = 'Ayarlar kaydedilirken bir hata oluştu!';
+                            $error_message = 'Error saving settings!';
                         }
                     } catch (PDOException $e) {
-                        $error_message = 'SQLite bağlantı hatası: ' . $e->getMessage();
+                        $error_message = 'SQLite connection error: ' . $e->getMessage();
                     }
                 }
             }
@@ -170,9 +170,9 @@ include '../includes/header.php';
         <div class="py-6">
             <div class="mx-auto max-w-4xl px-4 sm:px-6 md:px-8">
             <div class="mb-6">
-                <h1 class="text-3xl font-bold text-foreground">Ayarlar</h1>
+                <h1 class="text-3xl font-bold text-foreground">Settings</h1>
                 <p class="mt-2 text-sm text-muted-foreground">
-                    Uygulama ve veritabanı ayarlarını yapılandırın
+                    Configure application and database settings
                 </p>
             </div>
             
@@ -195,12 +195,12 @@ include '../includes/header.php';
             <form method="POST" action="" enctype="multipart/form-data" class="space-y-6">
                 <!-- Application Name -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h2 class="text-lg font-semibold text-foreground mb-4">Uygulama Bilgileri</h2>
+                    <h2 class="text-lg font-semibold text-foreground mb-4">Application Information</h2>
                     
                     <div class="space-y-4">
                         <div>
                             <label for="app_name" class="block text-sm font-medium text-foreground mb-2">
-                                Uygulama Adı
+                                Application Name
                             </label>
                             <input
                                 type="text"
@@ -209,10 +209,10 @@ include '../includes/header.php';
                                 value="<?php echo htmlspecialchars($current_settings['app_name'] ?? 'Vira Stok'); ?>"
                                 required
                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent sm:text-sm"
-                                placeholder="Uygulama adını girin"
+                                placeholder="Enter application name"
                             >
                             <p class="mt-1 text-xs text-muted-foreground">
-                                Bu ad login sayfasında ve sidebar'da görüntülenecektir.
+                                This name will be displayed on the login page and sidebar.
                             </p>
                         </div>
                         
@@ -233,7 +233,7 @@ include '../includes/header.php';
                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent sm:text-sm"
                             >
                             <p class="mt-1 text-xs text-muted-foreground">
-                                JPG, PNG, GIF, SVG veya WEBP formatında logo yükleyebilirsiniz. Maksimum dosya boyutu: 5MB
+                                You can upload logo in JPG, PNG, GIF, SVG or WEBP format. Maximum file size: 5MB
                             </p>
                         </div>
                         
@@ -254,7 +254,7 @@ include '../includes/header.php';
                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent sm:text-sm"
                             >
                             <p class="mt-1 text-xs text-muted-foreground">
-                                ICO, PNG, JPG, JPEG veya SVG formatında favicon yükleyebilirsiniz. Maksimum dosya boyutu: 1MB
+                                You can upload favicon in ICO, PNG, JPG, JPEG or SVG format. Maximum file size: 1MB
                             </p>
                         </div>
                     </div>
@@ -262,11 +262,11 @@ include '../includes/header.php';
                 
                 <!-- Database Type -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h2 class="text-lg font-semibold text-foreground mb-4">Veritabanı Ayarları</h2>
+                    <h2 class="text-lg font-semibold text-foreground mb-4">Database Settings</h2>
                     
                     <div class="mb-4">
                         <label for="db_type" class="block text-sm font-medium text-foreground mb-2">
-                            Veritabanı Tipi
+                            Database Type
                         </label>
                         <select
                             id="db_type"
@@ -283,7 +283,7 @@ include '../includes/header.php';
                     <div id="sqlite_config" style="display: <?php echo ($current_settings['db_type'] ?? 'sqlite') === 'sqlite' ? 'block' : 'none'; ?>;">
                         <div>
                             <label for="sqlite_path" class="block text-sm font-medium text-foreground mb-2">
-                                Veritabanı Dosya Yolu
+                                Database File Path
                             </label>
                             <input
                                 type="text"
@@ -295,7 +295,7 @@ include '../includes/header.php';
                                 placeholder="/path/to/database.db"
                             >
                             <p class="mt-1 text-xs text-muted-foreground">
-                                SQLite veritabanı dosyasının tam yolu
+                                Full path to the SQLite database file
                             </p>
                         </div>
                     </div>
@@ -333,7 +333,7 @@ include '../includes/header.php';
                             
                             <div>
                                 <label for="mysql_database" class="block text-sm font-medium text-foreground mb-2">
-                                    Veritabanı Adı
+                                    Database Name
                                 </label>
                                 <input
                                     type="text"
@@ -347,7 +347,7 @@ include '../includes/header.php';
                             
                             <div>
                                 <label for="mysql_username" class="block text-sm font-medium text-foreground mb-2">
-                                    Kullanıcı Adı
+                                    Username
                                 </label>
                                 <input
                                     type="text"
@@ -361,15 +361,15 @@ include '../includes/header.php';
                             
                             <div>
                                 <label for="mysql_password" class="block text-sm font-medium text-foreground mb-2">
-                                    Şifre
-                                </label>
-                                <input
-                                    type="password"
-                                    id="mysql_password"
-                                    name="mysql_password"
-                                    value="<?php echo htmlspecialchars($current_settings['db_config']['mysql']['password'] ?? ''); ?>"
-                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent sm:text-sm"
-                                    placeholder="Şifrenizi girin"
+                                    Password
+                            </label>
+                            <input
+                                type="password"
+                                id="mysql_password"
+                                name="mysql_password"
+                                value="<?php echo htmlspecialchars($current_settings['db_config']['mysql']['password'] ?? ''); ?>"
+                                class="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent sm:text-sm"
+                                placeholder="Enter your password"
                                 >
                             </div>
                         </div>
@@ -382,7 +382,7 @@ include '../includes/header.php';
                         type="submit"
                         class="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
                     >
-                        Ayarları Kaydet
+                        Save Settings
                     </button>
                 </div>
             </form>
