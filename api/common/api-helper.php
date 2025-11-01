@@ -4,6 +4,12 @@
  * Provides reusable functions for API endpoints
  */
 
+// Prevent multiple includes
+if (defined('API_HELPER_LOADED')) {
+    return;
+}
+define('API_HELPER_LOADED', true);
+
 /**
  * HTTP Method Constants
  */
@@ -223,42 +229,54 @@ function handleMethod($handlers) {
  * Get request body as array (JSON or form data)
  * @return array Request body data
  */
-function getRequestBody() {
-    return getJsonBody();
+if (!function_exists('getRequestBody')) {
+    function getRequestBody() {
+        return getJsonBody();
+    }
 }
 
 /**
  * Get all request headers
  * @return array Headers as key-value pairs
  */
-function getAllHeaders() {
-    $headers = [];
-    
-    if (function_exists('getallheaders')) {
-        $headers = getallheaders();
-    } else {
-        foreach ($_SERVER as $key => $value) {
-            if (strpos($key, 'HTTP_') === 0) {
-                $header = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($key, 5)))));
-                $headers[$header] = $value;
+if (!function_exists('getAllHeaders')) {
+    function getAllHeaders() {
+        $headers = [];
+        
+        // Use built-in function if available (Apache)
+        if (function_exists('getallheaders')) {
+            $allHeaders = getallheaders();
+            // Convert to lowercase keys for consistency
+            foreach ($allHeaders as $key => $value) {
+                $headers[$key] = $value;
+            }
+        } else {
+            // Fallback for Nginx or other servers
+            foreach ($_SERVER as $key => $value) {
+                if (strpos($key, 'HTTP_') === 0) {
+                    $header = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($key, 5)))));
+                    $headers[$header] = $value;
+                }
             }
         }
+        
+        return $headers;
     }
-    
-    return $headers;
 }
 
 /**
  * Ensure CORS is enabled
  */
-function ensureCors() {
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization');
-    
-    if ($_SERVER['REQUEST_METHOD'] === HttpMethod::OPTIONS) {
-        http_response_code(200);
-        exit;
+if (!function_exists('ensureCors')) {
+    function ensureCors() {
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization');
+        
+        if ($_SERVER['REQUEST_METHOD'] === HttpMethod::OPTIONS) {
+            http_response_code(200);
+            exit;
+        }
     }
 }
 ?>

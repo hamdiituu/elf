@@ -4,6 +4,30 @@ requireLogin();
 
 $page_title = 'API Playground - Vira Stok Sistemi';
 
+$db = getDB();
+
+// Ensure cloud_functions table exists
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS cloud_functions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        code TEXT NOT NULL,
+        http_method TEXT NOT NULL DEFAULT 'POST',
+        endpoint TEXT NOT NULL UNIQUE,
+        enabled INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_by INTEGER,
+        FOREIGN KEY (created_by) REFERENCES users(id)
+    )");
+} catch (PDOException $e) {
+    // Table might already exist
+}
+
+// Get cloud functions from database
+$cloud_functions = $db->query("SELECT * FROM cloud_functions WHERE enabled = 1 ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+
 // Define available APIs
 $apis = [
     [
@@ -62,6 +86,24 @@ $apis = [
     ]
 ];
 
+// Add cloud functions to API list
+foreach ($cloud_functions as $cf) {
+    $apis[] = [
+        'id' => 'cloud-function-' . $cf['id'],
+        'name' => $cf['name'] . ' (Cloud Function)',
+        'description' => ($cf['description'] ? $cf['description'] . ' - ' : '') . 'Cloud Function',
+        'methods' => [strtoupper($cf['http_method'])],
+        'endpoint' => '../api/cloud-functions/execute.php?function=' . urlencode($cf['name']),
+        'parameters' => [
+            ['name' => 'function', 'type' => 'string', 'required' => true, 'description' => 'Function name (already set in endpoint)'],
+            ['name' => '...', 'type' => 'any', 'required' => false, 'description' => 'Additional parameters as defined in the function code']
+        ],
+        'is_cloud_function' => true,
+        'cloud_function_id' => $cf['id'],
+        'cloud_function_name' => $cf['name']
+    ];
+}
+
 include '../includes/header.php';
 ?>
 <div class="flex h-screen overflow-hidden">
@@ -82,7 +124,7 @@ include '../includes/header.php';
                             <div class="space-y-2 max-h-[600px] overflow-y-auto">
                                 <?php foreach ($apis as $api): ?>
                                     <div 
-                                        class="p-4 rounded-md border border-border hover:bg-muted/50 cursor-pointer transition-colors api-item"
+                                        class="p-4 rounded-md border border-border hover:bg-muted/50 cursor-pointer transition-colors api-item <?php echo (isset($api['is_cloud_function']) && $api['is_cloud_function']) ? 'border-purple-300 bg-purple-50/30' : ''; ?>"
                                         data-api-id="<?php echo htmlspecialchars($api['id']); ?>"
                                     >
                                         <div class="flex items-start justify-between">
@@ -102,6 +144,11 @@ include '../includes/header.php';
                                                             <?php echo $method; ?>
                                                         </span>
                                                     <?php endforeach; ?>
+                                                    <?php if (isset($api['is_cloud_function']) && $api['is_cloud_function']): ?>
+                                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800">
+                                                            Cloud Function
+                                                        </span>
+                                                    <?php endif; ?>
                                                     <span class="font-medium text-sm"><?php echo htmlspecialchars($api['name']); ?></span>
                                                 </div>
                                                 <p class="text-xs text-muted-foreground"><?php echo htmlspecialchars($api['description']); ?></p>
@@ -163,17 +210,37 @@ apis.forEach(api => {
 document.querySelectorAll('.api-item').forEach(item => {
     item.addEventListener('click', function() {
         const apiId = this.dataset.apiId;
-        const api = apiData[apiId];
-        
-        // Remove active class from all items
-        document.querySelectorAll('.api-item').forEach(i => i.classList.remove('bg-accent'));
-        // Add active class to selected item
-        this.classList.add('bg-accent');
-        
-        // Generate request panel
-        generateRequestPanel(api);
+        selectAPI(apiId);
     });
 });
+
+function selectAPI(apiId) {
+    const api = apiData[apiId];
+    if (!api) return;
+    
+    // Remove active class from all items
+    document.querySelectorAll('.api-item').forEach(i => i.classList.remove('bg-accent'));
+    // Add active class to selected item
+    const selectedItem = document.querySelector(`[data-api-id="${apiId}"]`);
+    if (selectedItem) {
+        selectedItem.classList.add('bg-accent');
+        // Scroll to selected item
+        selectedItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    // Generate request panel
+    generateRequestPanel(api);
+}
+
+// Auto-select API from URL parameter
+const urlParams = new URLSearchParams(window.location.search);
+const apiIdParam = urlParams.get('api_id');
+if (apiIdParam) {
+    // Wait for DOM to be ready
+    setTimeout(() => {
+        selectAPI(apiIdParam);
+    }, 100);
+}
 
 function generateRequestPanel(api) {
     const panel = document.getElementById('api-request-panel');
@@ -212,14 +279,30 @@ function generateRequestPanel(api) {
         `).join('');
     }
     
+    const isCloudFunction = api.is_cloud_function || false;
+    
     panel.innerHTML = `
         <div>
+            ${isCloudFunction ? `
+                <div class="mb-4 rounded-md bg-purple-50 border border-purple-200 p-3">
+                    <div class="flex items-start">
+                        <svg class="h-5 w-5 text-purple-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-purple-800">Cloud Function</p>
+                            <p class="text-xs text-purple-600 mt-1">Bu bir cloud function'dır. Dinamik olarak oluşturulmuş ve veritabanında saklanmaktadır.</p>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
             <div class="mb-4">
-                <div class="flex items-center gap-2 mb-2">
+                <div class="flex items-center gap-2 mb-2 flex-wrap">
                     <span class="font-medium text-sm">${api.name}</span>
+                    ${isCloudFunction ? '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800">Cloud Function</span>' : ''}
                 </div>
                 <p class="text-xs text-muted-foreground mb-2">${api.description}</p>
-                <p class="text-xs font-mono bg-muted p-2 rounded mb-3">${api.endpoint}</p>
+                <p class="text-xs font-mono bg-muted p-2 rounded mb-3 break-all">${api.endpoint}</p>
             </div>
             
             <div class="mb-4">
