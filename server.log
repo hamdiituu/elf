@@ -562,3 +562,139 @@
 [Sat Nov  1 18:50:30 2025] [::1]:49856 Accepted
 [Sat Nov  1 18:50:30 2025] [::1]:49856 [200]: GET /uploads/logo_1762000180.png
 [Sat Nov  1 18:50:30 2025] [::1]:49856 Closing
+[Sat Nov  1 18:59:33 2025] [::1]:50115 Accepted
+[Sat Nov  1 18:59:33 2025] [::1]:50116 Accepted
+[Sat Nov  1 18:59:33 2025] [::1]:50115 [200]: GET /admin/cloud-functions.php
+[Sat Nov  1 18:59:33 2025] [::1]:50115 Closing
+[Sat Nov  1 18:59:33 2025] [::1]:50116 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:59:33 2025] [::1]:50116 Closing
+[Sat Nov  1 18:59:33 2025] [::1]:50118 Accepted
+[Sat Nov  1 18:59:33 2025] [::1]:50118 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:59:33 2025] [::1]:50118 Closing
+[Sat Nov  1 18:59:33 2025] [::1]:50119 Accepted
+[Sat Nov  1 18:59:33 2025] [::1]:50119 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:59:33 2025] [::1]:50119 Closing
+[Sat Nov  1 18:59:37 2025] [::1]:50121 Accepted
+[Sat Nov  1 18:59:38 2025] [::1]:50122 Accepted
+[Sat Nov  1 18:59:38 2025] [::1]:50121 [200]: GET /admin/cloud-middlewares.php
+[Sat Nov  1 18:59:38 2025] [::1]:50121 Closing
+[Sat Nov  1 18:59:38 2025] [::1]:50122 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:59:38 2025] [::1]:50122 Closing
+[Sat Nov  1 18:59:53 2025] [::1]:50131 Accepted
+[Sat Nov  1 18:59:53 2025] [::1]:50131 [200]: GET /admin/pages-builder.php
+[Sat Nov  1 18:59:53 2025] [::1]:50131 Closing
+[Sat Nov  1 18:59:53 2025] [::1]:50132 Accepted
+[Sat Nov  1 18:59:53 2025] [::1]:50132 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:59:53 2025] [::1]:50132 Closing
+[Sat Nov  1 19:00:28 2025] [::1]:50146 Accepted
+[Sat Nov  1 19:00:28 2025] [::1]:50147 Accepted
+[Sat Nov  1 19:00:28 2025] [::1]:50146 [200]: GET /admin/cloud-functions.php
+[Sat Nov  1 19:00:28 2025] [::1]:50146 Closing
+[Sat Nov  1 19:00:28 2025] [::1]:50147 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:00:28 2025] [::1]:50147 Closing
+[Sat Nov  1 19:00:49 2025] [::1]:50162 Accepted
+[Sat Nov  1 19:00:49 2025] [::1]:50163 Accepted
+[Sat Nov  1 19:00:49 2025] [::1]:50162 [302]: POST /admin/cloud-functions.php
+[Sat Nov  1 19:00:49 2025] [::1]:50162 Closing
+[Sat Nov  1 19:00:49 2025] [::1]:50163 [200]: GET /admin/cloud-functions.php?success=Fonksiyon+ba%C5%9Far%C4%B1yla+olu%C5%9Fturuldu%21
+[Sat Nov  1 19:00:49 2025] [::1]:50163 Closing
+[Sat Nov  1 19:00:49 2025] [::1]:50165 Accepted
+[Sat Nov  1 19:00:49 2025] [::1]:50165 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:00:49 2025] [::1]:50165 Closing
+[Sat Nov  1 19:00:51 2025] [::1]:50166 Accepted
+[Sat Nov  1 19:00:51 2025] [::1]:50166 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:00:51 2025] [::1]:50166 Closing
+[Sat Nov  1 19:00:51 2025] [::1]:50167 Accepted
+[Sat Nov  1 19:00:51 2025] [::1]:50167 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:00:51 2025] [::1]:50167 Closing
+[Sat Nov  1 19:00:56 2025] [::1]:50173 Accepted
+[Sat Nov  1 19:01:20 2025] [::1]:50173 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:01:20 2025] [::1]:50173 Closing
+[Sat Nov  1 19:01:20 2025] [::1]:50187 Accepted
+[Sat Nov  1 19:01:20 2025] [::1]:50192 Accepted
+[Sat Nov  1 19:01:20 2025] [::1]:50187 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:01:20 2025] [::1]:50187 Closing
+[Sat Nov  1 19:01:20 2025] [::1]:50192 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Sat Nov  1 19:01:20 2025] [::1]:50192 Closing
+[Sat Nov  1 19:01:26 2025] [::1]:50247 Accepted
+[Sat Nov  1 19:01:26 2025] [::1]:50247 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:01:26 2025] [::1]:50247 Closing
+[Sat Nov  1 19:01:42 2025] [::1]:50322 Accepted
+[Sat Nov  1 19:01:42 2025] [::1]:50323 Accepted
+[Sat Nov  1 19:01:42 2025] [::1]:50322 [200]: GET /admin/dynamic-page.php?page=urun-tanimi
+[Sat Nov  1 19:01:42 2025] [::1]:50322 Closing
+[Sat Nov  1 19:01:42 2025] [::1]:50323 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:01:42 2025] [::1]:50325 Accepted
+[Sat Nov  1 19:01:42 2025] [::1]:50325 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Sat Nov  1 19:01:42 2025] [::1]:50325 Closing
+[Sat Nov  1 19:01:42 2025] [::1]:50323 Closing
+[Sat Nov  1 19:02:28 2025] [::1]:50555 Accepted
+[Sat Nov  1 19:02:28 2025] [::1]:50555 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:02:28 2025] [::1]:50555 Closing
+[Sat Nov  1 19:02:32 2025] [::1]:50572 Accepted
+[Sat Nov  1 19:02:33 2025] [::1]:50572 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:02:33 2025] [::1]:50572 Closing
+[Sat Nov  1 19:02:33 2025] [::1]:50573 Accepted
+[Sat Nov  1 19:02:33 2025] [::1]:50573 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:02:33 2025] [::1]:50579 Accepted
+[Sat Nov  1 19:02:33 2025] [::1]:50579 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Sat Nov  1 19:02:33 2025] [::1]:50579 Closing
+[Sat Nov  1 19:02:33 2025] [::1]:50573 Closing
+[Sat Nov  1 19:02:41 2025] [::1]:50613 Accepted
+[Sat Nov  1 19:02:41 2025] [::1]:50613 [200]: POST /api/cloud-functions/execute.php?function=test
+[Sat Nov  1 19:02:41 2025] [::1]:50613 Closing
+[Sat Nov  1 19:02:56 2025] [::1]:50687 Accepted
+[Sat Nov  1 19:02:56 2025] PHP Parse error:  syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 330
+[Sat Nov  1 19:02:56 2025] [::1]:50687 [200]: GET /admin/cron-manager.php - syntax error, unexpected token "else" in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 330
+[Sat Nov  1 19:02:56 2025] [::1]:50687 Closing
+[Sat Nov  1 19:02:56 2025] [::1]:50688 Accepted
+[Sat Nov  1 19:02:56 2025] [::1]:50688 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Sat Nov  1 19:02:56 2025] [::1]:50688 Closing
+[Sat Nov  1 19:02:58 2025] [::1]:50699 Accepted
+[Sat Nov  1 19:02:58 2025] [::1]:50700 Accepted
+[Sat Nov  1 19:02:58 2025] [::1]:50699 [200]: GET /admin/api-playground.php
+[Sat Nov  1 19:02:58 2025] [::1]:50699 Closing
+[Sat Nov  1 19:02:58 2025] [::1]:50700 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Sat Nov  1 19:02:58 2025] [::1]:50700 Closing
+[Sat Nov  1 19:02:58 2025] [::1]:50701 Accepted
+[Sat Nov  1 19:02:58 2025] [::1]:50701 [200]: GET /admin/cloud-functions.php
+[Sat Nov  1 19:02:58 2025] [::1]:50701 Closing
+[Sat Nov  1 19:02:58 2025] [::1]:50702 Accepted
+[Sat Nov  1 19:02:59 2025] [::1]:50702 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Sat Nov  1 19:02:59 2025] [::1]:50702 Closing
+[Sat Nov  1 19:02:59 2025] [::1]:50703 Accepted
+[Sat Nov  1 19:02:59 2025] [::1]:50703 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:02:59 2025] [::1]:50703 Closing
+[Sat Nov  1 19:03:29 2025] [::1]:50838 Accepted
+[Sat Nov  1 19:03:29 2025] [::1]:50838 [200]: GET /admin/dynamic-page.php?page=integ_siparis_icerigi
+[Sat Nov  1 19:03:29 2025] [::1]:50838 Closing
+[Sat Nov  1 19:03:29 2025] [::1]:50843 Accepted
+[Sat Nov  1 19:03:29 2025] [::1]:50843 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:03:29 2025] [::1]:50845 Accepted
+[Sat Nov  1 19:03:29 2025] [::1]:50845 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Sat Nov  1 19:03:29 2025] [::1]:50845 Closing
+[Sat Nov  1 19:03:29 2025] [::1]:50843 Closing
+[Sat Nov  1 19:03:32 2025] [::1]:50858 Accepted
+[Sat Nov  1 19:03:32 2025] [::1]:50858 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Sat Nov  1 19:03:32 2025] [::1]:50858 Closing
+[Sat Nov  1 19:03:32 2025] [::1]:50859 Accepted
+[Sat Nov  1 19:03:32 2025] [::1]:50859 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Sat Nov  1 19:03:32 2025] [::1]:50859 Closing
+[Sat Nov  1 19:03:59 2025] [::1]:50995 Accepted
+[Sat Nov  1 19:03:59 2025] [::1]:50996 Accepted
+[Sat Nov  1 19:04:00 2025] [::1]:50995 [200]: GET /admin/cron-manager.php
+[Sat Nov  1 19:04:00 2025] [::1]:50995 Closing
+[Sat Nov  1 19:04:00 2025] [::1]:50996 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Sat Nov  1 19:04:00 2025] [::1]:50996 Closing
+[Sat Nov  1 19:04:00 2025] [::1]:50998 Accepted
+[Sat Nov  1 19:04:00 2025] [::1]:50998 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:04:00 2025] [::1]:50998 Closing
+[Sat Nov  1 19:04:01 2025] [::1]:51007 Accepted
+[Sat Nov  1 19:04:01 2025] [::1]:51008 Accepted
+[Sat Nov  1 19:04:01 2025] [::1]:51007 [200]: GET /admin/cron-builder.php
+[Sat Nov  1 19:04:01 2025] [::1]:51007 Closing
+[Sat Nov  1 19:04:01 2025] [::1]:51008 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 19:04:01 2025] [::1]:51010 Accepted
+[Sat Nov  1 19:04:01 2025] [::1]:51010 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Sat Nov  1 19:04:01 2025] [::1]:51010 Closing
+[Sat Nov  1 19:04:01 2025] [::1]:51008 Closing

@@ -209,19 +209,49 @@ if ($run_web_cron) {
         $cron_job = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($cron_job) {
-            // Create temporary file and execute
-            $temp_file = tempnam(sys_get_temp_dir(), 'cron_' . $cron_job['name'] . '_');
-            file_put_contents($temp_file, $cron_job['code']);
+            $language = $cron_job['language'] ?? 'php';
             
-            // Wrap code in proper PHP structure with cron logging
-            // Clean user code - ensure it ends with newline
-            $user_code = trim($cron_job['code']);
-            if (!empty($user_code) && substr($user_code, -1) !== ';' && substr($user_code, -1) !== '}') {
-                $user_code .= ';';
-            }
-            $user_code .= PHP_EOL;
-            
-            $wrapped_code = '<?php
+            if ($language === 'js' || $language === 'javascript') {
+                // JavaScript/Node.js execution
+                require_once __DIR__ . '/../api/common/node-executor.php';
+                
+                $context = [
+                    'dbContext' => $db
+                ];
+                
+                $start_time = microtime(true);
+                cronLog($cron_job['name'], 'started', "Manually triggered");
+                
+                $result = executeNodeCode($cron_job['code'], $context);
+                
+                $execution_time = (microtime(true) - $start_time) * 1000;
+                
+                if ($result['success']) {
+                    cronLog($cron_job['name'], "success", "Cron job completed successfully", $execution_time);
+                    $success_message = "Cron job başarıyla çalıştırıldı!";
+                } else {
+                    cronLog($cron_job['name'], "failed", "Cron job failed: " . ($result['message'] ?? 'Unknown error'), $execution_time, $result['error'] ?? null);
+                    $error_message = "Cron job hatası: " . ($result['message'] ?? 'Unknown error');
+                }
+                
+                // Update last run time
+                $stmt = $db->prepare("UPDATE cron_jobs SET last_run_at = CURRENT_TIMESTAMP WHERE id = ?");
+                $stmt->execute([$run_web_cron]);
+            } else {
+                // PHP execution
+                // Create temporary file and execute
+                $temp_file = tempnam(sys_get_temp_dir(), 'cron_' . $cron_job['name'] . '_');
+                file_put_contents($temp_file, $cron_job['code']);
+                
+                // Wrap code in proper PHP structure with cron logging
+                // Clean user code - ensure it ends with newline
+                $user_code = trim($cron_job['code']);
+                if (!empty($user_code) && substr($user_code, -1) !== ';' && substr($user_code, -1) !== '}') {
+                    $user_code .= ';';
+                }
+                $user_code .= PHP_EOL;
+                
+                $wrapped_code = '<?php
 require_once "' . __DIR__ . '/../config/config.php";
 require_once "' . __DIR__ . '/../cron/common/cron-helper.php";
 
@@ -297,6 +327,7 @@ try {
             // Note: In production, you might want to handle this differently
             usleep(100000); // Wait 100ms before cleanup
             @unlink($temp_file);
+            }
         } else {
             $error_message = "Cron job bulunamadı!";
         }
@@ -447,9 +478,20 @@ include '../includes/header.php';
     <main class="flex-1 overflow-y-auto">
         <div class="py-6">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-                <div class="mb-8">
-                    <h1 class="text-3xl font-bold text-foreground mb-2">Cron Manager</h1>
-                    <p class="text-sm text-muted-foreground">Otomatik görev yöneticisi ve zamanlayıcı</p>
+                <div class="mb-8 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-foreground mb-2">Cron Manager</h1>
+                        <p class="text-sm text-muted-foreground">Otomatik görev yöneticisi ve zamanlayıcı</p>
+                    </div>
+                    <a
+                        href="cron-builder.php"
+                        class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 transition-colors"
+                    >
+                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Yeni Cron Job
+                    </a>
                 </div>
                 
                 <?php

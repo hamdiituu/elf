@@ -1,0 +1,8 @@
+{
+    "name": "stockcount-web",
+    "version": "1.0.0",
+    "description": "StockCount Web Application",
+    "dependencies": {
+        "better-sqlite3": "^11.10.0"
+    }
+}
