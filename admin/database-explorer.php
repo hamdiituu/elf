@@ -1522,11 +1522,17 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
                 <div class="col-span-2">
                     <label class="flex items-center gap-1 text-xs font-medium cursor-pointer">
                         <input
-                            type="checkbox"
+                            type="hidden"
                             name="field_nullable[]"
+                            value="0"
+                            class="field-nullable-hidden"
+                        >
+                        <input
+                            type="checkbox"
+                            name="field_nullable_checkbox[]"
                             value="1"
                             ${isNullable ? 'checked' : ''}
-                            class="rounded border-input"
+                            class="rounded border-input field-nullable-checkbox"
                             onchange="updateNullableCheckbox(this)"
                         >
                         <span>Nullable</span>
@@ -1563,12 +1569,19 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
     // Update field IDs for form submission
     updateFieldIds();
     
-    // Update hint for the new field
+    // Initialize nullable checkbox state for the new field
     const newField = container.querySelector('[data-field-id="' + fieldId + '"]');
     if (newField) {
         const typeSelect = newField.querySelector('select[name="field_types[]"]');
         if (typeSelect) {
             updateFieldTypeHint(typeSelect);
+        }
+        
+        // Initialize nullable hidden input based on checkbox state
+        const nullableCheckbox = newField.querySelector('.field-nullable-checkbox');
+        const nullableHidden = newField.querySelector('.field-nullable-hidden');
+        if (nullableCheckbox && nullableHidden) {
+            nullableHidden.value = nullableCheckbox.checked ? '1' : '0';
         }
     }
 }
@@ -1600,10 +1613,14 @@ function updateFieldIds() {
 }
 
 function updateNullableCheckbox(checkbox) {
-    // Update hidden field for nullable
+    // Update hidden field for nullable based on checkbox state
     const field = checkbox.closest('[data-field-id]');
     if (field) {
-        // The checkbox value is already in the form, no need for hidden field
+        const hiddenInput = field.querySelector('.field-nullable-hidden');
+        if (hiddenInput) {
+            // If checkbox is checked, set hidden input to "1" (nullable), else "0" (NOT NULL)
+            hiddenInput.value = checkbox.checked ? '1' : '0';
+        }
     }
 }
 
@@ -1718,6 +1735,21 @@ function updateFieldTypeHint(select) {
     }
 }
 
+// Update all nullable hidden inputs before form submission
+function updateAllNullableInputs() {
+    const container = document.getElementById('table-fields-container');
+    if (container) {
+        const fields = container.querySelectorAll('[data-field-id]');
+        fields.forEach(function(field) {
+            const nullableCheckbox = field.querySelector('.field-nullable-checkbox');
+            const nullableHidden = field.querySelector('.field-nullable-hidden');
+            if (nullableCheckbox && nullableHidden) {
+                nullableHidden.value = nullableCheckbox.checked ? '1' : '0';
+            }
+        });
+    }
+}
+
 // Auto-detect image fields when name is entered
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('table-fields-container');
@@ -1739,6 +1771,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update hints on initial load
         container.querySelectorAll('select[name="field_types[]"]').forEach(function(select) {
             updateFieldTypeHint(select);
+        });
+    }
+    
+    // Update all nullable inputs before form submission
+    const createTableForm = document.getElementById('create-table-form');
+    if (createTableForm) {
+        createTableForm.addEventListener('submit', function(e) {
+            updateAllNullableInputs();
         });
     }
 });
