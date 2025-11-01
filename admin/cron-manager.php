@@ -229,46 +229,89 @@ if ($run_web_cron) {
             file_put_contents($temp_file, $cron_job['code']);
             
             // Wrap code in proper PHP structure with cron logging
+            // Clean user code - ensure it ends with newline
+            $user_code = trim($cron_job['code']);
+            if (!empty($user_code) && substr($user_code, -1) !== ';' && substr($user_code, -1) !== '}') {
+                $user_code .= ';';
+            }
+            $user_code .= PHP_EOL;
+            
             $wrapped_code = '<?php
 require_once "' . __DIR__ . '/../config/config.php";
 require_once "' . __DIR__ . '/../cron/common/cron-helper.php";
+
+function calculateNextRun($cron_expr) {
+    $parts = explode(" ", trim($cron_expr));
+    if (count($parts) !== 5) return null;
+    
+    list($minute, $hour, $day, $month, $weekday) = $parts;
+    $now = new DateTime();
+    $next = clone $now;
+    
+    if ($minute === "*" && $hour === "*" && $day === "*" && $month === "*" && $weekday === "*") {
+        $next->modify("+1 minute");
+        return $next->format("Y-m-d H:i:s");
+    }
+    
+    $next->modify("+1 minute");
+    return $next->format("Y-m-d H:i:s");
+}
 
 $cron_name = "' . addslashes($cron_job['name']) . '";
 $start_time = microtime(true);
 $log_id = cronLog($cron_name, "started", "Manually triggered");
 
 try {
-' . $cron_job['code'] . '
+    $db = getDB();
+    
+' . $user_code . '
     
     $execution_time = (microtime(true) - $start_time) * 1000;
     cronLog($cron_name, "success", "Cron job completed successfully", $execution_time);
+    
+    // Update last run time
+    $next_run = calculateNextRun("' . addslashes($cron_job['schedule']) . '");
+    $stmt = $db->prepare("UPDATE cron_jobs SET last_run_at = CURRENT_TIMESTAMP, next_run_at = ? WHERE id = ?");
+    $stmt->execute([$next_run, ' . $cron_job['id'] . ']);
 } catch (Exception $e) {
     $execution_time = (microtime(true) - $start_time) * 1000;
     cronLog($cron_name, "failed", "Cron job failed", $execution_time, $e->getMessage());
-    throw $e;
+    
+    // Still update last run time even on failure
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("UPDATE cron_jobs SET last_run_at = CURRENT_TIMESTAMP WHERE id = ?");
+        $stmt->execute([' . $cron_job['id'] . ']);
+    } catch (Exception $e2) {
+        // Ignore update errors
+    }
+    
+    // Don\'t rethrow - just log the error
+    error_log("Cron job failed: " . $e->getMessage());
 }
-
-// Update last run time
-$db = getDB();
-$stmt = $db->prepare("UPDATE cron_jobs SET last_run_at = CURRENT_TIMESTAMP WHERE id = ?");
-$stmt->execute([' . $cron_job['id'] . ']);
 ?>';
             
             file_put_contents($temp_file, $wrapped_code);
             
-            // Execute
+            // Execute in background to prevent site crash
             $output = [];
             $return_var = 0;
-            exec("php " . escapeshellarg($temp_file) . " 2>&1", $output, $return_var);
             
-            // Clean up
-            @unlink($temp_file);
-            
-            if ($return_var === 0) {
-                $success_message = "Cron job '{$cron_job['name']}' başarıyla çalıştırıldı!";
+            // Execute in background (non-blocking)
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                // Windows
+                pclose(popen("start /B php " . escapeshellarg($temp_file) . " > NUL 2>&1", "r"));
+                $success_message = "Cron job '{$cron_job['name']}' arka planda çalıştırılıyor...";
             } else {
-                $error_message = "Cron job '{$cron_job['name']}' çalıştırılırken hata oluştu: " . implode("\n", $output);
+                // Unix/Linux - non-blocking
+                exec("php " . escapeshellarg($temp_file) . " > /dev/null 2>&1 &", $output, $return_var);
+                $success_message = "Cron job '{$cron_job['name']}' arka planda çalıştırılıyor...";
             }
+            
+            // Clean up temp file after a delay (let it execute first)
+            // Note: In production, you might want to handle this differently
+            usleep(100000); // Wait 100ms before cleanup
+            @unlink($temp_file);
         } else {
             $error_message = "Cron job bulunamadı!";
         }

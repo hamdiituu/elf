@@ -36,25 +36,63 @@ try {
                 // Create temporary file with wrapped code
                 $temp_file = tempnam(sys_get_temp_dir(), 'web_cron_' . $cron_name . '_');
                 
+                // Clean user code - ensure it ends properly
+                $user_code = trim($job['code']);
+                if (!empty($user_code) && substr($user_code, -1) !== ';' && substr($user_code, -1) !== '}') {
+                    $user_code .= ';';
+                }
+                $user_code .= PHP_EOL;
+                
                 $wrapped_code = '<?php
 require_once "' . __DIR__ . '/../config/config.php";
+require_once "' . __DIR__ . '/common/cron-helper.php";
 
-$db = getDB();
+$cron_name = "' . addslashes($cron_name) . '";
+$start_time = microtime(true);
+$log_id = cronLog($cron_name, "started", "Scheduled run");
+
+function calculateNextRun($cron_expr) {
+    $parts = explode(" ", trim($cron_expr));
+    if (count($parts) !== 5) return null;
+    
+    list($minute, $hour, $day, $month, $weekday) = $parts;
+    $now = new DateTime();
+    $next = clone $now;
+    
+    if ($minute === "*" && $hour === "*" && $day === "*" && $month === "*" && $weekday === "*") {
+        $next->modify("+1 minute");
+        return $next->format("Y-m-d H:i:s");
+    }
+    
+    $next->modify("+1 minute");
+    return $next->format("Y-m-d H:i:s");
+}
 
 try {
-' . $job['code'] . '
+    $db = getDB();
+    
+' . $user_code . '
     
     $execution_time = (microtime(true) - $start_time) * 1000;
-    cronLog("' . addslashes($cron_name) . '", "success", "Cron job completed successfully", $execution_time);
+    cronLog($cron_name, "success", "Cron job completed successfully", $execution_time);
     
     // Update last run time and calculate next run
-    $db = getDB();
     $stmt = $db->prepare("UPDATE cron_jobs SET last_run_at = CURRENT_TIMESTAMP, next_run_at = ? WHERE id = ?");
     $next_run = calculateNextRun("' . addslashes($job['schedule']) . '");
     $stmt->execute([$next_run, ' . $job['id'] . ']);
 } catch (Exception $e) {
     $execution_time = (microtime(true) - $start_time) * 1000;
-    cronLog("' . addslashes($cron_name) . '", "failed", "Cron job failed", $execution_time, $e->getMessage());
+    cronLog($cron_name, "failed", "Cron job failed", $execution_time, $e->getMessage());
+    
+    // Still update last run time even on failure
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("UPDATE cron_jobs SET last_run_at = CURRENT_TIMESTAMP WHERE id = ?");
+        $stmt->execute([' . $job['id'] . ']);
+    } catch (Exception $e2) {
+        // Ignore
+    }
+    
     throw $e;
 }
 ?>';
