@@ -202,15 +202,7 @@ include '../includes/header.php';
             <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
                 <div class="flex items-center justify-between mb-6">
                     <h1 class="text-3xl font-bold text-foreground">Cloud Functions</h1>
-                    <a
-                        href="cloud-middlewares.php"
-                        class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-4 py-2 transition-colors"
-                    >
-                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
-                        Middleware Yönetimi
-                    </a>
+                  
                     <button
                         onclick="showCreateForm()"
                         class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 transition-colors"
