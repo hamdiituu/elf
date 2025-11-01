@@ -518,24 +518,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $custom_query) {
     }
 }
 
+// Get table statistics for all tables
+$table_stats = [];
+foreach ($tables as $tbl) {
+    try {
+        $row_count = $db->query("SELECT COUNT(*) FROM \"$tbl\"")->fetchColumn();
+        $table_info_temp = $db->query("PRAGMA table_info(\"$tbl\")")->fetchAll(PDO::FETCH_ASSOC);
+        $col_count = count($table_info_temp);
+        $table_stats[$tbl] = [
+            'row_count' => $row_count,
+            'col_count' => $col_count
+        ];
+    } catch (PDOException $e) {
+        $table_stats[$tbl] = [
+            'row_count' => 0,
+            'col_count' => 0
+        ];
+    }
+}
+
 // Get table structure and data
+$table_row_count = 0;
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$per_page = isset($_GET['per_page']) ? max(1, min(500, intval($_GET['per_page']))) : 50;
+$sort_col = $_GET['sort'] ?? null;
+$sort_order = strtoupper($_GET['order'] ?? 'ASC');
+if (!in_array($sort_order, ['ASC', 'DESC'])) {
+    $sort_order = 'ASC';
+}
+$search_term = $_GET['search'] ?? '';
+
 if ($table_name && in_array($table_name, $tables)) {
     $selected_table = $table_name;
     
     try {
         // Get table info (columns)
-        $table_info = $db->query("PRAGMA table_info($table_name)")->fetchAll(PDO::FETCH_ASSOC);
+        $table_info = $db->query("PRAGMA table_info(\"$table_name\")")->fetchAll(PDO::FETCH_ASSOC);
         foreach ($table_info as $col) {
             $table_columns[] = $col['name'];
         }
         
-        // Get table data
-        $stmt = $db->prepare("SELECT * FROM $table_name LIMIT 1000");
-        $stmt->execute();
+        // Build WHERE clause for search
+        $where_clause = '';
+        $where_params = [];
+        if (!empty($search_term) && !empty($table_columns)) {
+            $search_conditions = [];
+            foreach ($table_columns as $col) {
+                $search_conditions[] = "\"$col\" LIKE ?";
+                $where_params[] = '%' . $search_term . '%';
+            }
+            if (!empty($search_conditions)) {
+                $where_clause = 'WHERE ' . implode(' OR ', $search_conditions);
+            }
+        }
+        
+        // Get total count
+        $count_query = "SELECT COUNT(*) FROM \"$table_name\" $where_clause";
+        $count_stmt = $db->prepare($count_query);
+        $count_stmt->execute($where_params);
+        $table_row_count = $count_stmt->fetchColumn();
+        $total_pages = max(1, ceil($table_row_count / $per_page));
+        
+        // Build ORDER BY clause
+        $order_clause = '';
+        if ($sort_col && in_array($sort_col, $table_columns)) {
+            $order_clause = "ORDER BY \"$sort_col\" $sort_order";
+        } else {
+            // Default sort by first column
+            $order_clause = "ORDER BY \"{$table_columns[0]}\" ASC";
+        }
+        
+        // Get paginated data
+        $offset = ($page - 1) * $per_page;
+        $limit_clause = "LIMIT $per_page OFFSET $offset";
+        $query = "SELECT * FROM \"$table_name\" $where_clause $order_clause $limit_clause";
+        $stmt = $db->prepare($query);
+        $stmt->execute($where_params);
         $table_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         $error_message = "Tablo verileri yüklenirken hata: " . $e->getMessage();
     }
+}
+
+// Get database statistics
+$total_tables = count($tables);
+$total_rows = 0;
+foreach ($table_stats as $stats) {
+    $total_rows += $stats['row_count'];
 }
 
 include '../includes/header.php';
@@ -546,7 +615,69 @@ include '../includes/header.php';
     <main class="flex-1 overflow-y-auto">
         <div class="py-6">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-                <h1 class="text-3xl font-bold text-foreground mb-8">Database Explorer</h1>
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-foreground mb-2">Database Explorer</h1>
+                    <p class="text-sm text-muted-foreground">Veritabanı yönetimi ve sorgu aracı</p>
+                </div>
+                
+                <!-- Database Statistics -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Toplam Tablo</p>
+                                <p class="text-2xl font-bold text-foreground"><?php echo $total_tables; ?></p>
+                            </div>
+                            <div class="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                                <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Toplam Kayıt</p>
+                                <p class="text-2xl font-bold text-foreground"><?php echo number_format($total_rows); ?></p>
+                            </div>
+                            <div class="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                                <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Aktif Tablo</p>
+                                <p class="text-2xl font-bold text-foreground"><?php echo $selected_table ? '1' : '0'; ?></p>
+                            </div>
+                            <div class="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                                <svg class="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Kayıtlı Query</p>
+                                <p class="text-2xl font-bold text-foreground"><?php echo count($saved_queries); ?></p>
+                            </div>
+                            <div class="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                                <svg class="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
                 <?php if ($error_message): ?>
                     <div class="mb-4 rounded-md bg-red-50 border border-red-200 p-4">
@@ -600,15 +731,38 @@ include '../includes/header.php';
                                     </button>
                                 </div>
                                 <div class="space-y-2 max-h-[600px] overflow-y-auto">
-                                    <?php foreach ($tables as $table): ?>
-                                        <div class="group relative flex items-center">
+                                    <?php foreach ($tables as $table): 
+                                        $stats = $table_stats[$table] ?? ['row_count' => 0, 'col_count' => 0];
+                                    ?>
+                                        <div class="group relative">
                                             <a
                                                 href="?table=<?php echo htmlspecialchars($table); ?>"
-                                                class="flex-1 block p-2 rounded-md border border-border hover:bg-accent transition-colors <?php echo $selected_table === $table ? 'bg-accent border-primary' : ''; ?>"
+                                                class="flex-1 block p-3 rounded-md border border-border hover:bg-accent hover:border-primary transition-all <?php echo $selected_table === $table ? 'bg-accent border-primary shadow-sm' : ''; ?>"
                                             >
-                                                <div class="flex items-center justify-between">
-                                                    <span class="font-medium text-xs"><?php echo htmlspecialchars($table); ?></span>
-                                                    <svg class="h-3 w-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <div class="flex items-start justify-between">
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-center gap-2 mb-1">
+                                                            <svg class="h-4 w-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                                            </svg>
+                                                            <span class="font-semibold text-sm truncate"><?php echo htmlspecialchars($table); ?></span>
+                                                        </div>
+                                                        <div class="flex items-center gap-3 text-xs text-muted-foreground">
+                                                            <span class="flex items-center gap-1">
+                                                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                </svg>
+                                                                <?php echo number_format($stats['row_count']); ?> kayıt
+                                                            </span>
+                                                            <span class="flex items-center gap-1">
+                                                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                                                </svg>
+                                                                <?php echo $stats['col_count']; ?> kolon
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <svg class="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                                     </svg>
                                                 </div>
@@ -861,18 +1015,50 @@ include '../includes/header.php';
                                         <div class="overflow-x-auto -mx-6 px-6">
                                             <div class="inline-block min-w-full align-middle">
                                                 <table class="min-w-full border-collapse">
-                                                    <thead>
+                                                    <thead class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
                                                         <tr class="border-b border-border">
-                                                            <?php foreach ($display_columns as $col): ?>
-                                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm bg-muted/50">
-                                                                    <?php echo htmlspecialchars($col); ?>
+                                                            <?php foreach ($display_columns as $col): 
+                                                                $is_sorted = ($sort_col === $col);
+                                                                $new_order = ($is_sorted && $sort_order === 'ASC') ? 'DESC' : 'ASC';
+                                                                $sort_url = '?';
+                                                                $params = [];
+                                                                if ($selected_table) {
+                                                                    $params['table'] = $selected_table;
+                                                                }
+                                                                if (!empty($search_term)) {
+                                                                    $params['search'] = $search_term;
+                                                                }
+                                                                $params['sort'] = $col;
+                                                                $params['order'] = $new_order;
+                                                                $params['page'] = 1;
+                                                                $sort_url .= http_build_query($params);
+                                                            ?>
+                                                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm cursor-pointer hover:bg-muted/70 transition-colors group">
+                                                                    <div class="flex items-center gap-2">
+                                                                        <?php if ($selected_table && !$query_result): ?>
+                                                                            <a href="<?php echo htmlspecialchars($sort_url); ?>" class="flex items-center gap-1 flex-1">
+                                                                                <span><?php echo htmlspecialchars($col); ?></span>
+                                                                                <?php if ($is_sorted): ?>
+                                                                                    <svg class="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<?php echo $sort_order === 'ASC' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'; ?>" />
+                                                                                    </svg>
+                                                                                <?php else: ?>
+                                                                                    <svg class="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                                                                                    </svg>
+                                                                                <?php endif; ?>
+                                                                            </a>
+                                                                        <?php else: ?>
+                                                                            <span><?php echo htmlspecialchars($col); ?></span>
+                                                                        <?php endif; ?>
+                                                                    </div>
                                                                 </th>
                                                             <?php endforeach; ?>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <?php foreach ($display_data as $row): ?>
-                                                            <tr class="border-b border-border hover:bg-muted/50 transition-colors">
+                                                        <?php foreach ($display_data as $idx => $row): ?>
+                                                            <tr class="border-b border-border hover:bg-muted/30 transition-colors <?php echo $idx % 2 === 0 ? 'bg-background' : 'bg-muted/10'; ?>">
                                                                 <?php foreach ($display_columns as $col): ?>
                                                                     <td class="px-4 py-3 text-sm">
                                                                         <?php 
@@ -907,12 +1093,114 @@ include '../includes/header.php';
                                                 </table>
                                             </div>
                                         </div>
-                                        <div class="mt-4 text-sm text-muted-foreground">
-                                            Toplam <?php echo count($display_data); ?> satır gösteriliyor
-                                            <?php if ($selected_table && count($table_data) >= 1000): ?>
-                                                (İlk 1000 satır)
-                                            <?php endif; ?>
-                                        </div>
+                                        <!-- Pagination -->
+                                        <?php if ($selected_table && !$query_result && $total_pages > 1): ?>
+                                            <div class="mt-4 flex items-center justify-between border-t border-border pt-4">
+                                                <div class="text-sm text-muted-foreground">
+                                                    Sayfa <?php echo $page; ?> / <?php echo $total_pages; ?> · 
+                                                    Toplam <?php echo number_format($table_row_count); ?> kayıt · 
+                                                    Gösterilen: <?php echo number_format(min($per_page, $table_row_count - ($page - 1) * $per_page)); ?>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <!-- Per Page Selector -->
+                                                    <form method="GET" action="" class="flex items-center gap-2">
+                                                        <input type="hidden" name="table" value="<?php echo htmlspecialchars($selected_table); ?>">
+                                                        <?php if (!empty($search_term)): ?>
+                                                            <input type="hidden" name="search" value="<?php echo htmlspecialchars($search_term); ?>">
+                                                        <?php endif; ?>
+                                                        <?php if ($sort_col): ?>
+                                                            <input type="hidden" name="sort" value="<?php echo htmlspecialchars($sort_col); ?>">
+                                                            <input type="hidden" name="order" value="<?php echo htmlspecialchars($sort_order); ?>">
+                                                        <?php endif; ?>
+                                                        <label class="text-xs text-muted-foreground">Sayfa başına:</label>
+                                                        <select name="per_page" onchange="this.form.submit()" class="px-2 py-1 text-xs border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring">
+                                                            <option value="25" <?php echo $per_page == 25 ? 'selected' : ''; ?>>25</option>
+                                                            <option value="50" <?php echo $per_page == 50 ? 'selected' : ''; ?>>50</option>
+                                                            <option value="100" <?php echo $per_page == 100 ? 'selected' : ''; ?>>100</option>
+                                                            <option value="250" <?php echo $per_page == 250 ? 'selected' : ''; ?>>250</option>
+                                                            <option value="500" <?php echo $per_page == 500 ? 'selected' : ''; ?>>500</option>
+                                                        </select>
+                                                    </form>
+                                                    
+                                                    <!-- Page Navigation -->
+                                                    <div class="flex items-center gap-1">
+                                                        <?php
+                                                        $prev_url = '?';
+                                                        $next_url = '?';
+                                                        $params_prev = ['table' => $selected_table, 'page' => max(1, $page - 1)];
+                                                        $params_next = ['table' => $selected_table, 'page' => min($total_pages, $page + 1)];
+                                                        if (!empty($search_term)) {
+                                                            $params_prev['search'] = $search_term;
+                                                            $params_next['search'] = $search_term;
+                                                        }
+                                                        if ($sort_col) {
+                                                            $params_prev['sort'] = $sort_col;
+                                                            $params_prev['order'] = $sort_order;
+                                                            $params_next['sort'] = $sort_col;
+                                                            $params_next['order'] = $sort_order;
+                                                        }
+                                                        $params_prev['per_page'] = $per_page;
+                                                        $params_next['per_page'] = $per_page;
+                                                        $prev_url .= http_build_query($params_prev);
+                                                        $next_url .= http_build_query($params_next);
+                                                        ?>
+                                                        
+                                                        <a href="<?php echo htmlspecialchars($prev_url); ?>" class="px-3 py-1.5 text-xs font-medium border border-input bg-background text-foreground hover:bg-accent rounded-md transition-colors <?php echo $page <= 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''; ?>">
+                                                            Önceki
+                                                        </a>
+                                                        
+                                                        <?php
+                                                        $start_page = max(1, $page - 2);
+                                                        $end_page = min($total_pages, $page + 2);
+                                                        
+                                                        if ($start_page > 1): ?>
+                                                            <a href="?<?php echo http_build_query(array_merge(['table' => $selected_table, 'page' => 1], array_filter(['search' => $search_term, 'sort' => $sort_col, 'order' => $sort_order, 'per_page' => $per_page]))); ?>" class="px-2 py-1.5 text-xs font-medium border border-input bg-background text-foreground hover:bg-accent rounded-md transition-colors">
+                                                                1
+                                                            </a>
+                                                            <?php if ($start_page > 2): ?>
+                                                                <span class="px-2 text-xs text-muted-foreground">...</span>
+                                                            <?php endif; ?>
+                                                        <?php endif; ?>
+                                                        
+                                                        <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
+                                                            <?php
+                                                            $page_params = ['table' => $selected_table, 'page' => $i];
+                                                            if (!empty($search_term)) $page_params['search'] = $search_term;
+                                                            if ($sort_col) {
+                                                                $page_params['sort'] = $sort_col;
+                                                                $page_params['order'] = $sort_order;
+                                                            }
+                                                            $page_params['per_page'] = $per_page;
+                                                            ?>
+                                                            <a href="?<?php echo http_build_query($page_params); ?>" class="px-2 py-1.5 text-xs font-medium border border-input rounded-md transition-colors <?php echo $page == $i ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground hover:bg-accent'; ?>">
+                                                                <?php echo $i; ?>
+                                                            </a>
+                                                        <?php endfor; ?>
+                                                        
+                                                        <?php if ($end_page < $total_pages): ?>
+                                                            <?php if ($end_page < $total_pages - 1): ?>
+                                                                <span class="px-2 text-xs text-muted-foreground">...</span>
+                                                            <?php endif; ?>
+                                                            <a href="?<?php echo http_build_query(array_merge(['table' => $selected_table, 'page' => $total_pages], array_filter(['search' => $search_term, 'sort' => $sort_col, 'order' => $sort_order, 'per_page' => $per_page]))); ?>" class="px-2 py-1.5 text-xs font-medium border border-input bg-background text-foreground hover:bg-accent rounded-md transition-colors">
+                                                                <?php echo $total_pages; ?>
+                                                            </a>
+                                                        <?php endif; ?>
+                                                        
+                                                        <a href="<?php echo htmlspecialchars($next_url); ?>" class="px-3 py-1.5 text-xs font-medium border border-input bg-background text-foreground hover:bg-accent rounded-md transition-colors <?php echo $page >= $total_pages ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''; ?>">
+                                                            Sonraki
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php elseif ($selected_table && !$query_result): ?>
+                                            <div class="mt-4 text-sm text-muted-foreground border-t border-border pt-4">
+                                                Toplam <?php echo number_format($table_row_count); ?> kayıt gösteriliyor
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="mt-4 text-sm text-muted-foreground border-t border-border pt-4">
+                                                Toplam <?php echo count($display_data); ?> satır gösteriliyor
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </div>
