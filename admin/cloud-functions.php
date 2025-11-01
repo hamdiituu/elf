@@ -43,7 +43,7 @@ try {
         FOREIGN KEY (created_by) REFERENCES users(id)
     )");
 } catch (PDOException $e) {
-    // Table might already exist
+    // Table might already exist, ignore
 }
 
 // Handle form submissions
@@ -137,8 +137,13 @@ if ($edit_id) {
 // Get all functions
 $functions = $db->query("SELECT cf.*, u.username as created_by_name, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id ORDER BY cf.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 
-// Get all middlewares for dropdown
-$middlewares = $db->query("SELECT id, name, description FROM cloud_middlewares WHERE enabled = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+// Get all middlewares for dropdown (both enabled and disabled)
+try {
+    $middlewares = $db->query("SELECT id, name, description, enabled FROM cloud_middlewares ORDER BY enabled DESC, name ASC")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // If table doesn't exist or query fails, set empty array
+    $middlewares = [];
+}
 
 include '../includes/header.php';
 ?>
@@ -160,10 +165,12 @@ include '../includes/header.php';
     .CodeMirror {
         border: 1px solid hsl(var(--input));
         border-radius: 0.375rem;
-        height: 500px;
+        height: 500px !important;
         font-size: 14px;
         font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
     }
+    
+    /* CodeMirror will automatically replace textarea, no need to hide it in CSS */
     
     .CodeMirror-activeline-background {
         background: hsl(var(--muted) / 0.3);
@@ -353,14 +360,15 @@ include '../includes/header.php';
                                             >
                                                 <option value="">Middleware seçin...</option>
                                                 <?php foreach ($middlewares as $mw): ?>
-                                                    <?php if ($mw['enabled']): ?>
-                                                        <option value="<?php echo $mw['id']; ?>" <?php echo (isset($edit_function['middleware_id']) && $edit_function['middleware_id'] == $mw['id']) ? 'selected' : ''; ?>>
-                                                            <?php echo htmlspecialchars($mw['name']); ?>
-                                                            <?php if ($mw['description']): ?>
-                                                                - <?php echo htmlspecialchars($mw['description']); ?>
-                                                            <?php endif; ?>
-                                                        </option>
-                                                    <?php endif; ?>
+                                                    <option value="<?php echo $mw['id']; ?>" <?php echo (isset($edit_function['middleware_id']) && $edit_function['middleware_id'] == $mw['id']) ? 'selected' : ''; ?>>
+                                                        <?php echo htmlspecialchars($mw['name']); ?>
+                                                        <?php if ($mw['description']): ?>
+                                                            - <?php echo htmlspecialchars($mw['description']); ?>
+                                                        <?php endif; ?>
+                                                        <?php if (!$mw['enabled']): ?>
+                                                            (Pasif)
+                                                        <?php endif; ?>
+                                                    </option>
                                                 <?php endforeach; ?>
                                             </select>
                                             <p class="mt-1 text-xs text-muted-foreground">
@@ -440,68 +448,108 @@ include '../includes/header.php';
 </div>
 
 <script>
-    // Initialize CodeMirror
-    const codeEditor = CodeMirror.fromTextArea(document.getElementById('code'), {
-        mode: {
-            name: 'php',
-            startOpen: true
-        },
-        theme: 'monokai',
-        lineNumbers: true,
-        autoCloseBrackets: true,
-        matchBrackets: true,
-        styleActiveLine: true,
-        indentUnit: 4,
-        indentWithTabs: false,
-        lineWrapping: true,
-        extraKeys: {
-            "Ctrl-Space": function(cm) {
-                CodeMirror.commands.autocomplete(cm, CodeMirror.hint.anyword);
-            },
-            "Ctrl-F": "findPersistent"
-        },
-        hintOptions: {
-            hint: function(editor) {
-                const cursor = editor.getCursor();
-                const token = editor.getTokenAt(cursor);
-                const word = token.string;
-                
-                // Custom hints for dbContext and common functions
-                const hints = [
-                    'dbContext', 'request', 'method', 'headers', 'response',
-                    'query', 'prepare', 'execute', 'fetchAll', 'fetch', 'fetchColumn',
-                    'PDO::FETCH_ASSOC', 'PDO::FETCH_OBJ', 'PDO::FETCH_NUM',
-                    'success', 'data', 'message', 'error',
-                    'array', 'count', 'isset', 'empty', 'trim', 'htmlspecialchars',
-                    'json_encode', 'json_decode', 'date', 'time'
-                ];
-                
-                const filtered = hints.filter(h => h.toLowerCase().startsWith(word.toLowerCase()));
-                
-                return {
-                    list: filtered,
-                    from: CodeMirror.Pos(cursor.line, token.start),
-                    to: CodeMirror.Pos(cursor.line, token.end)
-                };
-            },
-            completeSingle: false
-        }
-    });
-    
-    // Auto-trigger autocomplete
-    codeEditor.on('inputRead', function(cm, change) {
-        if (change.text[0].length > 0 && change.text[0][0].match(/[a-zA-Z]/)) {
-            setTimeout(function() {
-                CodeMirror.commands.autocomplete(cm);
-            }, 100);
-        }
-    });
-    
+    // Initialize CodeMirror (same approach as cloud-middlewares.php)
+    let codeEditor;
     let isFullscreen = false;
     
-    function toggleFullscreen() {
+    function initCodeEditor() {
+        const codeTextarea = document.getElementById('code');
+        if (!codeTextarea) {
+            console.error('Code textarea not found');
+            return;
+        }
+        
+        if (typeof CodeMirror === 'undefined') {
+            console.error('CodeMirror is not loaded, retrying...');
+            setTimeout(initCodeEditor, 300);
+            return;
+        }
+        
+        // Initialize CodeMirror (exact copy from cloud-middlewares.php)
+        codeEditor = CodeMirror.fromTextArea(codeTextarea, {
+            mode: {
+                name: 'php',
+                startOpen: true
+            },
+            theme: 'monokai',
+            lineNumbers: true,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            styleActiveLine: true,
+            indentUnit: 4,
+            indentWithTabs: false,
+            lineWrapping: true,
+            extraKeys: {
+                "Ctrl-Space": function(cm) {
+                    CodeMirror.commands.autocomplete(cm, CodeMirror.hint.anyword);
+                },
+                "Ctrl-F": "findPersistent"
+            },
+            hintOptions: {
+                hint: function(editor) {
+                    const cursor = editor.getCursor();
+                    const token = editor.getTokenAt(cursor);
+                    const word = token.string;
+                    
+                    // Custom hints for dbContext and common functions
+                    const hints = [
+                        'dbContext', 'request', 'method', 'headers', 'response',
+                        'query', 'prepare', 'execute', 'fetchAll', 'fetch', 'fetchColumn',
+                        'PDO::FETCH_ASSOC', 'PDO::FETCH_OBJ', 'PDO::FETCH_NUM',
+                        'success', 'data', 'message', 'error',
+                        'array', 'count', 'isset', 'empty', 'trim', 'htmlspecialchars',
+                        'json_encode', 'json_decode', 'date', 'time'
+                    ];
+                    
+                    const filtered = hints.filter(h => h.toLowerCase().startsWith(word.toLowerCase()));
+                    
+                    return {
+                        list: filtered,
+                        from: CodeMirror.Pos(cursor.line, token.start),
+                        to: CodeMirror.Pos(cursor.line, token.end)
+                    };
+                },
+                completeSingle: false
+            }
+        });
+        
+        // Auto-trigger autocomplete
+        codeEditor.on('inputRead', function(cm, change) {
+            if (change.text && change.text[0] && change.text[0].length > 0 && change.text[0][0].match(/[a-zA-Z]/)) {
+                setTimeout(function() {
+                    CodeMirror.commands.autocomplete(cm);
+                }, 100);
+            }
+        });
+        
+        // Sync editor with textarea
+        codeEditor.on('change', function(cm) {
+            cm.save();
+        });
+        
+        console.log('CodeMirror editor initialized successfully');
+        } catch (error) {
+            console.error('Error initializing CodeMirror:', error);
+        }
+    }
+    
+    // Initialize CodeMirror immediately (exact same as cloud-middlewares.php)
+    initCodeEditor();
+    
+    // Initialize fullscreen functionality
+    window.toggleFullscreen = function() {
+        if (!codeEditor) {
+            console.error('Code editor not initialized');
+            return;
+        }
+        
         const wrapper = document.getElementById('code-editor-wrapper');
         const btn = document.getElementById('fullscreen-btn');
+        
+        if (!wrapper || !btn) {
+            console.error('Fullscreen elements not found');
+            return;
+        }
         
         if (!isFullscreen) {
             wrapper.classList.add('fullscreen');
@@ -525,12 +573,12 @@ include '../includes/header.php';
             isFullscreen = false;
             codeEditor.refresh();
         }
-    }
+    };
     
     // ESC key to exit fullscreen
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && isFullscreen) {
-            toggleFullscreen();
+        if (e.key === 'Escape' && isFullscreen && codeEditor) {
+            window.toggleFullscreen();
         }
     });
     
@@ -547,6 +595,18 @@ include '../includes/header.php';
             form.submit();
         }
     }
+    
+    // Update form submission to sync editor
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('function-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (codeEditor) {
+                    codeEditor.save();
+                }
+            });
+        }
+    });
     
 
 <?php include '../includes/footer.php'; ?>
