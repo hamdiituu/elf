@@ -322,6 +322,11 @@ if ($enable_list) {
         $where_sql = 'WHERE ' . implode(' AND ', $where_conditions);
     }
     
+    // Initialize variables for pagination
+    $records = [];
+    $total_records = 0;
+    $total_pages = 0;
+    
     // Get total count with error handling
     try {
         // Escape table name to prevent SQL injection
