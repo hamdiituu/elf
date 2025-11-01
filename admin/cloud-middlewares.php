@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             if (empty($middleware_name) || empty($middleware_code)) {
-                $error_message = "Middleware adı ve kod gereklidir!";
+                $error_message = "Middleware name and code are required!";
             } else {
                 try {
                     if ($middleware_id > 0) {
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             WHERE id = ?
                         ");
                         $stmt->execute([$middleware_name, $middleware_description, $middleware_code, $language, $middleware_enabled, $middleware_id]);
-                        $success_message = "Middleware başarıyla güncellendi!";
+                        $success_message = "Middleware updated successfully!";
                     } else {
                         // Create new middleware
                         $stmt = $db->prepare("
@@ -74,13 +74,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             VALUES (?, ?, ?, ?, ?, ?)
                         ");
                         $stmt->execute([$middleware_name, $middleware_description, $middleware_code, $language, $middleware_enabled, $_SESSION['user_id']]);
-                        $success_message = "Middleware başarıyla oluşturuldu!";
+                        $success_message = "Middleware created successfully!";
                     }
                 } catch (PDOException $e) {
                     if (strpos($e->getMessage(), 'UNIQUE constraint') !== false) {
-                        $error_message = "Bu middleware adı zaten kullanılıyor!";
+                        $error_message = "This middleware name is already in use!";
                     } else {
-                        $error_message = "Hata: " . $e->getMessage();
+                        $error_message = "Error: " . $e->getMessage();
                     }
                 }
             }
@@ -96,14 +96,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $usage_count = $stmt->fetchColumn();
                     
                     if ($usage_count > 0) {
-                        $error_message = "Bu middleware {$usage_count} fonksiyon tarafından kullanılıyor. Önce fonksiyonlardan kaldırın!";
+                        $error_message = "This middleware is used by {$usage_count} function(s). Please remove it from functions first!";
                     } else {
                         $stmt = $db->prepare("DELETE FROM cloud_middlewares WHERE id = ?");
                         $stmt->execute([$middleware_id]);
-                        $success_message = "Middleware başarıyla silindi!";
+                        $success_message = "Middleware deleted successfully!";
                     }
                 } catch (PDOException $e) {
-                    $error_message = "Middleware silinirken hata: " . $e->getMessage();
+                    $error_message = "Error deleting middleware: " . $e->getMessage();
                 }
             }
             break;
@@ -402,7 +402,7 @@ include '../includes/header.php';
                         <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                             <div class="p-6">
                                 <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">
-                                    <?php echo $edit_middleware ? 'Middleware Düzenle' : 'Yeni Middleware'; ?>
+                                    <?php echo $edit_middleware ? 'Edit Middleware' : 'New Middleware'; ?>
                                 </h3>
                                 
                                 <form method="POST" id="middleware-form">
@@ -412,7 +412,7 @@ include '../includes/header.php';
                                     <div class="space-y-4">
                                         <div>
                                             <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                Middleware Adı *
+                                                Middleware Name *
                                             </label>
                                             <input
                                                 type="text"
@@ -427,7 +427,7 @@ include '../includes/header.php';
                                         
                                         <div>
                                             <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                Açıklama
+                                                Description
                                             </label>
                                             <input
                                                 type="text"
@@ -435,13 +435,13 @@ include '../includes/header.php';
                                                 id="middleware_description"
                                                 value="<?php echo htmlspecialchars($edit_middleware['description'] ?? ''); ?>"
                                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                                placeholder="Kullanıcı doğrulama kontrolü"
+                                                placeholder="User authentication check"
                                             />
                                         </div>
                                         
                                         <div>
                                             <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                Dil *
+                                                Language *
                                             </label>
                                             <select
                                                 name="language"
@@ -454,7 +454,7 @@ include '../includes/header.php';
                                                 <option value="js" <?php echo (isset($edit_middleware['language']) && ($edit_middleware['language'] === 'js' || $edit_middleware['language'] === 'javascript')) ? 'selected' : ''; ?>>JavaScript (Node.js)</option>
                                             </select>
                                             <p class="mt-1 text-xs text-muted-foreground">
-                                                Middleware kodunun yazılacağı programlama dili
+                                                Programming language for middleware code
                                             </p>
                                         </div>
                                         
@@ -472,7 +472,7 @@ include '../includes/header.php';
                                                     <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                                                     </svg>
-                                                    Tam Ekran
+                                                    Fullscreen
                                                 </button>
                                             </div>
                                             <div id="code-editor-wrapper" class="relative">
@@ -503,7 +503,7 @@ include '../includes/header.php';
                                                 class="rounded border-input"
                                             />
                                             <label for="middleware_enabled" class="text-sm font-medium text-foreground">
-                                                Aktif
+                                                Active
                                             </label>
                                         </div>
                                         
@@ -515,14 +515,14 @@ include '../includes/header.php';
                                                 <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                                 </svg>
-                                                <?php echo $edit_middleware ? 'Güncelle' : 'Oluştur'; ?>
+                                                <?php echo $edit_middleware ? 'Update' : 'Create'; ?>
                                             </button>
                                             <?php if ($edit_middleware): ?>
                                                 <a
                                                     href="cloud-middlewares.php"
                                                     class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-4 py-2 transition-colors"
                                                 >
-                                                    İptal
+                                                    Cancel
                                                 </a>
                                             <?php endif; ?>
                                         </div>

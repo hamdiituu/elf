@@ -67,19 +67,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $enabled = isset($_POST['enabled']) ? 1 : 0;
     
     if (empty($name)) {
-        $error_message = "Cron job adı gereklidir!";
+        $error_message = "Cron job name is required!";
     } elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $name)) {
-        $error_message = "Cron job adı sadece harf, rakam ve alt çizgi içerebilir!";
+        $error_message = "Cron job name can only contain letters, numbers and underscore!";
     } elseif (empty($code)) {
-        $error_message = "Cron job kodu gereklidir!";
+        $error_message = "Cron job code is required!";
     } elseif (empty($schedule)) {
-        $error_message = "Zamanlama (schedule) gereklidir!";
+        $error_message = "Schedule is required!";
     } else {
         try {
             // Validate schedule format (basic cron expression: * * * * *)
             $schedule_parts = explode(' ', $schedule);
             if (count($schedule_parts) !== 5) {
-                throw new Exception("Geçersiz zamanlama formatı! Örnek: * * * * * (dakika saat gün ay hafta)");
+                throw new Exception("Invalid schedule format! Example: * * * * * (minute hour day month weekday)");
             }
             
             if ($action === 'create') {
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $check = $db->prepare("SELECT id FROM cron_jobs WHERE name = ?");
                 $check->execute([$name]);
                 if ($check->fetch()) {
-                    throw new Exception("Bu isimde bir cron job zaten mevcut!");
+                    throw new Exception("A cron job with this name already exists!");
                 }
                 
                 // Calculate next_run_at based on schedule
@@ -95,20 +95,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $stmt = $db->prepare("INSERT INTO cron_jobs (name, description, code, schedule, language, enabled, next_run_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([$name, $description, $code, $schedule, $language, $enabled, $next_run_at]);
-                $success_message = "Cron job başarıyla oluşturuldu!";
+                $success_message = "Cron job created successfully!";
                 header('Location: cron-manager.php?success=' . urlencode($success_message));
                 exit;
             } elseif ($action === 'update') {
                 $id = intval($_POST['id'] ?? 0);
                 if ($id <= 0) {
-                    throw new Exception("Geçersiz cron job ID!");
+                    throw new Exception("Invalid cron job ID!");
                 }
                 
                 // Check if name already exists (excluding current)
                 $check = $db->prepare("SELECT id FROM cron_jobs WHERE name = ? AND id != ?");
                 $check->execute([$name, $id]);
                 if ($check->fetch()) {
-                    throw new Exception("Bu isimde bir cron job zaten mevcut!");
+                    throw new Exception("A cron job with this name already exists!");
                 }
                 
                 // Calculate next_run_at based on schedule
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $stmt = $db->prepare("UPDATE cron_jobs SET name = ?, description = ?, code = ?, schedule = ?, language = ?, enabled = ?, next_run_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
                 $stmt->execute([$name, $description, $code, $schedule, $language, $enabled, $next_run_at, $id]);
-                $success_message = "Cron job başarıyla güncellendi!";
+                $success_message = "Cron job updated successfully!";
                 header('Location: cron-manager.php?success=' . urlencode($success_message));
                 exit;
             }
@@ -154,10 +154,10 @@ include '../includes/header.php';
         <div class="container mx-auto px-4 py-8">
             <div class="mb-8">
                 <h1 class="text-3xl font-bold text-foreground mb-2">
-                    <?php echo $edit_cron ? 'Cron Job Düzenle' : 'Yeni Cron Job Oluştur'; ?>
+                    <?php echo $edit_cron ? 'Edit Cron Job' : 'Create New Cron Job'; ?>
                 </h1>
                 <p class="text-muted-foreground">
-                    <?php echo $edit_cron ? 'Mevcut cron job bilgilerini güncelleyin.' : 'Yeni bir zamanlanmış görev (cron job) oluşturun.'; ?>
+                    <?php echo $edit_cron ? 'Update existing cron job information.' : 'Create a new scheduled task (cron job).'; ?>
                 </p>
             </div>
             
@@ -197,13 +197,13 @@ include '../includes/header.php';
                                 placeholder="ornek_cron_job"
                             />
                             <p class="mt-1 text-xs text-muted-foreground">
-                                Sadece harf, rakam ve alt çizgi kullanılabilir. <?php echo $edit_cron ? '(Düzenlenemez)' : ''; ?>
+                                Only letters, numbers and underscore allowed. <?php echo $edit_cron ? '(Cannot be edited)' : ''; ?>
                             </p>
                         </div>
                         
                         <div>
                             <label for="description" class="block text-sm font-medium text-foreground mb-2">
-                                Açıklama
+                                Description
                             </label>
                             <input
                                 type="text"
@@ -211,13 +211,13 @@ include '../includes/header.php';
                                 name="description"
                                 value="<?php echo htmlspecialchars($edit_cron['description'] ?? ''); ?>"
                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                placeholder="Bu cron job ne yapar?"
+                                placeholder="What does this cron job do?"
                             />
                         </div>
                         
                         <div>
                             <label for="language" class="block text-sm font-medium text-foreground mb-2">
-                                Dil <span class="text-destructive">*</span>
+                                Language <span class="text-destructive">*</span>
                             </label>
                             <select
                                 id="language"
@@ -233,7 +233,7 @@ include '../includes/header.php';
                         
                         <div>
                             <label for="schedule" class="block text-sm font-medium text-foreground mb-2">
-                                Zamanlama (Cron Expression) <span class="text-destructive">*</span>
+                                Schedule (Cron Expression) <span class="text-destructive">*</span>
                             </label>
                             <input
                                 type="text"
@@ -246,14 +246,14 @@ include '../includes/header.php';
                                 placeholder="* * * * *"
                             />
                             <p class="mt-1 text-xs text-muted-foreground">
-                                Format: <code class="bg-muted px-1 rounded">dakika saat gün ay hafta</code>
-                                <br>Örnekler: <code class="bg-muted px-1 rounded">*/5 * * * *</code> (her 5 dakikada), <code class="bg-muted px-1 rounded">0 0 * * *</code> (günde bir kez saat 00:00)
+                                Format: <code class="bg-muted px-1 rounded">minute hour day month weekday</code>
+                                <br>Examples: <code class="bg-muted px-1 rounded">*/5 * * * *</code> (every 5 minutes), <code class="bg-muted px-1 rounded">0 0 * * *</code> (once a day at 00:00)
                             </p>
                         </div>
                         
                         <div>
                             <label for="code" class="block text-sm font-medium text-foreground mb-2">
-                                Kod <span class="text-destructive">*</span>
+                                Code <span class="text-destructive">*</span>
                             </label>
                             <textarea
                                 id="code"
@@ -281,7 +281,7 @@ include '../includes/header.php';
                                 class="rounded border-input"
                             />
                             <label for="enabled" class="text-sm font-medium text-foreground">
-                                Aktif
+                                Active
                             </label>
                         </div>
                         
@@ -293,13 +293,13 @@ include '../includes/header.php';
                                 <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                 </svg>
-                                <?php echo $edit_cron ? 'Güncelle' : 'Oluştur'; ?>
+                                <?php echo $edit_cron ? 'Update' : 'Create'; ?>
                             </button>
                             <a
                                 href="cron-manager.php"
                                 class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-4 py-2 transition-colors"
                             >
-                                İptal
+                                Cancel
                             </a>
                         </div>
                     </div>

@@ -38,7 +38,7 @@ try {
     $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     if (empty($columns)) {
-        throw new PDOException("Tablo bulunamadı: $table_name");
+        throw new PDOException("Table not found: $table_name");
     }
     
     foreach ($columns as $col) {
@@ -48,8 +48,8 @@ try {
         }
     }
 } catch (PDOException $e) {
-    $error_message = "Tablo bulunamadı: <strong>" . htmlspecialchars($table_name) . "</strong><br>" . 
-                     "Lütfen tablo adının doğru olduğundan ve veritabanında mevcut olduğundan emin olun.";
+    $error_message = "Table not found: <strong>" . htmlspecialchars($table_name) . "</strong><br>" . 
+                     "Please ensure the table name is correct and exists in the database.";
     include '../includes/header.php';
     ?>
     <div class="flex h-screen overflow-hidden">
@@ -64,7 +64,7 @@ try {
                     </div>
                     <div class="mt-4">
                         <a href="admin.php" class="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
-                            Ana Sayfaya Dön
+                            Back to Dashboard
                         </a>
                     </div>
                 </div>
@@ -106,7 +106,7 @@ function executeRule($rule, $context = []) {
         return $result !== null ? $result : true;
     } catch (ParseError $e) {
         ob_end_clean();
-        throw new Exception('Rule syntax hatası: ' . $e->getMessage());
+        throw new Exception('Rule syntax error: ' . $e->getMessage());
     } catch (Exception $e) {
         ob_end_clean();
         throw $e;
@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             
                             executeRule($page_config['create_rule'], $rule_context);
                         } catch (Exception $e) {
-                            $error_message = "Kural hatası: " . $e->getMessage();
+                            $error_message = "Rule error: " . $e->getMessage();
                             break; // Stop execution
                         }
                     }
@@ -174,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         if (move_uploaded_file($file['tmp_name'], $file_path)) {
                                             $_POST[$col_name] = 'uploads/' . $filename;
                                         } else {
-                                            $error_message = "Görsel yüklenirken hata oluştu: " . $col_name;
+                                            $error_message = "Error uploading image: " . $col_name;
                                             break;
                                         }
                                     } else {
@@ -273,9 +273,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $sql = "INSERT INTO \"$escaped_table_name\" (" . implode(", ", $all_columns) . ") VALUES (" . implode(", ", $all_values_sql) . ")";
                         $stmt = $db->prepare($sql);
                         $stmt->execute($values);
-                        $success_message = "Kayıt başarıyla eklendi!";
+                        $success_message = "Record added successfully!";
                     } catch (PDOException $e) {
-                        $error_message = "Kayıt eklenirken hata: " . $e->getMessage();
+                        $error_message = "Error adding record: " . $e->getMessage();
                     }
                 }
                 break;
@@ -295,7 +295,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 $current_record = $stmt->fetch(PDO::FETCH_ASSOC);
                                 
                                 if (!$current_record) {
-                                    $error_message = "Kayıt bulunamadı!";
+                                    $error_message = "Record not found!";
                                     break;
                                 }
                                 
@@ -323,7 +323,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 
                                 executeRule($page_config['update_rule'], $rule_context);
                             } catch (Exception $e) {
-                                $error_message = "Kural hatası: " . $e->getMessage();
+                                $error_message = "Rule error: " . $e->getMessage();
                                 break; // Stop execution
                             }
                         }
@@ -362,11 +362,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             if (move_uploaded_file($file['tmp_name'], $file_path)) {
                                                 $_POST[$col_name] = 'uploads/' . $filename;
                                             } else {
-                                                $error_message = "Görsel yüklenirken hata oluştu: " . $col_name;
+                                                $error_message = "Error uploading image: " . $col_name;
                                                 break;
                                             }
                                         } else {
-                                            $error_message = "Geçersiz görsel formatı: " . $col_name;
+                                            $error_message = "Invalid image format: " . $col_name;
                                             break;
                                         }
                                     } elseif (isset($_POST['existing_' . $col_name])) {
@@ -431,9 +431,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $escaped_primary_key = preg_replace('/[^a-zA-Z0-9_]/', '', $primary_key);
                             $stmt = $db->prepare("UPDATE \"$escaped_table_name\" SET " . implode(", ", $set_parts) . " WHERE \"$escaped_primary_key\" = ?");
                             $stmt->execute($values);
-                            $success_message = "Kayıt başarıyla güncellendi!";
+                            $success_message = "Record updated successfully!";
                         } catch (PDOException $e) {
-                            $error_message = "Kayıt güncellenirken hata: " . $e->getMessage();
+                            $error_message = "Error updating record: " . $e->getMessage();
                         }
                     }
                 }
@@ -454,7 +454,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 $record = $stmt->fetch(PDO::FETCH_ASSOC);
                                 
                                 if (!$record) {
-                                    $error_message = "Kayıt bulunamadı!";
+                                    $error_message = "Record not found!";
                                 } else {
                                     $rule_context = [
                                         'record' => $record,
@@ -470,15 +470,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     try {
                                         $stmt = $db->prepare("DELETE FROM \"$escaped_table_name\" WHERE \"$escaped_primary_key\" = ?");
                                         $stmt->execute([$record_id]);
-                                        $success_message = "Kayıt başarıyla silindi!";
+                                        $success_message = "Record deleted successfully!";
                                         header('Location: dynamic-page.php?page=' . urlencode($page_name));
                                         exit;
                                     } catch (PDOException $e) {
-                                        $error_message = "Kayıt silinirken hata: " . $e->getMessage();
+                                        $error_message = "Error deleting record: " . $e->getMessage();
                                     }
                                 }
                             } catch (Exception $e) {
-                                $error_message = "Kural hatası: " . $e->getMessage();
+                                $error_message = "Rule error: " . $e->getMessage();
                                 // Don't redirect, show error on page
                             }
                         } else {
@@ -488,7 +488,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 $escaped_primary_key = preg_replace('/[^a-zA-Z0-9_]/', '', $primary_key);
                                 $stmt = $db->prepare("DELETE FROM \"$escaped_table_name\" WHERE \"$escaped_primary_key\" = ?");
                                 $stmt->execute([$record_id]);
-                                $success_message = "Kayıt başarıyla silindi!";
+                                $success_message = "Record deleted successfully!";
                                 header('Location: dynamic-page.php?page=' . urlencode($page_name));
                                 exit;
                             } catch (PDOException $e) {
@@ -615,9 +615,9 @@ if ($enable_list) {
         }
         $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        $error_message = "Veritabanı hatası: <strong>" . htmlspecialchars($table_name) . "</strong> tablosuna erişilemiyor.<br>" . 
-                         "Hata: " . htmlspecialchars($e->getMessage()) . "<br>" .
-                         "Lütfen tablo adının doğru olduğundan ve veritabanında mevcut olduğundan emin olun.";
+        $error_message = "Database error: Cannot access table <strong>" . htmlspecialchars($table_name) . "</strong>.<br>" . 
+                         "Error: " . htmlspecialchars($e->getMessage()) . "<br>" .
+                         "Please ensure the table name is correct and exists in the database.";
     }
 }
 
@@ -633,7 +633,7 @@ if ($edit_id && $enable_update) {
         $edit_record = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         if (!isset($error_message)) {
-            $error_message = "Kayıt getirilirken hata oluştu: " . htmlspecialchars($e->getMessage());
+            $error_message = "Error retrieving record: " . htmlspecialchars($e->getMessage());
         }
     }
 }

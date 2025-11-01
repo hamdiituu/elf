@@ -45,13 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     try {
         $stmt = $db->prepare("INSERT INTO saved_queries (name, query, user_id) VALUES (?, ?, ?)");
         $stmt->execute([$saved_query_name, $custom_query, $_SESSION['user_id']]);
-        $success_message = "Query başarıyla kaydedildi!";
+        $success_message = "Query saved successfully!";
         
         // Redirect to prevent form resubmission
         header('Location: database-explorer.php?success=' . urlencode($success_message));
         exit;
     } catch (PDOException $e) {
-        $error_message = "Query kaydedilirken hata: " . $e->getMessage();
+        $error_message = "Error saving query: " . $e->getMessage();
     }
 }
 
@@ -62,14 +62,14 @@ if ($delete_query_id) {
         $stmt = $db->prepare("DELETE FROM saved_queries WHERE id = ? AND (user_id = ? OR user_id IS NULL)");
         $stmt->execute([$delete_query_id, $_SESSION['user_id']]);
         if ($stmt->rowCount() > 0) {
-            $success_message = "Query başarıyla silindi!";
+            $success_message = "Query deleted successfully!";
             header('Location: database-explorer.php?success=' . urlencode($success_message));
             exit;
         } else {
-            $error_message = "Query bulunamadı veya silme izniniz yok!";
+            $error_message = "Query not found or you don't have permission to delete it!";
         }
     } catch (PDOException $e) {
-        $error_message = "Query silinirken hata: " . $e->getMessage();
+        $error_message = "Error deleting query: " . $e->getMessage();
     }
 }
 
@@ -88,20 +88,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $field_primary = $_POST['field_primary'] ?? [];
         
         if (empty($table_name)) {
-            $error_message = "Tablo adı gereklidir!";
+            $error_message = "Table name is required!";
         } elseif (empty($fields)) {
-            $error_message = "En az bir alan eklemelisiniz!";
+            $error_message = "At least one field must be added!";
         } else {
             try {
                 // Validate table name (SQLite identifier rules)
                 if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table_name)) {
-                    throw new Exception("Geçersiz tablo adı! Sadece harf, rakam ve alt çizgi kullanılabilir.");
+                    throw new Exception("Invalid table name! Only letters, numbers and underscore allowed.");
                 }
                 
                 // Check if table already exists
                 $existing_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name = " . $db->quote($table_name))->fetchAll(PDO::FETCH_COLUMN);
                 if (!empty($existing_tables)) {
-                    throw new Exception("Tablo '{$table_name}' zaten mevcut!");
+                    throw new Exception("Table '{$table_name}' already exists!");
                 }
                 
                 // Build SQL from form data
@@ -122,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     
                     // Validate field name
                     if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $field_name)) {
-                        throw new Exception("Geçersiz alan adı: '$field_name'");
+                        throw new Exception("Invalid field name: '$field_name'");
                     }
                     
                     // Convert BOOLEAN to INTEGER for SQLite
@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 }
                 
                 if (empty($columns)) {
-                    throw new Exception("En az bir geçerli alan eklemelisiniz!");
+                    throw new Exception("At least one valid field must be added!");
                 }
                 
                 // Build SQL statement
@@ -180,11 +180,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 
                 // Execute CREATE TABLE
                 $db->exec($sql);
-                $success_message = "Tablo '{$table_name}' başarıyla oluşturuldu!";
+                $success_message = "Table '{$table_name}' created successfully!";
                 header('Location: database-explorer.php?table=' . urlencode($table_name) . '&success=' . urlencode($success_message));
                 exit;
             } catch (PDOException $e) {
-                $error_message = "Tablo oluşturulurken hata: " . $e->getMessage();
+                $error_message = "Error creating table: " . $e->getMessage();
             } catch (Exception $e) {
                 $error_message = $e->getMessage();
             }
@@ -192,31 +192,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } else {
         // SQL-based creation (backward compatibility)
         if (empty($table_name)) {
-            $error_message = "Tablo adı gereklidir!";
+            $error_message = "Table name is required!";
         } elseif (empty($table_sql)) {
-            $error_message = "SQL sorgusu gereklidir!";
+            $error_message = "SQL query is required!";
         } else {
             try {
                 // Validate table name (SQLite identifier rules)
                 if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table_name)) {
-                    throw new Exception("Geçersiz tablo adı. Sadece harf, rakam ve alt çizgi kullanılabilir.");
+                    throw new Exception("Invalid table name. Only letters, numbers and underscore allowed.");
                 }
                 
                 // Check if table already exists
                 $existing_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name = " . $db->quote($table_name))->fetchAll(PDO::FETCH_COLUMN);
                 if (!empty($existing_tables)) {
-                    throw new Exception("Tablo '{$table_name}' zaten mevcut!");
+                    throw new Exception("Table '{$table_name}' already exists!");
                 }
                 
                 // Execute CREATE TABLE statement
                 $db->exec($table_sql);
-                $success_message = "Tablo '{$table_name}' başarıyla oluşturuldu!";
+                $success_message = "Table '{$table_name}' created successfully!";
                 
                 // Redirect to avoid form resubmission
                 header('Location: database-explorer.php?table=' . urlencode($table_name) . '&success=' . urlencode($success_message));
                 exit;
             } catch (Exception $e) {
-                $error_message = "Tablo oluşturulurken hata: " . $e->getMessage();
+                $error_message = "Error creating table: " . $e->getMessage();
             }
         }
     }
@@ -232,18 +232,18 @@ if ($delete_table) {
             // Prevent deletion of system tables
             $system_tables = ['sqlite_sequence', 'sqlite_master'];
             if (in_array($delete_table, $system_tables)) {
-                $error_message = "Sistem tabloları silinemez!";
+                $error_message = "System tables cannot be deleted!";
             } else {
                 $db->exec("DROP TABLE IF EXISTS " . $db->quote($delete_table));
-                $success_message = "Tablo '{$delete_table}' başarıyla silindi!";
+                $success_message = "Table '{$delete_table}' deleted successfully!";
                 header('Location: database-explorer.php?success=' . urlencode($success_message));
                 exit;
             }
         } else {
-            $error_message = "Tablo bulunamadı!";
+            $error_message = "Table not found!";
         }
     } catch (PDOException $e) {
-        $error_message = "Tablo silinirken hata: " . $e->getMessage();
+        $error_message = "Error deleting table: " . $e->getMessage();
     }
 }
 
@@ -300,21 +300,21 @@ if ($load_query_id || $run_query_id) {
                                 $table_columns[] = $col['name'] ?? "Column " . ($i + 1);
                             }
                         }
-                        $success_message = "Query başarıyla çalıştırıldı! " . count($query_result) . " satır bulundu.";
+                        $success_message = "Query executed successfully! " . count($query_result) . " rows found.";
                     } else {
                         // For non-SELECT queries, show affected rows
                         $affected_rows = $stmt->rowCount();
-                        $success_message = "Query başarıyla çalıştırıldı! Etkilenen satır sayısı: " . $affected_rows;
+                        $success_message = "Query executed successfully! Affected rows: " . $affected_rows;
                     }
                 } catch (PDOException $e) {
-                    $error_message = "Query çalıştırılırken hata: " . $e->getMessage();
+                    $error_message = "Error executing query: " . $e->getMessage();
                 }
             }
         } else {
-            $error_message = "Query bulunamadı veya erişim izniniz yok!";
+            $error_message = "Query not found or you don't have access permission!";
         }
     } catch (PDOException $e) {
-        $error_message = "Query yüklenirken hata: " . $e->getMessage();
+        $error_message = "Error loading query: " . $e->getMessage();
     }
 }
 
@@ -356,10 +356,10 @@ if ($export_excel) {
                     $export_name = 'query_results';
                 }
             } catch (PDOException $e) {
-                die("Query hatası: " . $e->getMessage());
+                die("Query error: " . $e->getMessage());
             }
         } else {
-            die("Export için query bulunamadı.");
+            die("Query not found for export.");
         }
     } elseif ($export_excel === 'table') {
         if ($export_table_name) {
@@ -382,13 +382,13 @@ if ($export_excel) {
                     }
                     $export_name = $export_table_name;
                 } else {
-                    die("Geçersiz tablo adı: " . htmlspecialchars($export_table_name));
+                    die("Invalid table name: " . htmlspecialchars($export_table_name));
                 }
             } catch (PDOException $e) {
-                die("Veri yüklenirken hata: " . $e->getMessage());
+                die("Error loading data: " . $e->getMessage());
             }
         } else {
-            die("Export için tablo adı belirtilmedi.");
+            die("Table name not specified for export.");
         }
     }
     
@@ -432,10 +432,10 @@ if ($export_excel) {
             fclose($output);
             exit;
         } else {
-            die("Export için kolon bilgisi bulunamadı.");
+            die("Column information not found for export.");
         }
     } else {
-        die("Export için veri bulunamadı.");
+        die("Data not found for export.");
     }
 }
 
@@ -476,7 +476,7 @@ try {
     $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
 } catch (PDOException $e) {
     $tables = [];
-    $error_message = "Tablolar yüklenirken hata: " . $e->getMessage();
+    $error_message = "Error loading tables: " . $e->getMessage();
 }
 
 // Handle custom query
@@ -511,10 +511,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $custom_query) {
         } else {
             // For non-SELECT queries, show affected rows
             $affected_rows = $stmt->rowCount();
-            $success_message = "Sorgu başarıyla çalıştırıldı. Etkilenen satır sayısı: " . $affected_rows;
+            $success_message = "Query executed successfully. Affected rows: " . $affected_rows;
         }
     } catch (PDOException $e) {
-        $error_message = "Sorgu hatası: " . $e->getMessage();
+        $error_message = "Query error: " . $e->getMessage();
     }
 }
 
@@ -596,7 +596,7 @@ if ($table_name && in_array($table_name, $tables)) {
         $stmt->execute($where_params);
         $table_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        $error_message = "Tablo verileri yüklenirken hata: " . $e->getMessage();
+        $error_message = "Error loading table data: " . $e->getMessage();
     }
 }
 
@@ -617,7 +617,7 @@ include '../includes/header.php';
             <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
                 <div class="mb-8">
                     <h1 class="text-3xl font-bold text-foreground mb-2">Database Explorer</h1>
-                    <p class="text-sm text-muted-foreground">Veritabanı yönetimi ve sorgu aracı</p>
+                    <p class="text-sm text-muted-foreground">Database management and query tool</p>
                 </div>
                 
                 <!-- Database Statistics -->
@@ -625,7 +625,7 @@ include '../includes/header.php';
                     <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-xs font-medium text-muted-foreground mb-1">Toplam Tablo</p>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Total Tables</p>
                                 <p class="text-2xl font-bold text-foreground"><?php echo $total_tables; ?></p>
                             </div>
                             <div class="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
@@ -639,7 +639,7 @@ include '../includes/header.php';
                     <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-xs font-medium text-muted-foreground mb-1">Toplam Kayıt</p>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Total Records</p>
                                 <p class="text-2xl font-bold text-foreground"><?php echo number_format($total_rows); ?></p>
                             </div>
                             <div class="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
@@ -653,7 +653,7 @@ include '../includes/header.php';
                     <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-xs font-medium text-muted-foreground mb-1">Aktif Tablo</p>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Active Table</p>
                                 <p class="text-2xl font-bold text-foreground"><?php echo $selected_table ? '1' : '0'; ?></p>
                             </div>
                             <div class="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
@@ -667,7 +667,7 @@ include '../includes/header.php';
                     <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-xs font-medium text-muted-foreground mb-1">Kayıtlı Query</p>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Saved Queries</p>
                                 <p class="text-2xl font-bold text-foreground"><?php echo count($saved_queries); ?></p>
                             </div>
                             <div class="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
@@ -706,12 +706,12 @@ include '../includes/header.php';
                     <div class="lg:col-span-3 transition-all duration-300" id="tables-panel">
                         <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                             <div class="p-4 pb-0 flex items-center justify-between">
-                                <h3 class="text-lg font-semibold leading-none tracking-tight" id="tables-title">Tablolar</h3>
+                                <h3 class="text-lg font-semibold leading-none tracking-tight" id="tables-title">Tables</h3>
                                 <button
                                     type="button"
                                     id="toggle-tables"
                                     class="p-1 rounded hover:bg-muted transition-colors"
-                                    title="Küçült / Büyüt"
+                                    title="Minimize / Maximize"
                                 >
                                     <svg class="h-5 w-5 text-muted-foreground transition-transform" id="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V5l7 7-7 7z" />
@@ -727,7 +727,7 @@ include '../includes/header.php';
                                         <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                         </svg>
-                                        Yeni Tablo
+                                        New Table
                                     </button>
                                 </div>
                                 <div class="space-y-2 max-h-[600px] overflow-y-auto">
@@ -752,13 +752,13 @@ include '../includes/header.php';
                                                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                                 </svg>
-                                                                <?php echo number_format($stats['row_count']); ?> kayıt
+                                                                <?php echo number_format($stats['row_count']); ?> records
                                                             </span>
                                                             <span class="flex items-center gap-1">
                                                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                                                                 </svg>
-                                                                <?php echo $stats['col_count']; ?> kolon
+                                                                <?php echo $stats['col_count']; ?> columns
                                                             </span>
                                                         </div>
                                                     </div>
@@ -771,7 +771,7 @@ include '../includes/header.php';
                                                 <button
                                                     onclick="deleteTable('<?php echo htmlspecialchars(addslashes($table)); ?>')"
                                                     class="ml-1 p-1 opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:bg-red-50 rounded"
-                                                    title="Tablo Sil"
+                                                    title="Delete Table"
                                                 >
                                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -790,7 +790,7 @@ include '../includes/header.php';
                         <!-- Saved Queries Sidebar -->
                         <div class="mb-6 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                             <div class="p-4 pb-0">
-                                <h3 class="text-sm font-semibold leading-none tracking-tight mb-3">Kaydedilmiş Query'ler</h3>
+                                <h3 class="text-sm font-semibold leading-none tracking-tight mb-3">Saved Queries</h3>
                             </div>
                             <div class="p-4 pt-2">
                                 <?php if (isset($saved_queries) && !empty($saved_queries)): ?>
@@ -808,7 +808,7 @@ include '../includes/header.php';
                                                     <a
                                                         href="?run_query=<?php echo $sq['id']; ?><?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>"
                                                         class="p-1.5 rounded hover:bg-green-600 hover:text-white transition-colors"
-                                                        title="Çalıştır"
+                                                        title="Run"
                                                     >
                                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -818,7 +818,7 @@ include '../includes/header.php';
                                                     <a
                                                         href="?load_query=<?php echo $sq['id']; ?><?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>"
                                                         class="p-1.5 rounded hover:bg-primary hover:text-primary-foreground transition-colors"
-                                                        title="Yükle"
+                                                        title="Load"
                                                     >
                                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -828,8 +828,8 @@ include '../includes/header.php';
                                                         <a
                                                             href="?delete_query=<?php echo $sq['id']; ?><?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>"
                                                             class="p-1.5 rounded hover:bg-red-500 hover:text-white transition-colors"
-                                                            title="Sil"
-                                                            onclick="return confirm('Bu sorguyu silmek istediğinizden emin misiniz?');"
+                                                            title="Delete"
+                                                            onclick="return confirm('Are you sure you want to delete this query?');"
                                                         >
                                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -841,7 +841,7 @@ include '../includes/header.php';
                                         <?php endforeach; ?>
                                     </div>
                                 <?php else: ?>
-                                    <p class="text-sm text-muted-foreground">Henüz kayıtlı sorgu yok. Sorgunuzu yazıp "Kaydet" butonuna tıklayarak kaydedebilirsiniz.</p>
+                                    <p class="text-sm text-muted-foreground">No saved queries yet. You can save your query by writing it and clicking the "Save" button.</p>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -850,7 +850,7 @@ include '../includes/header.php';
                         <div class="mb-6 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                             <div class="p-6 pb-0">
                                 <div class="flex items-center justify-between mb-4">
-                                    <h3 class="text-lg font-semibold leading-none tracking-tight">SQL Sorgusu</h3>
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight">SQL Query</h3>
                                     <?php if (isset($saved_queries) && !empty($saved_queries)): ?>
                                         <div class="flex items-center gap-2">
                                             <select
@@ -858,17 +858,17 @@ include '../includes/header.php';
                                                 class="text-sm px-3 py-1.5 border border-input bg-background text-foreground rounded-md hover:bg-accent transition-colors flex-1"
                                                 onchange="if(this.value) { handleSavedQuery(this.value); }"
                                             >
-                                                <option value="">Kaydedilmiş Query Seç...</option>
+                                                <option value="">Select Saved Query...</option>
                                                 <?php foreach ($saved_queries as $sq): ?>
-                                                    <option value="<?php echo $sq['id']; ?>" data-action="load"><?php echo htmlspecialchars($sq['name']); ?> (Yükle)</option>
-                                                    <option value="<?php echo $sq['id']; ?>" data-action="run"><?php echo htmlspecialchars($sq['name']); ?> (Çalıştır)</option>
+                                                    <option value="<?php echo $sq['id']; ?>" data-action="load"><?php echo htmlspecialchars($sq['name']); ?> (Load)</option>
+                                                    <option value="<?php echo $sq['id']; ?>" data-action="run"><?php echo htmlspecialchars($sq['name']); ?> (Run)</option>
                                                 <?php endforeach; ?>
                                             </select>
                                             <button
                                                 type="button"
                                                 onclick="const select = document.getElementById('load-saved-query'); if(select.value) { handleSavedQuery(select.value); }"
                                                 class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-green-600 text-white hover:bg-green-700 px-3 py-1.5 transition-colors"
-                                                title="Seçili Query'i Çalıştır"
+                                                title="Run Selected Query"
                                             >
                                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -901,31 +901,31 @@ include '../includes/header.php';
                                                 <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                                 </svg>
-                                                Sorguyu Çalıştır
+                                                Execute Query
                                             </button>
                                             <button
                                                 type="button"
                                                 onclick="showSaveDialog()"
                                                 class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 transition-colors"
-                                                title="Sorguyu Kaydet"
+                                                title="Save Query"
                                             >
                                                 <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                                                 </svg>
-                                                Kaydet
+                                                Save
                                             </button>
                                             <?php if ($custom_query): ?>
                                                 <a
                                                     href="database-explorer.php<?php echo $selected_table ? '?table=' . htmlspecialchars($selected_table) : ''; ?>"
                                                     class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-4 py-2 transition-colors"
                                                 >
-                                                    Temizle
+                                                    Clear
                                                 </a>
                                             <?php endif; ?>
                                         </div>
                                         <div class="rounded-md bg-yellow-50 border border-yellow-200 p-3">
                                             <p class="text-xs text-yellow-800">
-                                                <strong>Uyarı:</strong> Tüm SQL sorguları çalıştırılabilir. UPDATE, DELETE, DROP gibi sorgular veritabanını değiştirebilir. Dikkatli olun!
+                                                <strong>Warning:</strong> All SQL queries can be executed. Queries like UPDATE, DELETE, DROP can modify the database. Be careful!
                                             </p>
                                         </div>
                                     </div>
@@ -937,14 +937,14 @@ include '../includes/header.php';
                         <?php if ($selected_table && !empty($table_info)): ?>
                             <div class="mb-4 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                                 <div class="p-4 pb-0">
-                                    <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Tablo Yapısı: <?php echo htmlspecialchars($selected_table); ?></h3>
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Table Structure: <?php echo htmlspecialchars($selected_table); ?></h3>
                                 </div>
                                 <div class="p-4 pt-0">
                                     <div class="overflow-x-auto">
                                         <table class="min-w-full divide-y divide-border">
                                             <thead class="bg-muted/50">
                                                 <tr>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-foreground">Kolon Adı</th>
+                                                    <th class="px-3 py-2 text-left text-xs font-medium text-foreground">Column Name</th>
                                                     <th class="px-3 py-2 text-left text-xs font-medium text-foreground">Tip</th>
                                                     <th class="px-3 py-2 text-left text-xs font-medium text-foreground">NULL</th>
                                                     <th class="px-3 py-2 text-left text-xs font-medium text-foreground">Default</th>
@@ -986,9 +986,9 @@ include '../includes/header.php';
                                         <h3 class="text-lg font-semibold leading-none tracking-tight">
                                             <?php 
                                             if ($query_result !== null) {
-                                                echo 'Sorgu Sonuçları';
+                                                echo 'Query Results';
                                             } else {
-                                                echo htmlspecialchars($selected_table) . ' Tablosu';
+                                                echo htmlspecialchars($selected_table) . ' Table';
                                             }
                                             ?>
                                         </h3>
@@ -1000,7 +1000,7 @@ include '../includes/header.php';
                                                 <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                 </svg>
-                                                Excel'e Aktar
+                                                Export to Excel
                                             </a>
                                         <?php endif; ?>
                                     </div>
@@ -1009,7 +1009,7 @@ include '../includes/header.php';
                                     
                                     <?php if (empty($display_data)): ?>
                                         <div class="text-center py-8 text-muted-foreground">
-                                            Veri bulunamadı.
+                                            No data found.
                                         </div>
                                     <?php else: ?>
                                         <div class="overflow-x-auto -mx-6 px-6">
@@ -1073,7 +1073,7 @@ include '../includes/header.php';
                                                                             // Display image with thumbnail
                                                                             echo '<div class="flex items-center gap-2">';
                                                                             echo '<img src="../' . htmlspecialchars($value) . '" alt="' . htmlspecialchars($col) . '" class="w-16 h-16 object-cover rounded border border-input" onerror="this.style.display=\'none\'">';
-                                                                            echo '<a href="../' . htmlspecialchars($value) . '" target="_blank" class="text-xs text-primary hover:underline">Görüntüle</a>';
+                                                                            echo '<a href="../' . htmlspecialchars($value) . '" target="_blank" class="text-xs text-primary hover:underline">View</a>';
                                                                             echo '</div>';
                                                                         } else {
                                                                             // Truncate long values
@@ -1097,9 +1097,9 @@ include '../includes/header.php';
                                         <?php if ($selected_table && !$query_result && $total_pages > 1): ?>
                                             <div class="mt-4 flex items-center justify-between border-t border-border pt-4">
                                                 <div class="text-sm text-muted-foreground">
-                                                    Sayfa <?php echo $page; ?> / <?php echo $total_pages; ?> · 
-                                                    Toplam <?php echo number_format($table_row_count); ?> kayıt · 
-                                                    Gösterilen: <?php echo number_format(min($per_page, $table_row_count - ($page - 1) * $per_page)); ?>
+                                                    Page <?php echo $page; ?> / <?php echo $total_pages; ?> · 
+                                                    Total <?php echo number_format($table_row_count); ?> records · 
+                                                    Showing: <?php echo number_format(min($per_page, $table_row_count - ($page - 1) * $per_page)); ?>
                                                 </div>
                                                 <div class="flex items-center gap-2">
                                                     <!-- Per Page Selector -->
@@ -1112,7 +1112,7 @@ include '../includes/header.php';
                                                             <input type="hidden" name="sort" value="<?php echo htmlspecialchars($sort_col); ?>">
                                                             <input type="hidden" name="order" value="<?php echo htmlspecialchars($sort_order); ?>">
                                                         <?php endif; ?>
-                                                        <label class="text-xs text-muted-foreground">Sayfa başına:</label>
+                                                        <label class="text-xs text-muted-foreground">Per page:</label>
                                                         <select name="per_page" onchange="this.form.submit()" class="px-2 py-1 text-xs border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring">
                                                             <option value="25" <?php echo $per_page == 25 ? 'selected' : ''; ?>>25</option>
                                                             <option value="50" <?php echo $per_page == 50 ? 'selected' : ''; ?>>50</option>
@@ -1194,11 +1194,11 @@ include '../includes/header.php';
                                             </div>
                                         <?php elseif ($selected_table && !$query_result): ?>
                                             <div class="mt-4 text-sm text-muted-foreground border-t border-border pt-4">
-                                                Toplam <?php echo number_format($table_row_count); ?> kayıt gösteriliyor
+                                                Total <?php echo number_format($table_row_count); ?> records displayed
                                             </div>
                                         <?php else: ?>
                                             <div class="mt-4 text-sm text-muted-foreground border-t border-border pt-4">
-                                                Toplam <?php echo count($display_data); ?> satır gösteriliyor
+                                                Total <?php echo count($display_data); ?> rows displayed
                                             </div>
                                         <?php endif; ?>
                                     <?php endif; ?>
@@ -1210,7 +1210,7 @@ include '../includes/header.php';
                                     <svg class="mx-auto h-12 w-12 text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                                     </svg>
-                                    <p class="text-muted-foreground">Bir tablo seçin veya SQL sorgusu çalıştırın.</p>
+                                    <p class="text-muted-foreground">Select a table or run an SQL query.</p>
                                 </div>
                             </div>
                         <?php endif; ?>
@@ -1249,7 +1249,7 @@ include '../includes/header.php';
                         onclick="hideSaveDialog()"
                         class="px-4 py-2 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 rounded-md transition-colors"
                     >
-                        İptal
+                        Cancel
                     </button>
                     <button
                         type="submit"
@@ -1266,12 +1266,12 @@ include '../includes/header.php';
 <!-- Create Table Modal -->
 <div id="create-table-dialog" class="fixed inset-0 hidden items-center justify-center z-50" onclick="if(event.target === this) hideCreateTableModal()" style="background-color: rgba(0, 0, 0, 0.3) !important;">
     <div class="border border-border rounded-lg shadow-lg p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()" style="background-color: hsl(var(--background)) !important; z-index: 51;">
-        <h3 class="text-lg font-semibold mb-4">Yeni Tablo Oluştur</h3>
+        <h3 class="text-lg font-semibold mb-4">Create New Table</h3>
         <form method="POST" action="" id="create-table-form">
             <input type="hidden" name="action" value="create_table">
             <div class="space-y-4">
                 <div>
-                    <label for="table_name" class="block text-sm font-medium mb-2">Tablo Adı:</label>
+                    <label for="table_name" class="block text-sm font-medium mb-2">Table Name:</label>
                     <input
                         type="text"
                         name="table_name"
@@ -1317,13 +1317,13 @@ include '../includes/header.php';
                         onclick="hideCreateTableModal()"
                         class="px-4 py-2 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 rounded-md transition-colors"
                     >
-                        İptal
+                        Cancel
                     </button>
                     <button
                         type="submit"
                         class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
                     >
-                        Oluştur
+                        Create
                     </button>
                 </div>
             </div>
@@ -1577,7 +1577,7 @@ function addTimestamps() {
 
 // Delete Table function
 function deleteTable(tableName) {
-    if (confirm('Tablo "' + tableName + '" silinecek. Bu işlem geri alınamaz. Emin misiniz?')) {
+    if (confirm('Table "' + tableName + '" will be deleted. This action cannot be undone. Are you sure?')) {
         window.location.href = '?delete_table=' + encodeURIComponent(tableName);
     }
 }

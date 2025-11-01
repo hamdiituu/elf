@@ -62,39 +62,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $delete_rule = trim($_POST['delete_rule'] ?? '');
                 
                 if (empty($page_name) || empty($page_title) || empty($table_name)) {
-                    $error_message = "Sayfa adı, başlık ve tablo adı gereklidir!";
+                    $error_message = "Page name, title and table name are required!";
                 } else {
                     // Validate page_name (for filename)
                     if (!preg_match('/^[a-z0-9_-]+$/', strtolower($page_name))) {
-                        $error_message = "Sayfa adı sadece küçük harf, rakam, alt çizgi ve tire içerebilir!";
+                        $error_message = "Page name can only contain lowercase letters, numbers, underscore and dash!";
                     } else {
                         try {
                             // Validate and escape table name
                             $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
                             if ($escaped_table_name !== $table_name) {
-                                $error_message = "Geçersiz tablo adı!";
+                                $error_message = "Invalid table name!";
                             } else {
                                 // Check if table exists
                                 $stmt = $db->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
                                 $stmt->execute([$table_name]);
                                 if (!$stmt->fetch()) {
-                                    $error_message = "Seçilen tablo bulunamadı!";
+                                    $error_message = "Selected table not found!";
                                 } else {
                                     // Check if page_name already exists
                                     $stmt = $db->prepare("SELECT id FROM dynamic_pages WHERE page_name = ?");
                                     $stmt->execute([$page_name]);
                                     if ($stmt->fetch()) {
-                                        $error_message = "Bu sayfa adı zaten kullanılıyor!";
+                                        $error_message = "This page name is already in use!";
                                     } else {
                                         // Insert into dynamic_pages
                                         $stmt = $db->prepare("INSERT INTO dynamic_pages (page_name, page_title, table_name, group_name, enable_list, enable_create, enable_update, enable_delete, create_rule, update_rule, delete_rule) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                                         $stmt->execute([$page_name, $page_title, $table_name, $group_name ?: null, $enable_list, $enable_create, $enable_update, $enable_delete, $create_rule ?: null, $update_rule ?: null, $delete_rule ?: null]);
-                                        $success_message = "Sayfa başarıyla oluşturuldu: $page_name";
+                                        $success_message = "Page created successfully: $page_name";
                                     }
                                 }
                             }
                         } catch (PDOException $e) {
-                            $error_message = "Sayfa oluşturulurken hata: " . $e->getMessage();
+                            $error_message = "Error creating page: " . $e->getMessage();
                         }
                     }
                 }
@@ -117,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($page_id > 0 && !empty($page_name) && !empty($page_title) && !empty($table_name)) {
                     // Validate page_name (for filename)
                     if (!preg_match('/^[a-z0-9_-]+$/', strtolower($page_name))) {
-                        $error_message = "Sayfa adı sadece küçük harf, rakam, alt çizgi ve tire içerebilir!";
+                        $error_message = "Page name can only contain lowercase letters, numbers, underscore and dash!";
                     } else {
                         try {
                             // Check if page_name already exists (excluding current page)
@@ -129,23 +129,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 // Validate and escape table name
                                 $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
                                 if ($escaped_table_name !== $table_name) {
-                                    $error_message = "Geçersiz tablo adı!";
+                                    $error_message = "Invalid table name!";
                                 } else {
                                     // Check if table exists
                                     $stmt = $db->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
                                     $stmt->execute([$table_name]);
                                     if (!$stmt->fetch()) {
-                                        $error_message = "Seçilen tablo bulunamadı!";
+                                        $error_message = "Selected table not found!";
                                     } else {
                                         // Update dynamic_pages
                                         $stmt = $db->prepare("UPDATE dynamic_pages SET page_name = ?, page_title = ?, table_name = ?, group_name = ?, enable_list = ?, enable_create = ?, enable_update = ?, enable_delete = ?, create_rule = ?, update_rule = ?, delete_rule = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
                                         $stmt->execute([$page_name, $page_title, $table_name, $group_name ?: null, $enable_list, $enable_create, $enable_update, $enable_delete, $create_rule ?: null, $update_rule ?: null, $delete_rule ?: null, $page_id]);
-                                        $success_message = "Sayfa başarıyla güncellendi: $page_name";
+                                        $success_message = "Page updated successfully: $page_name";
                                     }
                                 }
                             }
                         } catch (PDOException $e) {
-                            $error_message = "Sayfa güncellenirken hata: " . $e->getMessage();
+                            $error_message = "Error updating page: " . $e->getMessage();
                         }
                     }
                 }
@@ -164,10 +164,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt = $db->prepare("DELETE FROM dynamic_pages WHERE id = ?");
                             $stmt->execute([$page_id]);
                             
-                            $success_message = "Sayfa başarıyla silindi!";
+                            $success_message = "Page deleted successfully!";
                         }
                     } catch (PDOException $e) {
-                        $error_message = "Sayfa silinirken hata: " . $e->getMessage();
+                        $error_message = "Error deleting page: " . $e->getMessage();
                     }
                 }
                 break;
@@ -357,7 +357,7 @@ include '../includes/header.php';
                                     name="page_name"
                                     required
                                     pattern="[a-z0-9_-]+"
-                                    title="Sadece küçük harf, rakam, alt çizgi ve tire kullanılabilir"
+                                    title="Only lowercase letters, numbers, underscore and dash allowed"
                                     value="<?php echo htmlspecialchars($edit_page['page_name'] ?? ''); ?>"
                                     <?php echo $edit_page ? 'readonly' : ''; ?>
                                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent <?php echo $edit_page ? 'bg-muted cursor-not-allowed' : ''; ?>"
@@ -394,7 +394,7 @@ include '../includes/header.php';
                                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent <?php echo $edit_page ? 'bg-muted cursor-not-allowed' : ''; ?>"
                                     <?php echo $edit_page ? 'disabled' : ''; ?>
                                 >
-                                    <option value="">-- Tablo Seçin --</option>
+                                    <option value="">-- Select Table --</option>
                                     <?php foreach ($tables as $table): ?>
                                         <option value="<?php echo htmlspecialchars($table); ?>" <?php echo ($edit_page && $edit_page['table_name'] === $table) ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($table); ?>
@@ -408,7 +408,7 @@ include '../includes/header.php';
                             
                             <div class="mb-4">
                                 <label for="group_name" class="block text-sm font-medium text-foreground mb-1.5">
-                                    Grup Adı
+                                    Group Name
                                 </label>
                                 <input
                                     type="text"
@@ -512,16 +512,16 @@ include '../includes/header.php';
                                         ></textarea>
                                         <div class="mb-2">
                                             <details class="text-xs">
-                                                <summary class="cursor-pointer text-muted-foreground hover:text-foreground mb-2">Örnek kodlar göster</summary>
+                                                <summary class="cursor-pointer text-muted-foreground hover:text-foreground mb-2">Show example code</summary>
                                                 <div class="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
-                                                    <div class="mb-2"><strong>Örnek 1 - Basit kontrol:</strong></div>
+                                                    <div class="mb-2"><strong>Example 1 - Simple validation:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
 if (empty($record[\'name\'])) {
     throw new Exception(\'İsim alanı boş olamaz!\');
 }
 ?>'); ?></pre>
                                                     
-                                                    <div class="mt-3 mb-2"><strong>Örnek 2 - Veritabanı sorgusu:</strong></div>
+                                                    <div class="mt-3 mb-2"><strong>Example 2 - Database query:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
 // Email kontrolü
 $stmt = $dbContext->prepare("SELECT COUNT(*) FROM users WHERE email = ?");
@@ -542,7 +542,7 @@ if (!$category) {
 }
 ?>'); ?></pre>
                                                     
-                                                    <div class="mt-3 mb-2"><strong>Örnek 3 - Birden fazla kontrol:</strong></div>
+                                                    <div class="mt-3 mb-2"><strong>Example 3 - Multiple validations:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
 // Birden fazla alan kontrolü
 $errors = [];
@@ -571,7 +571,7 @@ if (!empty($errors)) {
                                                 </div>
                                             </details>
                                         </div>
-                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu yazabilirsiniz. Exception fırlatarak işlemi durdurabilirsiniz.</p>
+                                        <p class="mt-1 text-xs text-muted-foreground">You can write PHP code. You can stop the operation by throwing an Exception.</p>
                                     </div>
                                     
                                     <div class="mb-4">
@@ -586,9 +586,9 @@ if (!empty($errors)) {
                                         ><?php echo htmlspecialchars($edit_page['update_rule'] ?? ''); ?></textarea>
                                         <div class="mb-2">
                                             <details class="text-xs">
-                                                <summary class="cursor-pointer text-muted-foreground hover:text-foreground mb-2">Örnek kodlar göster</summary>
+                                                <summary class="cursor-pointer text-muted-foreground hover:text-foreground mb-2">Show example code</summary>
                                                 <div class="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
-                                                    <div class="mb-2"><strong>Örnek 1 - Mevcut kayıt kontrolü:</strong></div>
+                                                    <div class="mb-2"><strong>Example 1 - Current record validation:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
 // Mevcut kaydın durumunu kontrol et
 $stmt = $dbContext->prepare("SELECT status FROM " . $table_name . " WHERE id = ?");
@@ -600,7 +600,7 @@ if ($current_status === \'locked\') {
 }
 ?>'); ?></pre>
                                                     
-                                                    <div class="mt-3 mb-2"><strong>Örnek 2 - Değişiklik kontrolü:</strong></div>
+                                                    <div class="mt-3 mb-2"><strong>Example 2 - Change validation:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
 // Mevcut kaydı al
 $stmt = $dbContext->prepare("SELECT * FROM users WHERE id = ?");
@@ -618,7 +618,7 @@ if ($current_record[\'email\'] !== $record[\'email\']) {
 }
 ?>'); ?></pre>
                                                     
-                                                    <div class="mt-3 mb-2"><strong>Örnek 3 - Yetki kontrolü:</strong></div>
+                                                    <div class="mt-3 mb-2"><strong>Example 3 - Permission check:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
 // Kullanıcının bu kaydı güncelleme yetkisi var mı?
 $stmt = $dbContext->prepare("SELECT created_by FROM posts WHERE id = ?");
@@ -632,7 +632,7 @@ if ($post && $post[\'created_by\'] != $_SESSION[\'user_id\']) {
                                                 </div>
                                             </details>
                                         </div>
-                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu yazabilirsiniz. <code>$record</code> güncellenecek kayıt verisini, <code>$current_record</code> mevcut kaydı içerir.</p>
+                                        <p class="mt-1 text-xs text-muted-foreground">You can write PHP code. <code>$record</code> contains the record data to be updated, <code>$current_record</code> contains the current record.</p>
                                     </div>
                                     
                                     <div class="mb-4">
@@ -647,9 +647,9 @@ if ($post && $post[\'created_by\'] != $_SESSION[\'user_id\']) {
                                         ><?php echo htmlspecialchars($edit_page['delete_rule'] ?? ''); ?></textarea>
                                         <div class="mb-2">
                                             <details class="text-xs">
-                                                <summary class="cursor-pointer text-muted-foreground hover:text-foreground mb-2">Örnek kodlar göster</summary>
+                                                <summary class="cursor-pointer text-muted-foreground hover:text-foreground mb-2">Show example code</summary>
                                                 <div class="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
-                                                    <div class="mb-2"><strong>Örnek 1 - İlişkili kayıt kontrolü:</strong></div>
+                                                    <div class="mb-2"><strong>Example 1 - Related record check:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
 // Silinecek kayıt başka tablolarda kullanılıyor mu?
 $stmt = $dbContext->prepare("SELECT COUNT(*) FROM order_items WHERE product_id = ?");
@@ -661,7 +661,7 @@ if ($related_count > 0) {
 }
 ?>'); ?></pre>
                                                     
-                                                    <div class="mt-3 mb-2"><strong>Örnek 2 - Durum kontrolü:</strong></div>
+                                                    <div class="mt-3 mb-2"><strong>Example 2 - Status check:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
 // Sadece belirli durumdaki kayıtlar silinebilir
 if ($record[\'status\'] === \'active\') {
@@ -673,7 +673,7 @@ if ($record[\'status\'] === \'locked\') {
 }
 ?>'); ?></pre>
                                                     
-                                                    <div class="mt-3 mb-2"><strong>Örnek 3 - Kaskad silme kontrolü:</strong></div>
+                                                    <div class="mt-3 mb-2"><strong>Example 3 - Cascade delete check:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
 // Alt kayıtları kontrol et
 $stmt = $dbContext->prepare("SELECT COUNT(*) FROM child_table WHERE parent_id = ?");
@@ -692,7 +692,7 @@ if ($children_count > 0) {
                                                 </div>
                                             </details>
                                         </div>
-                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu yazabilirsiniz. <code>$record</code> silinecek kayıt verisini içerir.</p>
+                                        <p class="mt-1 text-xs text-muted-foreground">You can write PHP code. <code>$record</code> contains the record data to be deleted.</p>
                                     </div>
                                 </div>
                             </div>

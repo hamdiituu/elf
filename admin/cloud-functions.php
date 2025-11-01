@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             if (empty($function_name) || empty($code)) {
-                $error_message = "Fonksiyon adı ve kod gereklidir!";
+                $error_message = "Function name and code are required!";
             } else {
                 try {
                     // Generate endpoint from name
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             WHERE id = ?
                         ");
                         $stmt->execute([$function_name, $description, $code, $language, $http_method, $endpoint, $enabled, $middleware_id, $function_id]);
-                        $success_message = "Fonksiyon başarıyla güncellendi!";
+                        $success_message = "Function updated successfully!";
                     } else {
                         // Create new function
                         $stmt = $db->prepare("
@@ -101,13 +101,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ");
                         $stmt->execute([$function_name, $description, $code, $language, $http_method, $endpoint, $enabled, $middleware_id, $_SESSION['user_id']]);
-                        $success_message = "Fonksiyon başarıyla oluşturuldu!";
+                        $success_message = "Function created successfully!";
                     }
                 } catch (PDOException $e) {
                     if (strpos($e->getMessage(), 'UNIQUE constraint') !== false) {
-                        $error_message = "Bu fonksiyon adı veya endpoint zaten kullanılıyor!";
+                        $error_message = "This function name or endpoint is already in use!";
                     } else {
-                        $error_message = "Hata: " . $e->getMessage();
+                        $error_message = "Error: " . $e->getMessage();
                     }
                 }
             }
@@ -119,9 +119,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $stmt = $db->prepare("DELETE FROM cloud_functions WHERE id = ?");
                     $stmt->execute([$function_id]);
-                    $success_message = "Fonksiyon başarıyla silindi!";
+                    $success_message = "Function deleted successfully!";
                 } catch (PDOException $e) {
-                    $error_message = "Fonksiyon silinirken hata: " . $e->getMessage();
+                    $error_message = "Error deleting function: " . $e->getMessage();
                 }
             }
             break;
@@ -435,7 +435,7 @@ include '../includes/header.php';
                         <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                             <div class="p-6">
                                 <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">
-                                    <?php echo $edit_function ? 'Fonksiyon Düzenle' : 'Yeni Fonksiyon'; ?>
+                                    <?php echo $edit_function ? 'Edit Function' : 'New Function'; ?>
                                 </h3>
                                 
                                 <form method="POST" id="function-form">
@@ -445,7 +445,7 @@ include '../includes/header.php';
                                     <div class="space-y-4">
                                         <div>
                                             <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                Fonksiyon Adı *
+                                                Function Name *
                                             </label>
                                             <input
                                                 type="text"
@@ -461,7 +461,7 @@ include '../includes/header.php';
                                         
                                         <div>
                                             <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                Açıklama
+                                                Description
                                             </label>
                                             <input
                                                 type="text"
@@ -469,13 +469,13 @@ include '../includes/header.php';
                                                 id="description"
                                                 value="<?php echo htmlspecialchars($edit_function['description'] ?? ''); ?>"
                                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                                placeholder="Fonksiyon açıklaması"
+                                                placeholder="Function description"
                                             />
                                         </div>
                                         
                                         <div>
                                             <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                Dil *
+                                                Language *
                                             </label>
                                             <select
                                                 name="language"
@@ -488,20 +488,20 @@ include '../includes/header.php';
                                                 <option value="js" <?php echo (isset($edit_function['language']) && ($edit_function['language'] === 'js' || $edit_function['language'] === 'javascript')) ? 'selected' : ''; ?>>JavaScript (Node.js)</option>
                                             </select>
                                             <p class="mt-1 text-xs text-muted-foreground">
-                                                Fonksiyon kodunun yazılacağı programlama dili
+                                                Programming language for function code
                                             </p>
                                         </div>
                                         
                                         <div>
                                             <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                Middleware (Opsiyonel)
+                                                Middleware (Optional)
                                             </label>
                                             <select
                                                 name="middleware_id"
                                                 id="middleware_id"
                                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                                             >
-                                                <option value="">Middleware seçin...</option>
+                                                <option value="">Select middleware...</option>
                                                 <?php foreach ($middlewares as $mw): ?>
                                                     <option value="<?php echo $mw['id']; ?>" <?php echo (isset($edit_function['middleware_id']) && $edit_function['middleware_id'] == $mw['id']) ? 'selected' : ''; ?>>
                                                         <?php echo htmlspecialchars($mw['name']); ?>
@@ -509,13 +509,13 @@ include '../includes/header.php';
                                                             - <?php echo htmlspecialchars($mw['description']); ?>
                                                         <?php endif; ?>
                                                         <?php if (!$mw['enabled']): ?>
-                                                            (Pasif)
+                                                            (Inactive)
                                                         <?php endif; ?>
                                                     </option>
                                                 <?php endforeach; ?>
                                             </select>
                                             <p class="mt-1 text-xs text-muted-foreground">
-                                                Middleware, fonksiyon çalışmadan önce execute edilir. Eğer middleware <code class="text-xs bg-muted px-1 py-0.5 rounded">success = false</code> dönerse, fonksiyon çalışmaz.
+                                                Middleware is executed before the function runs. If middleware returns <code class="text-xs bg-muted px-1 py-0.5 rounded">success = false</code>, the function will not run.
                                             </p>
                                         </div>
                                         
@@ -533,7 +533,7 @@ include '../includes/header.php';
                                                     <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                                                     </svg>
-                                                    Tam Ekran
+                                                    Fullscreen
                                                 </button>
                                             </div>
                                             <div id="code-editor-wrapper" class="relative">
@@ -564,7 +564,7 @@ include '../includes/header.php';
                                                 class="rounded border-input"
                                             />
                                             <label for="enabled" class="text-sm font-medium text-foreground">
-                                                Aktif
+                                                Active
                                             </label>
                                         </div>
                                         
@@ -576,14 +576,14 @@ include '../includes/header.php';
                                                 <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                                 </svg>
-                                                <?php echo $edit_function ? 'Güncelle' : 'Oluştur'; ?>
+                                                <?php echo $edit_function ? 'Update' : 'Create'; ?>
                                             </button>
                                             <?php if ($edit_function): ?>
                                                 <a
                                                     href="cloud-functions.php"
                                                     class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-4 py-2 transition-colors"
                                                 >
-                                                    İptal
+                                                    Cancel
                                                 </a>
                                             <?php endif; ?>
                                         </div>
