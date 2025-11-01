@@ -13,7 +13,7 @@ if (isLoggedIn()) {
     exit;
 }
 
-$page_title = 'Giriş Yap - ' . getAppName();
+$page_title = 'Sign In - ' . getAppName();
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -40,13 +40,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header('Location: admin/admin.php');
                 exit;
             } else {
-                $error = 'Kullanıcı adı veya şifre hatalı!';
+                $error = 'Invalid username or password!';
             }
         } catch (PDOException $e) {
-            $error = 'Giriş hatası: ' . $e->getMessage();
+            $error = 'Login error: ' . $e->getMessage();
         }
     } else {
-        $error = 'Lütfen tüm alanları doldurun!';
+        $error = 'Please fill in all fields!';
     }
 }
 
@@ -67,7 +67,7 @@ include 'includes/header.php';
                 <?php echo htmlspecialchars(getAppName()); ?>
             </h2>
             <p class="mt-2 text-center text-sm text-muted-foreground">
-                Hesabınıza giriş yapın
+                Sign in to your account
             </p>
         </div>
         
@@ -83,7 +83,7 @@ include 'includes/header.php';
             <div class="space-y-4 rounded-md shadow-sm">
                 <div>
                     <label for="username" class="block text-sm font-medium text-foreground mb-1.5">
-                        Kullanıcı Adı
+                        Username
                     </label>
                     <input
                         id="username"
@@ -92,12 +92,12 @@ include 'includes/header.php';
                         required
                         autofocus
                         class="relative block w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:z-10 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm"
-                        placeholder="Kullanıcı adınızı girin"
+                        placeholder="Enter your username"
                     >
                 </div>
                 <div>
                     <label for="password" class="block text-sm font-medium text-foreground mb-1.5">
-                        Şifre
+                        Password
                     </label>
                     <input
                         id="password"
@@ -105,7 +105,7 @@ include 'includes/header.php';
                         type="password"
                         required
                         class="relative block w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:z-10 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm"
-                        placeholder="Şifrenizi girin"
+                        placeholder="Enter your password"
                     >
                 </div>
             </div>
@@ -115,7 +115,7 @@ include 'includes/header.php';
                     type="submit"
                     class="group relative flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
                 >
-                    Giriş Yap
+                    Sign In
                 </button>
             </div>
         </form>
