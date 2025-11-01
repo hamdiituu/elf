@@ -7,17 +7,24 @@
     <?php
     // Add favicon if set
     $favicon = getFavicon();
-    if (!empty($favicon) && file_exists(__DIR__ . '/../' . $favicon)) {
-        $favicon_ext = strtolower(pathinfo($favicon, PATHINFO_EXTENSION));
-        $mime_types = [
-            'ico' => 'image/x-icon',
-            'png' => 'image/png',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'svg' => 'image/svg+xml'
-        ];
-        $mime_type = $mime_types[$favicon_ext] ?? 'image/x-icon';
-        echo '<link rel="icon" type="' . htmlspecialchars($mime_type) . '" href="' . htmlspecialchars($favicon) . '">';
+    if (!empty($favicon)) {
+        $favicon_path = __DIR__ . '/../' . $favicon;
+        if (file_exists($favicon_path)) {
+            $favicon_ext = strtolower(pathinfo($favicon, PATHINFO_EXTENSION));
+            $mime_types = [
+                'ico' => 'image/x-icon',
+                'png' => 'image/png',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'svg' => 'image/svg+xml'
+            ];
+            $mime_type = $mime_types[$favicon_ext] ?? 'image/x-icon';
+            // Add cache busting with file modification time
+            $favicon_url = '/' . ltrim($favicon, '/');
+            $favicon_url .= '?v=' . filemtime($favicon_path);
+            echo '<link rel="icon" type="' . htmlspecialchars($mime_type) . '" href="' . htmlspecialchars($favicon_url) . '">';
+            echo '<link rel="shortcut icon" type="' . htmlspecialchars($mime_type) . '" href="' . htmlspecialchars($favicon_url) . '">';
+        }
     }
     ?>
     <script src="https://cdn.tailwindcss.com"></script>
