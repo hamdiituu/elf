@@ -7,7 +7,7 @@ if (isLoggedIn()) {
     exit;
 }
 
-$page_title = 'Giriş Yap - Vira Stok Sistemi';
+$page_title = 'Giriş Yap - ' . getAppName();
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -49,8 +49,16 @@ include 'includes/header.php';
 <div class="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
     <div class="w-full max-w-sm space-y-8">
         <div>
+            <?php
+            $logo = getLogo();
+            if (!empty($logo) && file_exists(__DIR__ . '/../' . $logo)):
+            ?>
+                <div class="flex justify-center mb-4">
+                    <img src="<?php echo htmlspecialchars($logo); ?>" alt="<?php echo htmlspecialchars(getAppName()); ?>" class="h-20 object-contain">
+                </div>
+            <?php endif; ?>
             <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-foreground">
-                Vira Stok Sistemi
+                <?php echo htmlspecialchars(getAppName()); ?>
             </h2>
             <p class="mt-2 text-center text-sm text-muted-foreground">
                 Hesabınıza giriş yapın

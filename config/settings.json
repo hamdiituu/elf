@@ -1,0 +1,16 @@
+{
+    "app_name": "Vira CMS",
+    "db_type": "sqlite",
+    "db_config": {
+        "sqlite": {
+            "path": "\/Users\/hamditug\/Hamdis\/StockCountWeb\/config\/..\/database\/stockcount.db"
+        },
+        "mysql": {
+            "host": "localhost",
+            "port": "3306",
+            "database": "",
+            "username": "",
+            "password": ""
+        }
+    }
+}

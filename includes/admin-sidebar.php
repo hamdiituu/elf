@@ -4,6 +4,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 // Get dynamic pages from database grouped by group_name
 $dynamic_pages_by_group = [];
+$db = null;
 try {
     require_once __DIR__ . '/../config/config.php';
     $db = getDB();
@@ -46,8 +47,14 @@ try {
 ?>
 <aside class="hidden md:flex md:flex-shrink-0">
     <div class="flex flex-col w-64 border-r border-border bg-background">
-        <div class="flex h-16 shrink-0 items-center px-6 border-b border-border">
-            <h1 class="text-lg font-semibold text-foreground">Vira Stok</h1>
+        <div class="flex h-16 shrink-0 items-center px-6 border-b border-border gap-3">
+            <?php
+            $logo = getLogo();
+            if (!empty($logo) && file_exists(__DIR__ . '/../' . $logo)):
+            ?>
+                <img src="../<?php echo htmlspecialchars($logo); ?>" alt="<?php echo htmlspecialchars(getAppName()); ?>" class="h-10 object-contain">
+            <?php endif; ?>
+            <h1 class="text-lg font-semibold text-foreground"><?php echo htmlspecialchars(getAppName()); ?></h1>
         </div>
         <nav class="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
             <!-- Dashboard -->
@@ -79,6 +86,47 @@ try {
                 </svg>
                 Kullanıcılar
             </a>
+            
+            <?php
+            // Check if user is developer for settings access
+            $is_developer_for_settings = false;
+            if (isset($_SESSION['user_id'])) {
+                if (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'developer') {
+                    $is_developer_for_settings = true;
+                } elseif ($db !== null) {
+                    try {
+                        try {
+                            $db->exec("ALTER TABLE users ADD COLUMN user_type TEXT DEFAULT 'user'");
+                        } catch (PDOException $e) {
+                            // Column might already exist, ignore
+                        }
+                        $stmt = $db->prepare("SELECT user_type FROM users WHERE id = ?");
+                        $stmt->execute([$_SESSION['user_id']]);
+                        $user_type = $stmt->fetchColumn();
+                        $_SESSION['user_type'] = $user_type ?: 'user';
+                        $is_developer_for_settings = ($user_type === 'developer');
+                    } catch (PDOException $e) {
+                        $is_developer_for_settings = false;
+                    }
+                }
+            }
+            // If settings are not configured, allow access to settings page for all logged in users
+            if (!isSettingsConfigured()) {
+                $is_developer_for_settings = true;
+            }
+            if ($is_developer_for_settings):
+            ?>
+            <a
+                href="settings.php"
+                class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == 'settings.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
+            >
+                <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Ayarlar
+            </a>
+            <?php endif; ?>
             
             <?php
             // Check if user is developer
