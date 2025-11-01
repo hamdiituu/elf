@@ -1513,7 +1513,7 @@
 [Sat Nov  1 19:12:51 2025] [::1]:53755 Closing
 [Sat Nov  1 19:13:33 2025] [::1]:53957 Accepted
 [Sat Nov  1 19:13:33 2025] [::1]:53958 Accepted
-[Sat Nov  1 19:13:33 2025] [::1]:53957 [200]: GET /admin/kullanicilar.php
+[Sat Nov  1 19:13:33 2025] [::1]:53957 [200]: GET /admin/users.php
 [Sat Nov  1 19:13:33 2025] [::1]:53957 Closing
 [Sat Nov  1 19:13:33 2025] [::1]:53958 [200]: GET /uploads/logo_1762000180.png
 [Sat Nov  1 19:13:33 2025] [::1]:53958 Closing
@@ -1527,7 +1527,7 @@
 [Sat Nov  1 19:13:34 2025] [::1]:53965 Closing
 [Sat Nov  1 19:13:34 2025] [::1]:53966 Closing
 [Sat Nov  1 19:13:34 2025] [::1]:53968 Accepted
-[Sat Nov  1 19:13:35 2025] [::1]:53968 [200]: GET /admin/kullanicilar.php
+[Sat Nov  1 19:13:35 2025] [::1]:53968 [200]: GET /admin/users.php
 [Sat Nov  1 19:13:35 2025] [::1]:53968 Closing
 [Sat Nov  1 19:13:35 2025] [::1]:53974 Accepted
 [Sat Nov  1 19:13:35 2025] [::1]:53974 [200]: GET /uploads/logo_1762000180.png
