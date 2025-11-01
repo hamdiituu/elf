@@ -178,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             break;
                                         }
                                     } else {
-                                        $error_message = "Geçersiz görsel formatı: " . $col_name;
+                                        $error_message = "Invalid image format: " . $col_name;
                                         break;
                                     }
                                 } elseif (isset($_POST['existing_' . $col_name])) {
@@ -492,7 +492,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 header('Location: dynamic-page.php?page=' . urlencode($page_name));
                                 exit;
                             } catch (PDOException $e) {
-                                $error_message = "Kayıt silinirken hata: " . $e->getMessage();
+                                $error_message = "Error deleting record: " . $e->getMessage();
                             }
                         }
                     }

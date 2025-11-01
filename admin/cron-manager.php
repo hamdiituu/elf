@@ -486,7 +486,7 @@ include '../includes/header.php';
                 <div class="mb-8 flex items-center justify-between">
                     <div>
                         <h1 class="text-3xl font-bold text-foreground mb-2">Cron Manager</h1>
-                        <p class="text-sm text-muted-foreground">Otomatik görev yöneticisi ve zamanlayıcı</p>
+                        <p class="text-sm text-muted-foreground">Automatic task manager and scheduler</p>
                     </div>
                     <a
                         href="cron-builder.php"
@@ -1283,7 +1283,7 @@ function toggleFullscreenCron() {
             <svg class="h-3 w-3 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
-            Çık
+            Exit
         `;
         isCronFullscreen = true;
         if (cronEditor) {
@@ -1296,7 +1296,7 @@ function toggleFullscreenCron() {
             <svg class="h-3 w-3 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
             </svg>
-            Tam Ekran
+            Fullscreen
         `;
         isCronFullscreen = false;
         if (cronEditor) {

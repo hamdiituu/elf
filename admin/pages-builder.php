@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt = $db->prepare("SELECT id FROM dynamic_pages WHERE page_name = ? AND id != ?");
                             $stmt->execute([$page_name, $page_id]);
                             if ($stmt->fetch()) {
-                                $error_message = "Bu sayfa adı zaten kullanılıyor!";
+                                $error_message = "This page name is already in use!";
                             } else {
                                 // Validate and escape table name
                                 $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
@@ -517,51 +517,51 @@ include '../includes/header.php';
                                                     <div class="mb-2"><strong>Example 1 - Simple validation:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
 if (empty($record[\'name\'])) {
-    throw new Exception(\'İsim alanı boş olamaz!\');
+    throw new Exception(\'Name field cannot be empty!\');
 }
 ?>'); ?></pre>
                                                     
                                                     <div class="mt-3 mb-2"><strong>Example 2 - Database query:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
-// Email kontrolü
+// Email check
 $stmt = $dbContext->prepare("SELECT COUNT(*) FROM users WHERE email = ?");
 $stmt->execute([$record[\'email\'] ?? \'\']);
 $exists = $stmt->fetchColumn();
 
 if ($exists > 0) {
-    throw new Exception(\'Bu email adresi zaten kullanılıyor!\');
+    throw new Exception(\'This email address is already in use!\');
 }
 
-// İlişkili kayıt kontrolü
+// Related record check
 $stmt = $dbContext->prepare("SELECT * FROM categories WHERE id = ? AND status = \'active\'");
 $stmt->execute([$record[\'category_id\'] ?? 0]);
 $category = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$category) {
-    throw new Exception(\'Geçersiz kategori seçildi!\');
+    throw new Exception(\'Invalid category selected!\');
 }
 ?>'); ?></pre>
                                                     
                                                     <div class="mt-3 mb-2"><strong>Example 3 - Multiple validations:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
-// Birden fazla alan kontrolü
+// Multiple field validation
 $errors = [];
 
 if (empty($record[\'name\'])) {
-    $errors[] = \'İsim gereklidir\';
+    $errors[] = \'Name is required\';
 }
 
 if (empty($record[\'email\'])) {
-    $errors[] = \'Email gereklidir\';
+    $errors[] = \'Email is required\';
 } elseif (!filter_var($record[\'email\'], FILTER_VALIDATE_EMAIL)) {
-    $errors[] = \'Geçersiz email formatı\';
+    $errors[] = \'Invalid email format\';
 }
 
-// Veritabanından kontrol
+// Check from database
 $stmt = $dbContext->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
 $stmt->execute([$record[\'username\'] ?? \'\']);
 if ($stmt->fetchColumn() > 0) {
-    $errors[] = \'Bu kullanıcı adı zaten kullanılıyor\';
+    $errors[] = \'This username is already in use\';
 }
 
 if (!empty($errors)) {
@@ -590,43 +590,43 @@ if (!empty($errors)) {
                                                 <div class="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
                                                     <div class="mb-2"><strong>Example 1 - Current record validation:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
-// Mevcut kaydın durumunu kontrol et
+// Check current record status
 $stmt = $dbContext->prepare("SELECT status FROM " . $table_name . " WHERE id = ?");
 $stmt->execute([$record[\'id\']]);
 $current_status = $stmt->fetchColumn();
 
 if ($current_status === \'locked\') {
-    throw new Exception(\'Kilitli kayıt güncellenemez!\');
+    throw new Exception(\'Locked records cannot be updated!\');
 }
 ?>'); ?></pre>
                                                     
                                                     <div class="mt-3 mb-2"><strong>Example 2 - Change validation:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
-// Mevcut kaydı al
+// Get current record
 $stmt = $dbContext->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->execute([$record[\'id\']]);
 $current_record = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Kritik alanlar değiştirilmişse kontrol et
+// Check if critical fields changed
 if ($current_record[\'email\'] !== $record[\'email\']) {
-    // Yeni email başka bir kullanıcıda var mı?
+    // Does new email exist in another user?
     $stmt = $dbContext->prepare("SELECT COUNT(*) FROM users WHERE email = ? AND id != ?");
     $stmt->execute([$record[\'email\'], $record[\'id\']]);
     if ($stmt->fetchColumn() > 0) {
-        throw new Exception(\'Bu email adresi başka bir kullanıcı tarafından kullanılıyor!\');
+        throw new Exception(\'This email address is already used by another user!\');
     }
 }
 ?>'); ?></pre>
                                                     
                                                     <div class="mt-3 mb-2"><strong>Example 3 - Permission check:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
-// Kullanıcının bu kaydı güncelleme yetkisi var mı?
+// Does user have permission to update this record?
 $stmt = $dbContext->prepare("SELECT created_by FROM posts WHERE id = ?");
 $stmt->execute([$record[\'id\']]);
 $post = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($post && $post[\'created_by\'] != $_SESSION[\'user_id\']) {
-    throw new Exception(\'Bu kaydı güncelleme yetkiniz yok!\');
+    throw new Exception(\'You do not have permission to update this record!\');
 }
 ?>'); ?></pre>
                                                 </div>
@@ -651,42 +651,42 @@ if ($post && $post[\'created_by\'] != $_SESSION[\'user_id\']) {
                                                 <div class="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
                                                     <div class="mb-2"><strong>Example 1 - Related record check:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
-// Silinecek kayıt başka tablolarda kullanılıyor mu?
+// Is the record to be deleted used in other tables?
 $stmt = $dbContext->prepare("SELECT COUNT(*) FROM order_items WHERE product_id = ?");
 $stmt->execute([$record[\'id\']]);
 $related_count = $stmt->fetchColumn();
 
 if ($related_count > 0) {
-    throw new Exception(\'Bu ürün \' . $related_count . \' siparişte kullanıldığı için silinemez!\');
+    throw new Exception(\'This product cannot be deleted because it is used in \' . $related_count . \' orders!\');
 }
 ?>'); ?></pre>
                                                     
                                                     <div class="mt-3 mb-2"><strong>Example 2 - Status check:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
-// Sadece belirli durumdaki kayıtlar silinebilir
+// Only records with certain status can be deleted
 if ($record[\'status\'] === \'active\') {
-    throw new Exception(\'Aktif kayıtlar silinemez! Önce pasif hale getirin.\');
+    throw new Exception(\'Active records cannot be deleted! Please set them to inactive first.\');
 }
 
 if ($record[\'status\'] === \'locked\') {
-    throw new Exception(\'Kilitli kayıtlar silinemez!\');
+    throw new Exception(\'Locked records cannot be deleted!\');
 }
 ?>'); ?></pre>
                                                     
                                                     <div class="mt-3 mb-2"><strong>Example 3 - Cascade delete check:</strong></div>
                                                     <pre><?php echo htmlspecialchars('<?php
-// Alt kayıtları kontrol et
+// Check child records
 $stmt = $dbContext->prepare("SELECT COUNT(*) FROM child_table WHERE parent_id = ?");
 $stmt->execute([$record[\'id\']]);
 $children_count = $stmt->fetchColumn();
 
 if ($children_count > 0) {
-    // Önce alt kayıtları sil
+    // Delete child records first
     $stmt = $dbContext->prepare("DELETE FROM child_table WHERE parent_id = ?");
     $stmt->execute([$record[\'id\']]);
     
-    // Veya hata ver
-    // throw new Exception(\'Önce alt kayıtları silmelisiniz!\');
+    // Or throw error
+    // throw new Exception(\'You must delete child records first!\');
 }
 ?>'); ?></pre>
                                                 </div>

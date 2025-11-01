@@ -945,7 +945,7 @@ include '../includes/header.php';
                                             <thead class="bg-muted/50">
                                                 <tr>
                                                     <th class="px-3 py-2 text-left text-xs font-medium text-foreground">Column Name</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-foreground">Tip</th>
+                                                    <th class="px-3 py-2 text-left text-xs font-medium text-foreground">Type</th>
                                                     <th class="px-3 py-2 text-left text-xs font-medium text-foreground">NULL</th>
                                                     <th class="px-3 py-2 text-left text-xs font-medium text-foreground">Default</th>
                                                     <th class="px-3 py-2 text-left text-xs font-medium text-foreground">PK</th>
@@ -1146,7 +1146,7 @@ include '../includes/header.php';
                                                         ?>
                                                         
                                                         <a href="<?php echo htmlspecialchars($prev_url); ?>" class="px-3 py-1.5 text-xs font-medium border border-input bg-background text-foreground hover:bg-accent rounded-md transition-colors <?php echo $page <= 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''; ?>">
-                                                            Önceki
+                                                            Previous
                                                         </a>
                                                         
                                                         <?php
@@ -1187,7 +1187,7 @@ include '../includes/header.php';
                                                         <?php endif; ?>
                                                         
                                                         <a href="<?php echo htmlspecialchars($next_url); ?>" class="px-3 py-1.5 text-xs font-medium border border-input bg-background text-foreground hover:bg-accent rounded-md transition-colors <?php echo $page >= $total_pages ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''; ?>">
-                                                            Sonraki
+                                                            Next
                                                         </a>
                                                     </div>
                                                 </div>
@@ -1227,20 +1227,20 @@ include '../includes/header.php';
 <!-- Save Query Modal -->
 <div id="save-dialog" class="fixed inset-0 hidden items-center justify-center z-50" onclick="if(event.target === this) hideSaveDialog()" style="background-color: rgba(0, 0, 0, 0.3) !important;">
     <div class="border border-border rounded-lg shadow-lg p-6 max-w-md w-full mx-4" onclick="event.stopPropagation()" style="background-color: hsl(var(--background)) !important; z-index: 51;">
-        <h3 class="text-lg font-semibold mb-4">Query Kaydet</h3>
+        <h3 class="text-lg font-semibold mb-4">Save Query</h3>
         <form method="POST" action="">
             <input type="hidden" name="action" value="save_query">
             <input type="hidden" name="custom_query" id="save_query_text">
             <div class="space-y-4">
                 <div>
-                    <label for="saved_query_name" class="block text-sm font-medium mb-2">Query Adı:</label>
+                    <label for="saved_query_name" class="block text-sm font-medium mb-2">Query Name:</label>
                     <input
                         type="text"
                         name="saved_query_name"
                         id="saved_query_name"
                         required
                         class="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="Örn: Kullanıcı Listesi"
+                        placeholder="e.g: User List"
                     >
                 </div>
                 <div class="flex items-center gap-2 justify-end">
@@ -1255,7 +1255,7 @@ include '../includes/header.php';
                         type="submit"
                         class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
                     >
-                        Kaydet
+                        Save
                     </button>
                 </div>
             </div>
@@ -1279,21 +1279,21 @@ include '../includes/header.php';
                         required
                         pattern="[a-zA-Z_][a-zA-Z0-9_]*"
                         class="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring font-mono"
-                        placeholder="ornek_tablo"
-                        title="Sadece harf, rakam ve alt çizgi kullanılabilir. İlk karakter harf veya alt çizgi olmalıdır."
+                        placeholder="example_table"
+                        title="Only letters, numbers and underscore can be used. First character must be a letter or underscore."
                     >
-                    <p class="text-xs text-muted-foreground mt-1">Sadece harf, rakam ve alt çizgi kullanılabilir</p>
+                    <p class="text-xs text-muted-foreground mt-1">Only letters, numbers and underscore can be used</p>
                 </div>
                 
                 <div>
                     <div class="flex items-center justify-between mb-2">
-                        <label class="block text-sm font-medium">Alanlar:</label>
+                        <label class="block text-sm font-medium">Fields:</label>
                         <div class="flex gap-2">
                             <button
                                 type="button"
                                 onclick="addTimestamps()"
                                 class="px-3 py-1 text-xs font-medium bg-blue-500 text-white hover:bg-blue-600 rounded-md transition-colors"
-                                title="created_at ve updated_at alanlarını otomatik ekle"
+                                title="Automatically add created_at and updated_at fields"
                             >
                                 + Timestamps
                             </button>
@@ -1302,7 +1302,7 @@ include '../includes/header.php';
                                 onclick="addTableField()"
                                 class="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
                             >
-                                + Alan Ekle
+                                + Add Field
                             </button>
                         </div>
                     </div>
@@ -1408,7 +1408,7 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
         <div class="border border-input rounded-md p-3 bg-muted/30" data-field-id="${fieldId}">
             <div class="grid grid-cols-12 gap-2 items-end">
                 <div class="col-span-4">
-                    <label class="block text-xs font-medium mb-1">Alan Adı:</label>
+                    <label class="block text-xs font-medium mb-1">Field Name:</label>
                     <input
                         type="text"
                         name="field_names[]"
@@ -1432,7 +1432,7 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
                         <option value="BLOB" ${fieldType === 'BLOB' ? 'selected' : ''}>BLOB</option>
                         <option value="NUMERIC" ${fieldType === 'NUMERIC' ? 'selected' : ''}>NUMERIC</option>
                         <option value="BOOLEAN" ${fieldType === 'BOOLEAN' ? 'selected' : ''}>BOOLEAN</option>
-                        <option value="IMAGE" ${fieldType === 'IMAGE' ? 'selected' : ''}>IMAGE (Görsel - TEXT)</option>
+                        <option value="IMAGE" ${fieldType === 'IMAGE' ? 'selected' : ''}>IMAGE (Image - TEXT)</option>
                     </select>
                     <span class="field-type-hint text-xs text-muted-foreground mt-1 hidden"></span>
                 </div>
@@ -1466,7 +1466,7 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
                         type="button"
                         onclick="removeTableField('${fieldId}')"
                         class="w-full px-2 py-1.5 text-xs font-medium bg-red-500 text-white hover:bg-red-600 rounded-md transition-colors"
-                        title="Alanı Sil"
+                        title="Delete Field"
                     >
                         ✕
                     </button>
@@ -1624,10 +1624,10 @@ function updateFieldTypeHint(select) {
         const isImageField = /(image|img|photo|picture|resim|foto)/i.test(fieldName);
         
         if (fieldType === 'IMAGE') {
-            hintSpan.textContent = 'Bu alan görsel yolu saklayacak (TEXT olarak kaydedilir)';
+            hintSpan.textContent = 'This field will store image path (saved as TEXT)';
             hintSpan.classList.remove('hidden');
         } else if (isImageField && fieldType !== 'IMAGE') {
-            hintSpan.textContent = '💡 İpucu: Bu alan adı görsel gibi görünüyor. IMAGE tipini seçebilirsiniz!';
+            hintSpan.textContent = '💡 Tip: This field name looks like an image. You can select IMAGE type!';
             hintSpan.classList.remove('hidden');
         } else {
             hintSpan.classList.add('hidden');

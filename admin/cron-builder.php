@@ -183,7 +183,7 @@ include '../includes/header.php';
                     <div class="space-y-4">
                         <div>
                             <label for="name" class="block text-sm font-medium text-foreground mb-2">
-                                Cron Job Adı <span class="text-destructive">*</span>
+                                Cron Job Name <span class="text-destructive">*</span>
                             </label>
                             <input
                                 type="text"

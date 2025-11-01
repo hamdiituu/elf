@@ -15,7 +15,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                 class="w-full p-6 pb-0 text-left flex items-center justify-between hover:bg-muted/50 transition-colors rounded-t-lg"
             >
                 <h3 class="text-lg font-semibold leading-none tracking-tight mb-5">
-                    <?php echo $edit_record ? 'Kayıt Düzenle' : 'Yeni Kayıt Ekle'; ?>
+                    <?php echo $edit_record ? 'Edit Record' : 'Add New Record'; ?>
                 </h3>
                 <svg
                     id="create-form-chevron"
@@ -84,7 +84,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                 <div class="space-y-2">
                                     <?php if (!empty($current_image) && file_exists(__DIR__ . '/../' . $current_image)): ?>
                                         <div class="mb-2">
-                                            <label class="block text-xs text-muted-foreground mb-1">Mevcut Görsel:</label>
+                                            <label class="block text-xs text-muted-foreground mb-1">Current Image:</label>
                                             <img 
                                                 src="../<?php echo htmlspecialchars($current_image); ?>" 
                                                 alt="<?php echo $col_label; ?>"
@@ -101,7 +101,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                         <?php if ($col['notnull'] == 1 && $col['dflt_value'] === null && empty($current_image)): ?>required<?php endif; ?>
                                         class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                                     >
-                                    <p class="text-xs text-muted-foreground">Maksimum dosya boyutu: 5MB. Desteklenen formatlar: JPG, PNG, GIF, WEBP, SVG</p>
+                                    <p class="text-xs text-muted-foreground">Maximum file size: 5MB. Supported formats: JPG, PNG, GIF, WEBP, SVG</p>
                                 </div>
                             <?php elseif ($is_boolean): 
                                 $checked = false;
@@ -129,7 +129,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                     <?php if ($col['notnull'] == 1 && $col['dflt_value'] === null): ?>required<?php endif; ?>
                                     rows="3"
                                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                                    placeholder="<?php echo $col_label; ?> giriniz"
+                                    placeholder="Enter <?php echo $col_label; ?>"
                                 ><?php echo $edit_record ? htmlspecialchars($edit_record[$col_name] ?? '') : ''; ?></textarea>
                             <?php else: ?>
                                 <?php
@@ -145,7 +145,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                     <?php if ($col['notnull'] == 1 && $col['dflt_value'] === null): ?>required<?php endif; ?>
                                     value="<?php echo $edit_record ? htmlspecialchars($edit_record[$col_name] ?? '') : ''; ?>"
                                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                                    placeholder="<?php echo $col_label; ?> giriniz"
+                                    placeholder="Enter <?php echo $col_label; ?>"
                                 >
                             <?php endif; ?>
                         </div>
@@ -159,14 +159,14 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                 type="submit"
                                 class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
                             >
-                                <?php echo $edit_record ? 'Güncelle' : 'Ekle'; ?>
+                                <?php echo $edit_record ? 'Update' : 'Add'; ?>
                             </button>
                             <?php if ($edit_record): ?>
                                 <a
                                     href="dynamic-page.php?page=<?php echo urlencode($page_name); ?>"
                                     class="rounded-md bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 transition-all ml-2"
                                 >
-                                    İptal
+                                    Cancel
                                 </a>
                             <?php endif; ?>
                             <?php
@@ -239,7 +239,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                 onclick="toggleCollapse('filter-form-collapse')"
                 class="w-full p-6 pb-0 text-left flex items-center justify-between hover:bg-muted/50 transition-colors rounded-t-lg"
             >
-                <h3 class="text-lg font-semibold leading-none tracking-tight mb-5">Filtreleme</h3>
+                <h3 class="text-lg font-semibold leading-none tracking-tight mb-5">Filtering</h3>
                 <svg
                     id="filter-form-chevron"
                     class="h-5 w-5 text-muted-foreground transition-transform <?php echo $has_filters ? '' : 'rotate-180'; ?>"
@@ -291,9 +291,9 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                         name="filter_<?php echo $col_name; ?>"
                                         class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                                     >
-                                        <option value="">Tümü</option>
-                                        <option value="1" <?php echo (isset($_GET['filter_' . $col_name]) && $_GET['filter_' . $col_name] === '1') ? 'selected' : ''; ?>>Evet</option>
-                                        <option value="0" <?php echo (isset($_GET['filter_' . $col_name]) && $_GET['filter_' . $col_name] === '0') ? 'selected' : ''; ?>>Hayır</option>
+                                        <option value="">All</option>
+                                        <option value="1" <?php echo (isset($_GET['filter_' . $col_name]) && $_GET['filter_' . $col_name] === '1') ? 'selected' : ''; ?>>Yes</option>
+                                        <option value="0" <?php echo (isset($_GET['filter_' . $col_name]) && $_GET['filter_' . $col_name] === '0') ? 'selected' : ''; ?>>No</option>
                                     </select>
                                 </div>
                                 <?php
@@ -306,7 +306,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                         id="filter_<?php echo $col_name; ?>"
                                         name="filter_<?php echo $col_name; ?>"
                                         value="<?php echo htmlspecialchars($_GET['filter_' . $col_name] ?? ''); ?>"
-                                        placeholder="<?php echo $col_label; ?> ara..."
+                                        placeholder="Search <?php echo $col_label; ?>..."
                                         class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                                     >
                                 </div>
@@ -314,7 +314,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                             } else if ($col_type_lower === 'integer' || $col_type_lower === 'real') {
                                 ?>
                                 <div>
-                                    <label for="filter_<?php echo $col_name; ?>" class="block text-sm font-medium text-foreground mb-1.5"><?php echo $col_label; ?> (Eşit)</label>
+                                    <label for="filter_<?php echo $col_name; ?>" class="block text-sm font-medium text-foreground mb-1.5"><?php echo $col_label; ?> (Equal)</label>
                                     <input
                                         type="number"
                                         id="filter_<?php echo $col_name; ?>"
@@ -352,7 +352,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                         ?>
                         
                         <div>
-                            <label for="per_page" class="block text-sm font-medium text-foreground mb-1.5">Sayfa Başına Kayıt</label>
+                            <label for="per_page" class="block text-sm font-medium text-foreground mb-1.5">Records Per Page</label>
                             <select
                                 id="per_page"
                                 name="per_page"
@@ -372,13 +372,13 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                             type="submit"
                             class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
                         >
-                            Filtrele
+                            Filter
                         </button>
                         <a
                             href="dynamic-page.php?page=<?php echo urlencode($page_name); ?>"
                             class="rounded-md bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 transition-all"
                         >
-                            Temizle
+                            Clear
                         </a>
                     </div>
                 </form>
@@ -390,16 +390,16 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
         <div class="mb-8 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
             <div class="p-6 pb-0">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold leading-none tracking-tight">Tüm Kayıtlar</h3>
+                    <h3 class="text-lg font-semibold leading-none tracking-tight">All Records</h3>
                     <div class="text-sm text-muted-foreground">
-                        Toplam: <span class="font-medium text-foreground"><?php echo $total_records; ?></span> kayıt
+                        Total: <span class="font-medium text-foreground"><?php echo $total_records; ?></span> records
                     </div>
                 </div>
             </div>
             <div class="p-6 pt-0">
                 <?php if (empty($records)): ?>
                     <div class="text-center py-8 text-muted-foreground">
-                        Henüz kayıt eklenmemiş veya filtre sonucu bulunamadı.
+                        No records added yet or no results found with filters.
                     </div>
                 <?php else: ?>
                     <div class="overflow-x-auto">
@@ -434,7 +434,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                     ?>
                                     
                                     <?php if ($enable_update || $enable_delete): ?>
-                                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">İşlemler</th>
+                                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Actions</th>
                                     <?php endif; ?>
                                 </tr>
                             </thead>
@@ -463,9 +463,9 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                     
                                                     if ($is_boolean && $value !== null): ?>
                                                         <?php if (intval($value) === 1): ?>
-                                                            <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Evet</span>
+                                                            <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Yes</span>
                                                         <?php else: ?>
-                                                            <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">Hayır</span>
+                                                            <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">No</span>
                                                         <?php endif; ?>
                                                     <?php elseif ($is_image_col && !empty($value) && file_exists(__DIR__ . '/../' . $value)): ?>
                                                         <div class="flex items-center gap-2">
@@ -480,7 +480,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                                 target="_blank" 
                                                                 class="text-xs text-primary hover:underline"
                                                             >
-                                                                Görüntüle
+                                                                View
                                                             </a>
                                                         </div>
                                                     <?php elseif ($value === null): ?>
@@ -508,7 +508,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                                 href="?page=<?php echo urlencode($page_name); ?>&edit=<?php echo $record[$primary_key]; ?>"
                                                                 class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-100 text-blue-800 hover:bg-blue-200 h-9 px-3"
                                                             >
-                                                                Düzenle
+                                                                Edit
                                                             </a>
                                                             <?php if (!empty($page_config['update_rule'])): 
                                                                 // Execute rule as PHP code
@@ -530,7 +530,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                                     $rule_output = '<span class="text-red-600"> ' . htmlspecialchars($e->getMessage()) . '</span>';
                                                                 } catch (ParseError $e) {
                                                                     ob_end_clean();
-                                                                    $rule_output = '<span class="text-red-600">Rule syntax hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                                                    $rule_output = '<span class="text-red-600">Rule syntax error: ' . htmlspecialchars($e->getMessage()) . '</span>';
                                                                 }
                                                             ?>
                                                                 <div class="mt-1">
@@ -542,14 +542,14 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                     
                                                     <?php if ($enable_delete): ?>
                                                         <div class="inline-block">
-                                                            <form method="POST" action="" class="inline" onsubmit="return confirm('Bu kaydı silmek istediğinizden emin misiniz?');">
+                                                            <form method="POST" action="" class="inline" onsubmit="return confirm('Are you sure you want to delete this record?');">
                                                                 <input type="hidden" name="action" value="delete">
                                                                 <input type="hidden" name="record_id" value="<?php echo $record[$primary_key]; ?>">
                                                                 <button
                                                                     type="submit"
                                                                     class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-red-100 text-red-800 hover:bg-red-200 h-9 px-3"
                                                                 >
-                                                                    Sil
+                                                                    Delete
                                                                 </button>
                                                             </form>
                                                             <?php if (!empty($page_config['delete_rule'])): 
@@ -572,7 +572,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                                     $rule_output = '<span class="text-red-600"> ' . htmlspecialchars($e->getMessage()) . '</span>';
                                                                 } catch (ParseError $e) {
                                                                     ob_end_clean();
-                                                                    $rule_output = '<span class="text-red-600">Rule syntax hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                                                    $rule_output = '<span class="text-red-600">Rule syntax error: ' . htmlspecialchars($e->getMessage()) . '</span>';
                                                                 }
                                                             ?>
                                                                 <div class="mt-1">
@@ -594,11 +594,11 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                     <?php if ($total_records > 0): ?>
                         <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-4">
                             <div class="text-sm text-muted-foreground">
-                                <span class="font-medium text-foreground"><?php echo $total_records; ?></span> kayıttan
+                                <span class="font-medium text-foreground"><?php echo $total_records; ?></span> records,
+                                showing
                                 <span class="font-medium text-foreground"><?php echo min($offset + 1, $total_records); ?> - <?php echo min($offset + $per_page, $total_records); ?></span>
-                                gösteriliyor
                                 <?php if ($total_pages > 1): ?>
-                                    (Sayfa <span class="font-medium text-foreground"><?php echo $current_page_num; ?></span> / <span class="font-medium text-foreground"><?php echo $total_pages; ?></span>)
+                                    (Page <span class="font-medium text-foreground"><?php echo $current_page_num; ?></span> / <span class="font-medium text-foreground"><?php echo $total_pages; ?></span>)
                                 <?php endif; ?>
                             </div>
                             <?php if ($total_pages > 1): ?>
@@ -613,7 +613,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                 echo http_build_query($params);
                                             ?>"
                                             class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                            title="İlk Sayfa"
+                                            title="First Page"
                                         >
                                             1
                                         </a>
@@ -632,7 +632,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                 echo http_build_query($params);
                                             ?>"
                                             class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                            title="Önceki Sayfa"
+                                            title="Previous Page"
                                         >
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -685,7 +685,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                 echo http_build_query($params);
                                             ?>"
                                             class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                            title="Sonraki Sayfa"
+                                            title="Next Page"
                                         >
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -712,7 +712,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                 echo http_build_query($params);
                                             ?>"
                                             class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                            title="Son Sayfa"
+                                            title="Last Page"
                                         >
                                             <?php echo $total_pages; ?>
                                         </a>
