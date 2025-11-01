@@ -13,7 +13,7 @@
     "stop:node": "if [ -f api/nodejs-server.pid ]; then kill $(cat api/nodejs-server.pid) 2>/dev/null || true; rm -f api/nodejs-server.pid; echo 'Node.js server stopped'; else echo 'Node.js server PID file not found'; fi",
     "stop:php": "lsof -ti:8000 | xargs kill -9 2>/dev/null || true; echo 'PHP server stopped'",
     "restart": "npm run stop && sleep 1 && npm run start:bg",
-    "status": "echo '=== Server Status ===' && if [ -f api/nodejs-server.pid ] && kill -0 $(cat api/nodejs-server.pid) 2>/dev/null; then echo 'Node.js: Running (PID: $(cat api/nodejs-server.pid))'; else echo 'Node.js: Not running'; fi && if lsof -ti:8000 > /dev/null 2>&1; then echo 'PHP: Running (PID: $(lsof -ti:8000))'; else echo 'PHP: Not running'; fi"
+    "status": "echo '=== Server Status ===' && if [ -f api/nodejs-server.pid ] && kill -0 $(cat api/nodejs-server.pid) 2>/dev/null; then echo \"Node.js: Running (PID: $(cat api/nodejs-server.pid))\"; else echo 'Node.js: Not running'; fi && if [ ! -z \"$(lsof -ti:8000 2>/dev/null)\" ]; then echo \"PHP: Running (PID: $(lsof -ti:8000 | head -1))\"; else echo 'PHP: Not running'; fi"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",
