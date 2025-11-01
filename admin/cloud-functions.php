@@ -222,21 +222,88 @@ include '../includes/header.php';
 <div class="flex h-screen overflow-hidden">
     <?php include '../includes/admin-sidebar.php'; ?>
 
-    <main class="flex-1 overflow-y-auto">
+    <main class="flex-1 overflow-y-auto bg-muted/30">
         <div class="py-6">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-                <div class="flex items-center justify-between mb-6">
-                    <h1 class="text-3xl font-bold text-foreground">Cloud Functions</h1>
-                  
-                    <button
-                        onclick="showCreateForm()"
-                        class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 transition-colors"
-                    >
-                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Yeni Fonksiyon
-                    </button>
+            <div class="mx-auto max-w-[1600px] px-4 sm:px-6 md:px-8">
+                <!-- Header -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h1 class="text-3xl font-bold text-foreground">Cloud Functions</h1>
+                            <p class="mt-2 text-sm text-muted-foreground">Create and manage serverless functions</p>
+                        </div>
+                        <button
+                            onclick="showCreateForm()"
+                            class="inline-flex items-center justify-center rounded-md text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2.5 transition-colors shadow-sm"
+                        >
+                            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            New Function
+                        </button>
+                    </div>
+                    
+                    <!-- Stats Dashboard -->
+                    <div class="grid gap-4 md:grid-cols-4 mb-6">
+                        <?php 
+                        $total_funcs = count($functions);
+                        $active_funcs = count(array_filter($functions, fn($f) => $f['enabled']));
+                        $php_funcs = count(array_filter($functions, fn($f) => ($f['language'] ?? 'php') === 'php'));
+                        $js_funcs = count(array_filter($functions, fn($f) => ($f['language'] ?? 'php') === 'js'));
+                        ?>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $total_funcs; ?></p>
+                                </div>
+                                <div class="rounded-full bg-blue-100 p-3">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $active_funcs; ?></p>
+                                </div>
+                                <div class="rounded-full bg-green-100 p-3">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">PHP</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $php_funcs; ?></p>
+                                </div>
+                                <div class="rounded-full bg-purple-100 p-3">
+                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">JavaScript</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $js_funcs; ?></p>
+                                </div>
+                                <div class="rounded-full bg-yellow-100 p-3">
+                                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <?php if ($error_message): ?>
@@ -264,57 +331,96 @@ include '../includes/header.php';
                 <div class="grid gap-6 lg:grid-cols-3">
                     <!-- Functions List -->
                     <div class="lg:col-span-1">
-                        <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Fonksiyonlar</h3>
-                                <div class="space-y-2 max-h-[600px] overflow-y-auto">
+                        <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm sticky top-6">
+                            <div class="p-4 border-b border-border bg-muted/30">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight">Functions</h3>
+                                    <span class="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                                        <?php echo count($functions); ?>
+                                    </span>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    id="function-search"
+                                    placeholder="Search functions..."
+                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                    oninput="filterFunctions(this.value)"
+                                >
+                            </div>
+                            <div class="p-4">
+                                <div class="space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto" id="functions-list">
                                     <?php if (empty($functions)): ?>
-                                        <div class="text-center py-8 text-muted-foreground text-sm">
-                                            Henüz fonksiyon yok.
+                                        <div class="text-center py-12 text-muted-foreground">
+                                            <svg class="mx-auto h-12 w-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                            </svg>
+                                            <p class="text-sm font-medium">No functions yet</p>
+                                            <p class="text-xs mt-1">Create your first cloud function to get started</p>
                                         </div>
                                     <?php else: ?>
-                                        <?php foreach ($functions as $func): ?>
-                                            <div class="rounded-md border border-border p-3 bg-muted/30 hover:bg-muted/50 transition-colors">
-                                                <div class="flex items-center justify-between mb-2">
-                                                    <div class="flex-1">
-                                                        <h4 class="font-medium text-sm text-foreground">
-                                                            <?php echo htmlspecialchars($func['name']); ?>
+                                        <?php foreach ($functions as $func): 
+                                            $lang = ($func['language'] ?? 'php') === 'js' ? 'js' : 'php';
+                                            $langColor = $lang === 'js' ? 'text-yellow-600 bg-yellow-100' : 'text-purple-600 bg-purple-100';
+                                        ?>
+                                            <div class="rounded-lg border border-border p-4 bg-gradient-to-br from-background to-muted/30 hover:border-primary/50 hover:shadow-md transition-all function-item group <?php echo (isset($edit_id) && $edit_id == $func['id']) ? 'border-primary bg-primary/5 shadow-md' : ''; ?>" 
+                                                 data-function-id="<?php echo $func['id']; ?>"
+                                                 data-function-name="<?php echo strtolower(htmlspecialchars($func['name'])); ?>"
+                                                 onclick="selectFunction(<?php echo $func['id']; ?>)"
+                                            >
+                                                <div class="flex items-start justify-between gap-3 mb-3">
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                                            <h4 class="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate">
+                                                                <?php echo htmlspecialchars($func['name']); ?>
+                                                            </h4>
+                                                            <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-semibold <?php echo $langColor; ?>">
+                                                                <?php echo strtoupper($lang); ?>
+                                                            </span>
                                                             <?php if (!$func['enabled']): ?>
-                                                                <span class="ml-2 text-xs text-muted-foreground">(Pasif)</span>
+                                                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
+                                                                    Inactive
+                                                                </span>
                                                             <?php endif; ?>
-                                                        </h4>
+                                                        </div>
                                                         <?php if ($func['description']): ?>
-                                                            <p class="text-xs text-muted-foreground mt-1"><?php echo htmlspecialchars($func['description']); ?></p>
+                                                            <p class="text-xs text-muted-foreground line-clamp-2"><?php echo htmlspecialchars($func['description']); ?></p>
                                                         <?php endif; ?>
-                                                        <p class="text-xs text-muted-foreground mt-1">
-                                                            POST /api/cloud-functions/execute.php?function=<?php echo htmlspecialchars($func['name']); ?>
-                                                        </p>
                                                         <?php if (!empty($func['middleware_name'])): ?>
-                                                            <p class="text-xs text-purple-600 mt-1 font-medium">
-                                                                🔒 Middleware: <?php echo htmlspecialchars($func['middleware_name']); ?>
-                                                            </p>
+                                                            <div class="flex items-center gap-1 mt-2 text-xs text-purple-600 font-medium">
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                                </svg>
+                                                                <?php echo htmlspecialchars($func['middleware_name']); ?>
+                                                            </div>
                                                         <?php endif; ?>
+                                                        <p class="text-xs text-muted-foreground mt-2 font-mono truncate opacity-75">
+                                                            /api/cloud-functions/execute.php?function=<?php echo htmlspecialchars($func['name']); ?>
+                                                        </p>
                                                     </div>
                                                 </div>
-                                                <div class="flex items-center gap-2 mt-3">
+                                                <div class="flex items-center gap-2 pt-3 border-t border-border">
                                                     <a
                                                         href="?edit=<?php echo $func['id']; ?>"
-                                                        class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-2 py-1 transition-colors"
+                                                        class="flex-1 inline-flex items-center justify-center rounded-md text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-3 py-1.5 transition-colors"
+                                                        onclick="event.stopPropagation()"
                                                     >
-                                                        Düzenle
+                                                        Edit
                                                     </a>
-                                                    <button
-                                                        onclick="deleteFunction(<?php echo $func['id']; ?>, '<?php echo htmlspecialchars(addslashes($func['name'])); ?>')"
-                                                        class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 px-2 py-1 transition-colors"
-                                                    >
-                                                        Sil
-                                                    </button>
                                                     <a
                                                         href="api-playground.php?api_id=cloud-function-<?php echo $func['id']; ?>"
-                                                        class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-2 py-1 transition-colors"
+                                                        class="flex-1 inline-flex items-center justify-center rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-1.5 transition-colors"
+                                                        onclick="event.stopPropagation()"
                                                     >
                                                         Test
                                                     </a>
+                                                    <button
+                                                        onclick="event.stopPropagation(); deleteFunction(<?php echo $func['id']; ?>, '<?php echo htmlspecialchars(addslashes($func['name'])); ?>')"
+                                                        class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1.5 transition-colors"
+                                                    >
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
                                                 </div>
                                             </div>
                                         <?php endforeach; ?>
@@ -758,8 +864,27 @@ response.message = 'Function executed successfully';
         window.location.href = 'cloud-functions.php';
     }
     
+    function filterFunctions(searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+        const items = document.querySelectorAll('.function-item');
+        
+        items.forEach(item => {
+            const name = item.dataset.functionName || '';
+            
+            if (term === '' || name.includes(term)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    function selectFunction(id) {
+        window.location.href = '?edit=' + id;
+    }
+    
     function deleteFunction(id, name) {
-        if (confirm('Fonksiyon "' + name + '" silinecek. Emin misiniz?')) {
+        if (confirm('Are you sure you want to delete "' + name + '"? This action cannot be undone.')) {
             const form = document.createElement('form');
             form.method = 'POST';
             form.innerHTML = '<input type="hidden" name="action" value="delete_function"><input type="hidden" name="function_id" value="' + id + '">';
