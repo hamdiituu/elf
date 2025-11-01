@@ -151,6 +151,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     }
                     
                     try {
+                        // Handle file uploads first
+                        $uploads_dir = __DIR__ . '/../uploads';
+                        if (!is_dir($uploads_dir)) {
+                            mkdir($uploads_dir, 0755, true);
+                        }
+                        
+                        // Process image uploads
+                        foreach ($columns as $col) {
+                            $col_name = $col['name'];
+                            // Check if field is image
+                            if (preg_match('/\b(image|img|photo|picture|resim|foto)\b/i', $col_name)) {
+                                if (isset($_FILES[$col_name]) && $_FILES[$col_name]['error'] === UPLOAD_ERR_OK) {
+                                    $file = $_FILES[$col_name];
+                                    $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                                    $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+                                    
+                                    if (in_array($file_ext, $allowed_exts)) {
+                                        $filename = $col_name . '_' . time() . '_' . uniqid() . '.' . $file_ext;
+                                        $file_path = $uploads_dir . '/' . $filename;
+                                        
+                                        if (move_uploaded_file($file['tmp_name'], $file_path)) {
+                                            $_POST[$col_name] = 'uploads/' . $filename;
+                                        } else {
+                                            $error_message = "Görsel yüklenirken hata oluştu: " . $col_name;
+                                            break;
+                                        }
+                                    } else {
+                                        $error_message = "Geçersiz görsel formatı: " . $col_name;
+                                        break;
+                                    }
+                                } elseif (isset($_POST['existing_' . $col_name])) {
+                                    // Keep existing image if no new upload
+                                    $_POST[$col_name] = $_POST['existing_' . $col_name];
+                                }
+                            }
+                        }
+                        
+                        if (!empty($error_message)) {
+                            break; // Stop if there was an upload error
+                        }
+                        
                         $insert_columns = [];
                         $insert_placeholders = [];
                         $values = [];
@@ -288,6 +329,57 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         }
                         
                         try {
+                            // Handle file uploads first
+                            $uploads_dir = __DIR__ . '/../uploads';
+                            if (!is_dir($uploads_dir)) {
+                                mkdir($uploads_dir, 0755, true);
+                            }
+                            
+                            // Process image uploads
+                            foreach ($columns as $col) {
+                                $col_name = $col['name'];
+                                // Check if field is image
+                                if (preg_match('/\b(image|img|photo|picture|resim|foto)\b/i', $col_name)) {
+                                    if (isset($_FILES[$col_name]) && $_FILES[$col_name]['error'] === UPLOAD_ERR_OK) {
+                                        $file = $_FILES[$col_name];
+                                        $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                                        $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+                                        
+                                        if (in_array($file_ext, $allowed_exts)) {
+                                            // Delete old image if exists
+                                            $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+                                            $escaped_primary_key = preg_replace('/[^a-zA-Z0-9_]/', '', $primary_key);
+                                            $stmt = $db->prepare("SELECT `$col_name` FROM \"$escaped_table_name\" WHERE \"$escaped_primary_key\" = ?");
+                                            $stmt->execute([$record_id]);
+                                            $old_record = $stmt->fetch(PDO::FETCH_ASSOC);
+                                            if ($old_record && !empty($old_record[$col_name]) && file_exists(__DIR__ . '/../' . $old_record[$col_name])) {
+                                                @unlink(__DIR__ . '/../' . $old_record[$col_name]);
+                                            }
+                                            
+                                            $filename = $col_name . '_' . time() . '_' . uniqid() . '.' . $file_ext;
+                                            $file_path = $uploads_dir . '/' . $filename;
+                                            
+                                            if (move_uploaded_file($file['tmp_name'], $file_path)) {
+                                                $_POST[$col_name] = 'uploads/' . $filename;
+                                            } else {
+                                                $error_message = "Görsel yüklenirken hata oluştu: " . $col_name;
+                                                break;
+                                            }
+                                        } else {
+                                            $error_message = "Geçersiz görsel formatı: " . $col_name;
+                                            break;
+                                        }
+                                    } elseif (isset($_POST['existing_' . $col_name])) {
+                                        // Keep existing image if no new upload
+                                        $_POST[$col_name] = $_POST['existing_' . $col_name];
+                                    }
+                                }
+                            }
+                            
+                            if (!empty($error_message)) {
+                                break; // Stop if there was an upload error
+                            }
+                            
                             $set_parts = [];
                             $values = [];
                             

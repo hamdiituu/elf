@@ -870,8 +870,18 @@ include '../includes/header.php';
                                                                     <td class="px-4 py-3 text-sm">
                                                                         <?php 
                                                                         $value = $row[$col] ?? null;
+                                                                        
+                                                                        // Check if column is image field
+                                                                        $is_image_col = preg_match('/\b(image|img|photo|picture|resim|foto)\b/i', $col);
+                                                                        
                                                                         if ($value === null) {
                                                                             echo '<span class="text-muted-foreground italic">NULL</span>';
+                                                                        } elseif ($is_image_col && !empty($value) && file_exists(__DIR__ . '/../' . $value)) {
+                                                                            // Display image with thumbnail
+                                                                            echo '<div class="flex items-center gap-2">';
+                                                                            echo '<img src="../' . htmlspecialchars($value) . '" alt="' . htmlspecialchars($col) . '" class="w-16 h-16 object-cover rounded border border-input" onerror="this.style.display=\'none\'">';
+                                                                            echo '<a href="../' . htmlspecialchars($value) . '" target="_blank" class="text-xs text-primary hover:underline">Görüntüle</a>';
+                                                                            echo '</div>';
                                                                         } else {
                                                                             // Truncate long values
                                                                             $display_value = htmlspecialchars($value);

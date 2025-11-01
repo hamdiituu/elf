@@ -62,9 +62,15 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                             </label>
                             
                             <?php 
+                            // Check if field is image (column name contains 'image' or 'img' or 'photo' or 'picture')
+                            $is_image = false;
+                            if (preg_match('/\b(image|img|photo|picture|resim|foto)\b/i', $col_name)) {
+                                $is_image = true;
+                            }
+                            
                             // Check if field is boolean (INTEGER with default 0/1 or field name suggests boolean)
                             $is_boolean = false;
-                            if ($col_type === 'integer') {
+                            if (!$is_image && $col_type === 'integer') {
                                 $dflt_val = $col['dflt_value'] ?? '';
                                 if ($dflt_val === '0' || $dflt_val === '1' || 
                                     preg_match('/^(is_|has_|can_|should_|must_|.*_(mi|mu|mi_durum|durum)$)/i', $col_name)) {
@@ -72,7 +78,32 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                 }
                             }
                             
-                            if ($is_boolean): 
+                            if ($is_image):
+                                $current_image = $edit_record ? ($edit_record[$col_name] ?? '') : '';
+                                ?>
+                                <div class="space-y-2">
+                                    <?php if (!empty($current_image) && file_exists(__DIR__ . '/../' . $current_image)): ?>
+                                        <div class="mb-2">
+                                            <label class="block text-xs text-muted-foreground mb-1">Mevcut Görsel:</label>
+                                            <img 
+                                                src="../<?php echo htmlspecialchars($current_image); ?>" 
+                                                alt="<?php echo $col_label; ?>"
+                                                class="max-w-xs max-h-48 rounded-md border border-input object-contain"
+                                            >
+                                            <input type="hidden" name="existing_<?php echo $col_name; ?>" value="<?php echo htmlspecialchars($current_image); ?>">
+                                        </div>
+                                    <?php endif; ?>
+                                    <input
+                                        type="file"
+                                        id="<?php echo $col_name; ?>"
+                                        name="<?php echo $col_name; ?>"
+                                        accept="image/*"
+                                        <?php if ($col['notnull'] == 1 && $col['dflt_value'] === null && empty($current_image)): ?>required<?php endif; ?>
+                                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                    >
+                                    <p class="text-xs text-muted-foreground">Maksimum dosya boyutu: 5MB. Desteklenen formatlar: JPG, PNG, GIF, WEBP, SVG</p>
+                                </div>
+                            <?php elseif ($is_boolean): 
                                 $checked = false;
                                 if ($edit_record && isset($edit_record[$col_name])) {
                                     $checked = (intval($edit_record[$col_name]) === 1);
@@ -426,16 +457,44 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                 }
                                                 ?>
                                                 <td class="p-4 align-middle text-sm">
-                                                    <?php if ($is_boolean && $value !== null): ?>
+                                                    <?php 
+                                                    // Check if field is image
+                                                    $is_image_col = preg_match('/\b(image|img|photo|picture|resim|foto)\b/i', $col_name);
+                                                    
+                                                    if ($is_boolean && $value !== null): ?>
                                                         <?php if (intval($value) === 1): ?>
                                                             <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Evet</span>
                                                         <?php else: ?>
                                                             <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">Hayır</span>
                                                         <?php endif; ?>
+                                                    <?php elseif ($is_image_col && !empty($value) && file_exists(__DIR__ . '/../' . $value)): ?>
+                                                        <div class="flex items-center gap-2">
+                                                            <img 
+                                                                src="../<?php echo htmlspecialchars($value); ?>" 
+                                                                alt="<?php echo htmlspecialchars($col_name); ?>"
+                                                                class="w-16 h-16 object-cover rounded border border-input"
+                                                                onerror="this.style.display='none'"
+                                                            >
+                                                            <a 
+                                                                href="../<?php echo htmlspecialchars($value); ?>" 
+                                                                target="_blank" 
+                                                                class="text-xs text-primary hover:underline"
+                                                            >
+                                                                Görüntüle
+                                                            </a>
+                                                        </div>
                                                     <?php elseif ($value === null): ?>
                                                         <span class="text-muted-foreground italic">NULL</span>
                                                     <?php else: ?>
-                                                        <?php echo htmlspecialchars($value); ?>
+                                                        <?php 
+                                                        // Truncate long values
+                                                        $display_value = htmlspecialchars($value);
+                                                        if (strlen($display_value) > 50) {
+                                                            echo '<span title="' . htmlspecialchars($value) . '">' . htmlspecialchars(substr($value, 0, 50)) . '...</span>';
+                                                        } else {
+                                                            echo $display_value;
+                                                        }
+                                                        ?>
                                                     <?php endif; ?>
                                                 </td>
                                             <?php endforeach; ?>
