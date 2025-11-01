@@ -80,6 +80,36 @@ try {
                 Kullanıcılar
             </a>
             
+            <?php
+            // Check if user is developer
+            $is_developer = false;
+            if (isset($_SESSION['user_id'])) {
+                // Check session first
+                if (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'developer') {
+                    $is_developer = true;
+                } else {
+                    // Check database
+                    try {
+                        // Ensure user_type column exists
+                        try {
+                            $db->exec("ALTER TABLE users ADD COLUMN user_type TEXT DEFAULT 'user'");
+                        } catch (PDOException $e) {
+                            // Column might already exist, ignore
+                        }
+                        
+                        $stmt = $db->prepare("SELECT user_type FROM users WHERE id = ?");
+                        $stmt->execute([$_SESSION['user_id']]);
+                        $user_type = $stmt->fetchColumn();
+                        $_SESSION['user_type'] = $user_type ?: 'user';
+                        $is_developer = ($user_type === 'developer');
+                    } catch (PDOException $e) {
+                        $is_developer = false;
+                    }
+                }
+            }
+            
+            if ($is_developer):
+            ?>
             <!-- Divider - Developer -->
             <div class="px-3 py-2">
                 <div class="border-t border-border"></div>
@@ -142,6 +172,7 @@ try {
                 </svg>
                 Dashboard Widgets
             </a>
+            <?php endif; ?>
             
             <?php if (!empty($dynamic_pages_by_group)): ?>
                 <?php 

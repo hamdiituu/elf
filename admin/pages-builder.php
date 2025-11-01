@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
-requireLogin();
+requireDeveloper();
 
 $page_title = 'Pages Builder - Vira Stok Sistemi';
 $db = getDB();

@@ -12,12 +12,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             case 'add_user':
                 $username = trim($_POST['username'] ?? '');
                 $password = trim($_POST['password'] ?? '');
+                $user_type = trim($_POST['user_type'] ?? 'user');
+                
+                // Validate user_type
+                if (!in_array($user_type, ['user', 'developer'])) {
+                    $user_type = 'user';
+                }
                 
                 if (!empty($username) && !empty($password)) {
                     try {
+                        // Ensure user_type column exists
+                        try {
+                            $db->exec("ALTER TABLE users ADD COLUMN user_type TEXT DEFAULT 'user'");
+                        } catch (PDOException $e) {
+                            // Column might already exist, ignore
+                        }
+                        
                         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                        $stmt = $db->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
-                        $stmt->execute([$username, $hashed_password]);
+                        $stmt = $db->prepare("INSERT INTO users (username, password, user_type) VALUES (?, ?, ?)");
+                        $stmt->execute([$username, $hashed_password, $user_type]);
                         $success_message = "Kullanıcı başarıyla eklendi!";
                     } catch (PDOException $e) {
                         $error_message = "Kullanıcı eklenirken hata oluştu: " . $e->getMessage();
@@ -46,8 +59,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
+// Ensure user_type column exists
+try {
+    $db->exec("ALTER TABLE users ADD COLUMN user_type TEXT DEFAULT 'user'");
+} catch (PDOException $e) {
+    // Column might already exist, ignore
+}
+
 // Get all users
-$users = $db->query("SELECT id, username, created_at FROM users ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+$users = $db->query("SELECT id, username, user_type, created_at FROM users ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 include '../includes/header.php';
 ?>
@@ -111,6 +131,20 @@ include '../includes/header.php';
                                         placeholder="Şifre"
                                     >
                                 </div>
+                                <div>
+                                    <label for="user_type" class="block text-sm font-medium text-foreground mb-1.5">
+                                        Kullanıcı Tipi
+                                    </label>
+                                    <select
+                                        id="user_type"
+                                        name="user_type"
+                                        required
+                                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                    >
+                                        <option value="user" selected>User</option>
+                                        <option value="developer">Developer</option>
+                                    </select>
+                                </div>
                                 <div class="flex items-end">
                                     <button
                                         type="submit"
@@ -141,6 +175,7 @@ include '../includes/header.php';
                                         <tr class="border-b border-border">
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">ID</th>
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Kullanıcı Adı</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Tip</th>
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Oluşturulma Tarihi</th>
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">İşlemler</th>
                                         </tr>
@@ -154,6 +189,20 @@ include '../includes/header.php';
                                                     <?php if ($user['id'] == $_SESSION['user_id']): ?>
                                                         <span class="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
                                                             Sen
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="p-4 align-middle">
+                                                    <?php
+                                                    $user_type = $user['user_type'] ?? 'user';
+                                                    if ($user_type === 'developer'):
+                                                    ?>
+                                                        <span class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                                                            Developer
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                                                            User
                                                         </span>
                                                     <?php endif; ?>
                                                 </td>

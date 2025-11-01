@@ -1,6 +1,6 @@
 <?php
 require_once '../config/config.php';
-requireLogin();
+requireDeveloper();
 
 $page_title = 'Cloud Functions - Vira Stok Sistemi';
 

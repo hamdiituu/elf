@@ -28,5 +28,41 @@ function requireLogin() {
         exit;
     }
 }
+
+// Check if user is developer
+function isDeveloper() {
+    if (!isLoggedIn()) {
+        return false;
+    }
+    
+    // Check if user_type is set in session
+    if (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'developer') {
+        return true;
+    }
+    
+    // If not in session, check database
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT user_type FROM users WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $user_type = $stmt->fetchColumn();
+        
+        // Update session
+        $_SESSION['user_type'] = $user_type ?: 'user';
+        
+        return ($user_type === 'developer');
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+// Require developer access
+function requireDeveloper() {
+    requireLogin();
+    if (!isDeveloper()) {
+        header('Location: admin.php');
+        exit;
+    }
+}
 ?>
 

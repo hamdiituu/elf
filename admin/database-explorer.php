@@ -1,6 +1,6 @@
 <?php
 require_once '../config/config.php';
-requireLogin();
+requireDeveloper();
 
 $page_title = 'Database Explorer - Vira Stok Sistemi';
 

@@ -24,6 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($user && password_verify($password, $user['password'])) {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
+                
+                // Get user_type from database
+                $stmt = $db->prepare("SELECT user_type FROM users WHERE id = ?");
+                $stmt->execute([$user['id']]);
+                $user_type = $stmt->fetchColumn();
+                $_SESSION['user_type'] = $user_type ?: 'user';
+                
                 header('Location: admin/admin.php');
                 exit;
             } else {
