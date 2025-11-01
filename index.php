@@ -1,6 +1,12 @@
 <?php
 require_once 'config/config.php';
 
+// If settings are not configured, redirect to settings page (no login required)
+if (!isSettingsConfigured()) {
+    header('Location: admin/settings.php');
+    exit;
+}
+
 // If already logged in, redirect to admin panel
 if (isLoggedIn()) {
     header('Location: admin/admin.php');

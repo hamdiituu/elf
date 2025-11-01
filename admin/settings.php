@@ -1,10 +1,10 @@
 <?php
 require_once '../config/config.php';
-requireLogin();
 
-// Only require developer if settings are configured (database connection works)
-// Otherwise, allow access to configure settings
+// If settings are not configured, allow access without login
+// Otherwise, require login and developer access
 if (isSettingsConfigured()) {
+    requireLogin();
     requireDeveloper();
 }
 
@@ -162,18 +162,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 include '../includes/header.php';
+
+// If settings are not configured, show minimal layout without sidebar
+$show_minimal_layout = !isSettingsConfigured();
 ?>
+<?php if ($show_minimal_layout): ?>
+<div class="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+<?php else: ?>
 <div class="flex h-screen overflow-hidden">
     <?php include '../includes/admin-sidebar.php'; ?>
+<?php endif; ?>
 
-    <main class="flex-1 overflow-y-auto">
+    <main class="<?php echo $show_minimal_layout ? '' : 'flex-1 overflow-y-auto'; ?>">
         <div class="py-6">
             <div class="mx-auto max-w-4xl px-4 sm:px-6 md:px-8">
             <div class="mb-6">
-                <h1 class="text-3xl font-bold text-foreground">Settings</h1>
-                <p class="mt-2 text-sm text-muted-foreground">
-                    Configure application and database settings
-                </p>
+                <?php if ($show_minimal_layout): ?>
+                    <div class="text-center mb-8">
+                        <h1 class="text-3xl font-bold text-foreground">Welcome to ELF CMS</h1>
+                        <p class="mt-2 text-sm text-muted-foreground">
+                            Please configure your application settings to get started
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <h1 class="text-3xl font-bold text-foreground">Settings</h1>
+                    <p class="mt-2 text-sm text-muted-foreground">
+                        Configure application and database settings
+                    </p>
+                <?php endif; ?>
             </div>
             
             <?php if ($success_message): ?>
@@ -389,7 +405,11 @@ include '../includes/header.php';
             </div>
         </div>
     </main>
+<?php if ($show_minimal_layout): ?>
 </div>
+<?php else: ?>
+</div>
+<?php endif; ?>
 
 <script>
 function toggleDbConfig() {
