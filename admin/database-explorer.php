@@ -616,11 +616,14 @@ if ($table_name && in_array($table_name, $tables)) {
             // Normalize MySQL result to match SQLite PRAGMA format
             foreach ($table_info as &$col) {
                 $col['type'] = strtoupper($col['type']);
-                $col['notnull'] = ($col['nullable'] === 'NO') ? 1 : 0;
+                // Case-insensitive check: IS_NULLABLE 'NO' = NOT NULL = notnull = 1
+                $col['notnull'] = (strtoupper(trim($col['nullable'] ?? 'YES')) === 'NO') ? 1 : 0;
                 $col['dflt_value'] = $col['dflt_value'];
-                $col['pk'] = ($col['pk_indicator'] === 'PRI') ? 1 : 0;
+                // Case-insensitive check: COLUMN_KEY 'PRI' = PRIMARY KEY = pk = 1
+                $col['pk'] = (strtoupper(trim($col['pk_indicator'] ?? '')) === 'PRI') ? 1 : 0;
                 $table_columns[] = $col['name'];
             }
+            unset($col); // Break reference
         } else {
             // SQLite: Use PRAGMA table_info
             $table_info = $db->query("PRAGMA table_info(\"$table_name\")")->fetchAll(PDO::FETCH_ASSOC);
