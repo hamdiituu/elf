@@ -10,24 +10,62 @@ $success_message = null;
 
 // Ensure cloud_middlewares table exists
 try {
-    $db->exec("CREATE TABLE IF NOT EXISTS cloud_middlewares (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        description TEXT,
-        code TEXT NOT NULL,
-        language TEXT DEFAULT 'php',
-        enabled INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        created_by INTEGER,
-        FOREIGN KEY (created_by) REFERENCES users(id)
-    )");
+    $settings = getSettings();
+    $dbType = $settings['db_type'] ?? 'sqlite';
     
-    // Add language column if it doesn't exist
+    if ($dbType === 'mysql') {
+        // MySQL syntax
+        $db->exec("CREATE TABLE IF NOT EXISTS cloud_middlewares (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL UNIQUE,
+            description TEXT,
+            code TEXT NOT NULL,
+            language VARCHAR(50) DEFAULT 'php',
+            enabled TINYINT DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            created_by INT,
+            FOREIGN KEY (created_by) REFERENCES users(id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } else {
+        // SQLite syntax
+        $db->exec("CREATE TABLE IF NOT EXISTS cloud_middlewares (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            code TEXT NOT NULL,
+            language TEXT DEFAULT 'php',
+            enabled INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_by INTEGER,
+            FOREIGN KEY (created_by) REFERENCES users(id)
+        )");
+    }
+    
+    // Add missing columns if they don't exist (for existing tables)
     try {
-        $db->exec("ALTER TABLE cloud_middlewares ADD COLUMN language TEXT DEFAULT 'php'");
+        $settings = getSettings();
+        $dbType = $settings['db_type'] ?? 'sqlite';
+        
+        if ($dbType === 'sqlite') {
+            $stmt = $db->query("PRAGMA table_info(cloud_middlewares)");
+            $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $column_names = array_column($columns, 'name');
+            
+            if (!in_array('language', $column_names)) {
+                $db->exec("ALTER TABLE cloud_middlewares ADD COLUMN language TEXT DEFAULT 'php'");
+            }
+        } else {
+            // MySQL
+            try {
+                $db->exec("ALTER TABLE cloud_middlewares ADD COLUMN language VARCHAR(50) DEFAULT 'php'");
+            } catch (PDOException $e) {
+                // Column might already exist
+            }
+        }
     } catch (PDOException $e) {
-        // Column might already exist
+        // Ignore errors
     }
 } catch (PDOException $e) {
     // Table might already exist
@@ -133,12 +171,49 @@ if ($edit_id) {
     $edit_middleware = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-// Get all middlewares
-$middlewares = $db->query("SELECT cm.*, u.username as created_by_name, 
-    (SELECT COUNT(*) FROM cloud_functions WHERE middleware_id = cm.id) as usage_count
-    FROM cloud_middlewares cm 
-    LEFT JOIN users u ON cm.created_by = u.id 
-    ORDER BY cm.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+// Get all middlewares (handle middleware_id column safely)
+try {
+    // First check if middleware_id column exists in cloud_functions table
+    $settings = getSettings();
+    $dbType = $settings['db_type'] ?? 'sqlite';
+    $has_middleware_id = false;
+    
+    if ($dbType === 'sqlite') {
+        try {
+            $stmt = $db->query("PRAGMA table_info(cloud_functions)");
+            $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $column_names = array_column($columns, 'name');
+            $has_middleware_id = in_array('middleware_id', $column_names);
+        } catch (PDOException $e) {
+            $has_middleware_id = false;
+        }
+    } else {
+        // MySQL - try to query with middleware_id, if it fails, column doesn't exist
+        try {
+            $test = $db->query("SELECT middleware_id FROM cloud_functions LIMIT 1");
+            $has_middleware_id = true;
+        } catch (PDOException $e) {
+            $has_middleware_id = false;
+        }
+    }
+    
+    if ($has_middleware_id) {
+        $middlewares = $db->query("SELECT cm.*, u.username as created_by_name, 
+            (SELECT COUNT(*) FROM cloud_functions WHERE middleware_id = cm.id) as usage_count
+            FROM cloud_middlewares cm 
+            LEFT JOIN users u ON cm.created_by = u.id 
+            ORDER BY cm.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        // middleware_id column doesn't exist, use simpler query
+        $middlewares = $db->query("SELECT cm.*, u.username as created_by_name, 0 as usage_count
+            FROM cloud_middlewares cm 
+            LEFT JOIN users u ON cm.created_by = u.id 
+            ORDER BY cm.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (PDOException $e) {
+    // If query fails, return empty array
+    $middlewares = [];
+}
 
 include '../includes/header.php';
 ?>

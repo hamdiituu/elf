@@ -8,42 +8,14 @@ $db = getDB();
 $error_message = null;
 $success_message = null;
 
-// Ensure cloud_functions table exists
-try {
-    $db->exec("CREATE TABLE IF NOT EXISTS cloud_functions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        description TEXT,
-        code TEXT NOT NULL,
-        language TEXT DEFAULT 'php',
-        http_method TEXT NOT NULL DEFAULT 'POST',
-        endpoint TEXT NOT NULL UNIQUE,
-        enabled INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        created_by INTEGER,
-        middleware_id INTEGER,
-        FOREIGN KEY (created_by) REFERENCES users(id),
-        FOREIGN KEY (middleware_id) REFERENCES cloud_middlewares(id)
-    )");
-    
-    // Add language column if it doesn't exist
-    try {
-        $db->exec("ALTER TABLE cloud_functions ADD COLUMN language TEXT DEFAULT 'php'");
-    } catch (PDOException $e) {
-        // Column might already exist
-    }
-} catch (PDOException $e) {
-    // Table might already exist
-}
-
-// Ensure cloud_middlewares table exists
+// Ensure cloud_middlewares table exists first (for foreign key reference)
 try {
     $db->exec("CREATE TABLE IF NOT EXISTS cloud_middlewares (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
         description TEXT,
         code TEXT NOT NULL,
+        language TEXT DEFAULT 'php',
         enabled INTEGER DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -51,7 +23,87 @@ try {
         FOREIGN KEY (created_by) REFERENCES users(id)
     )");
 } catch (PDOException $e) {
-    // Table might already exist, ignore
+    // Table might already exist
+}
+
+// Ensure cloud_functions table exists
+try {
+    $settings = getSettings();
+    $dbType = $settings['db_type'] ?? 'sqlite';
+    
+    if ($dbType === 'mysql') {
+        // MySQL syntax
+        $db->exec("CREATE TABLE IF NOT EXISTS cloud_functions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL UNIQUE,
+            description TEXT,
+            code TEXT NOT NULL,
+            language VARCHAR(50) DEFAULT 'php',
+            http_method VARCHAR(10) NOT NULL DEFAULT 'POST',
+            endpoint VARCHAR(255) NOT NULL UNIQUE,
+            enabled TINYINT DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            created_by INT,
+            middleware_id INT,
+            FOREIGN KEY (created_by) REFERENCES users(id),
+            FOREIGN KEY (middleware_id) REFERENCES cloud_middlewares(id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } else {
+        // SQLite syntax
+        $db->exec("CREATE TABLE IF NOT EXISTS cloud_functions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            code TEXT NOT NULL,
+            language TEXT DEFAULT 'php',
+            http_method TEXT NOT NULL DEFAULT 'POST',
+            endpoint TEXT NOT NULL UNIQUE,
+            enabled INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_by INTEGER,
+            middleware_id INTEGER,
+            FOREIGN KEY (created_by) REFERENCES users(id),
+            FOREIGN KEY (middleware_id) REFERENCES cloud_middlewares(id)
+        )");
+    }
+    
+    // Add missing columns if they don't exist (for existing tables)
+    try {
+        // Check which columns exist
+        $settings = getSettings();
+        $dbType = $settings['db_type'] ?? 'sqlite';
+        
+        if ($dbType === 'sqlite') {
+            $stmt = $db->query("PRAGMA table_info(cloud_functions)");
+            $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $column_names = array_column($columns, 'name');
+            
+            if (!in_array('language', $column_names)) {
+                $db->exec("ALTER TABLE cloud_functions ADD COLUMN language TEXT DEFAULT 'php'");
+            }
+            if (!in_array('middleware_id', $column_names)) {
+                $db->exec("ALTER TABLE cloud_functions ADD COLUMN middleware_id INTEGER");
+            }
+        } else {
+            // MySQL - check columns differently
+            try {
+                $db->exec("ALTER TABLE cloud_functions ADD COLUMN language VARCHAR(50) DEFAULT 'php'");
+            } catch (PDOException $e) {
+                // Column might already exist
+            }
+            try {
+                $db->exec("ALTER TABLE cloud_functions ADD COLUMN middleware_id INT");
+            } catch (PDOException $e) {
+                // Column might already exist
+            }
+        }
+    } catch (PDOException $e) {
+        // Ignore errors
+    }
+} catch (PDOException $e) {
+    // Table might already exist
 }
 
 // Handle form submissions
@@ -151,8 +203,22 @@ if ($edit_id) {
     $edit_function = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-// Get all functions
-$functions = $db->query("SELECT cf.*, u.username as created_by_name, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id ORDER BY cf.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+// Get all functions (handle middleware_id column safely)
+try {
+    $functions = $db->query("SELECT cf.*, u.username as created_by_name, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id ORDER BY cf.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // If middleware_id column doesn't exist, use simpler query
+    try {
+        $functions = $db->query("SELECT cf.*, u.username as created_by_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id ORDER BY cf.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+        // Add middleware_name as null for each function
+        foreach ($functions as &$func) {
+            $func['middleware_name'] = null;
+            $func['middleware_id'] = null;
+        }
+    } catch (PDOException $e2) {
+        $functions = [];
+    }
+}
 
 // Get all middlewares for dropdown (both enabled and disabled)
 try {
