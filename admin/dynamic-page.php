@@ -139,7 +139,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 'record' => $rule_record,
                                 'columns' => $columns,
                                 'is_edit' => false,
-                                'db' => $db
+                                'db' => $db,
+                                'dbContext' => $db  // Alias for dbContext like in cloud-functions
                             ];
                             
                             executeRule($page_config['create_rule'], $rule_context);
@@ -275,6 +276,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     'columns' => $columns,
                                     'is_edit' => true,
                                     'db' => $db,
+                                    'dbContext' => $db,  // Alias for dbContext like in cloud-functions
                                     'current_record' => $current_record
                                 ];
                                 
@@ -366,7 +368,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         'record' => $record,
                                         'columns' => $columns,
                                         'is_edit' => false,
-                                        'db' => $db
+                                        'db' => $db,
+                                        'dbContext' => $db  // Alias for dbContext like in cloud-functions
                                     ];
                                     
                                     executeRule($page_config['delete_rule'], $rule_context);

@@ -150,7 +150,9 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                 $rule_context = [
                                     'record' => $edit_record ?? [],
                                     'columns' => $columns,
-                                    'is_edit' => !empty($edit_record)
+                                    'is_edit' => !empty($edit_record),
+                                    'db' => $db,
+                                    'dbContext' => $db  // Alias for dbContext like in cloud-functions
                                 ];
                                 
                                 // Execute rule as PHP code
@@ -454,7 +456,9 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                                 $rule_context = [
                                                                     'record' => $record,
                                                                     'columns' => $columns,
-                                                                    'is_edit' => false
+                                                                    'is_edit' => false,
+                                                                    'db' => $db,
+                                                                    'dbContext' => $db  // Alias for dbContext like in cloud-functions
                                                                 ];
                                                                 
                                                                 ob_start();
@@ -494,7 +498,9 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                                 $rule_context = [
                                                                     'record' => $record,
                                                                     'columns' => $columns,
-                                                                    'is_edit' => false
+                                                                    'is_edit' => false,
+                                                                    'db' => $db,
+                                                                    'dbContext' => $db  // Alias for dbContext like in cloud-functions
                                                                 ];
                                                                 
                                                                 ob_start();

@@ -129,6 +129,33 @@ $dynamic_pages = $db->query("SELECT * FROM dynamic_pages ORDER BY created_at DES
 include '../includes/header.php';
 ?>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/php/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/anyword-hint.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.css">
+
+<style>
+    .CodeMirror {
+        border: 1px solid hsl(var(--input));
+        border-radius: 0.375rem;
+        height: 300px !important;
+        font-size: 14px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    }
+    
+    .CodeMirror-activeline-background {
+        background: hsl(var(--muted) / 0.3);
+    }
+</style>
+
 <div class="flex h-screen overflow-hidden">
     <?php include '../includes/admin-sidebar.php'; ?>
 
@@ -287,6 +314,10 @@ include '../includes/header.php';
                                     • <code>$columns</code> - Kolon bilgileri (array)
                                     <br>
                                     • <code>$is_edit</code> - Düzenleme modunda mı? (boolean, sadece create/update için)
+                                    <br>
+                                    • <code>$db</code> - Veritabanı bağlantısı (PDO)
+                                    <br>
+                                    • <code>$dbContext</code> - Veritabanı bağlantısı (PDO, cloud-functions ile uyumlu)
                                 </p>
                                 
                                 <div class="space-y-4">
@@ -298,10 +329,70 @@ include '../includes/header.php';
                                             id="create_rule"
                                             name="create_rule"
                                             rows="4"
-                                            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                                            placeholder="<?php echo htmlspecialchars('<?php if ($is_edit): ?><span>Güncelleme modu</span><?php else: ?><span>Yeni kayıt modu</span><?php endif; ?>'); ?>"
+                                            class="hidden"
                                         ></textarea>
-                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu veya düz metin yazabilirsiniz</p>
+                                        <div class="mb-2">
+                                            <details class="text-xs">
+                                                <summary class="cursor-pointer text-muted-foreground hover:text-foreground mb-2">Örnek kodlar göster</summary>
+                                                <div class="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
+                                                    <div class="mb-2"><strong>Örnek 1 - Basit kontrol:</strong></div>
+                                                    <pre><?php echo htmlspecialchars('<?php
+if (empty($record[\'name\'])) {
+    throw new Exception(\'İsim alanı boş olamaz!\');
+}
+?>'); ?></pre>
+                                                    
+                                                    <div class="mt-3 mb-2"><strong>Örnek 2 - Veritabanı sorgusu:</strong></div>
+                                                    <pre><?php echo htmlspecialchars('<?php
+// Email kontrolü
+$stmt = $dbContext->prepare("SELECT COUNT(*) FROM users WHERE email = ?");
+$stmt->execute([$record[\'email\'] ?? \'\']);
+$exists = $stmt->fetchColumn();
+
+if ($exists > 0) {
+    throw new Exception(\'Bu email adresi zaten kullanılıyor!\');
+}
+
+// İlişkili kayıt kontrolü
+$stmt = $dbContext->prepare("SELECT * FROM categories WHERE id = ? AND status = \'active\'");
+$stmt->execute([$record[\'category_id\'] ?? 0]);
+$category = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$category) {
+    throw new Exception(\'Geçersiz kategori seçildi!\');
+}
+?>'); ?></pre>
+                                                    
+                                                    <div class="mt-3 mb-2"><strong>Örnek 3 - Birden fazla kontrol:</strong></div>
+                                                    <pre><?php echo htmlspecialchars('<?php
+// Birden fazla alan kontrolü
+$errors = [];
+
+if (empty($record[\'name\'])) {
+    $errors[] = \'İsim gereklidir\';
+}
+
+if (empty($record[\'email\'])) {
+    $errors[] = \'Email gereklidir\';
+} elseif (!filter_var($record[\'email\'], FILTER_VALIDATE_EMAIL)) {
+    $errors[] = \'Geçersiz email formatı\';
+}
+
+// Veritabanından kontrol
+$stmt = $dbContext->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+$stmt->execute([$record[\'username\'] ?? \'\']);
+if ($stmt->fetchColumn() > 0) {
+    $errors[] = \'Bu kullanıcı adı zaten kullanılıyor\';
+}
+
+if (!empty($errors)) {
+    throw new Exception(implode(\', \', $errors));
+}
+?>'); ?></pre>
+                                                </div>
+                                            </details>
+                                        </div>
+                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu yazabilirsiniz. Exception fırlatarak işlemi durdurabilirsiniz.</p>
                                     </div>
                                     
                                     <div>
@@ -312,10 +403,57 @@ include '../includes/header.php';
                                             id="update_rule"
                                             name="update_rule"
                                             rows="4"
-                                            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                                            placeholder="<?php echo htmlspecialchars('<?php if (isset($record[\'status\']) && $record[\'status\'] === \'active\'): ?><span class="text-yellow-600">Aktif kayıt - dikkatli güncelleyin</span><?php endif; ?>'); ?>"
+                                            class="hidden"
                                         ></textarea>
-                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu veya düz metin yazabilirsiniz. <code>$record</code> güncellenecek kayıt verisini içerir.</p>
+                                        <div class="mb-2">
+                                            <details class="text-xs">
+                                                <summary class="cursor-pointer text-muted-foreground hover:text-foreground mb-2">Örnek kodlar göster</summary>
+                                                <div class="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
+                                                    <div class="mb-2"><strong>Örnek 1 - Mevcut kayıt kontrolü:</strong></div>
+                                                    <pre><?php echo htmlspecialchars('<?php
+// Mevcut kaydın durumunu kontrol et
+$stmt = $dbContext->prepare("SELECT status FROM " . $table_name . " WHERE id = ?");
+$stmt->execute([$record[\'id\']]);
+$current_status = $stmt->fetchColumn();
+
+if ($current_status === \'locked\') {
+    throw new Exception(\'Kilitli kayıt güncellenemez!\');
+}
+?>'); ?></pre>
+                                                    
+                                                    <div class="mt-3 mb-2"><strong>Örnek 2 - Değişiklik kontrolü:</strong></div>
+                                                    <pre><?php echo htmlspecialchars('<?php
+// Mevcut kaydı al
+$stmt = $dbContext->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->execute([$record[\'id\']]);
+$current_record = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Kritik alanlar değiştirilmişse kontrol et
+if ($current_record[\'email\'] !== $record[\'email\']) {
+    // Yeni email başka bir kullanıcıda var mı?
+    $stmt = $dbContext->prepare("SELECT COUNT(*) FROM users WHERE email = ? AND id != ?");
+    $stmt->execute([$record[\'email\'], $record[\'id\']]);
+    if ($stmt->fetchColumn() > 0) {
+        throw new Exception(\'Bu email adresi başka bir kullanıcı tarafından kullanılıyor!\');
+    }
+}
+?>'); ?></pre>
+                                                    
+                                                    <div class="mt-3 mb-2"><strong>Örnek 3 - Yetki kontrolü:</strong></div>
+                                                    <pre><?php echo htmlspecialchars('<?php
+// Kullanıcının bu kaydı güncelleme yetkisi var mı?
+$stmt = $dbContext->prepare("SELECT created_by FROM posts WHERE id = ?");
+$stmt->execute([$record[\'id\']]);
+$post = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if ($post && $post[\'created_by\'] != $_SESSION[\'user_id\']) {
+    throw new Exception(\'Bu kaydı güncelleme yetkiniz yok!\');
+}
+?>'); ?></pre>
+                                                </div>
+                                            </details>
+                                        </div>
+                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu yazabilirsiniz. <code>$record</code> güncellenecek kayıt verisini, <code>$current_record</code> mevcut kaydı içerir.</p>
                                     </div>
                                     
                                     <div>
@@ -326,10 +464,56 @@ include '../includes/header.php';
                                             id="delete_rule"
                                             name="delete_rule"
                                             rows="4"
-                                            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                                            placeholder="<?php echo htmlspecialchars('<?php if (isset($record[\'id\'])): ?><span>Kayıt ID: <?php echo $record[\'id\']; ?></span><?php endif; ?>'); ?>"
+                                            class="hidden"
                                         ></textarea>
-                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu veya düz metin yazabilirsiniz. <code>$record</code> silinecek kayıt verisini içerir.</p>
+                                        <div class="mb-2">
+                                            <details class="text-xs">
+                                                <summary class="cursor-pointer text-muted-foreground hover:text-foreground mb-2">Örnek kodlar göster</summary>
+                                                <div class="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
+                                                    <div class="mb-2"><strong>Örnek 1 - İlişkili kayıt kontrolü:</strong></div>
+                                                    <pre><?php echo htmlspecialchars('<?php
+// Silinecek kayıt başka tablolarda kullanılıyor mu?
+$stmt = $dbContext->prepare("SELECT COUNT(*) FROM order_items WHERE product_id = ?");
+$stmt->execute([$record[\'id\']]);
+$related_count = $stmt->fetchColumn();
+
+if ($related_count > 0) {
+    throw new Exception(\'Bu ürün \' . $related_count . \' siparişte kullanıldığı için silinemez!\');
+}
+?>'); ?></pre>
+                                                    
+                                                    <div class="mt-3 mb-2"><strong>Örnek 2 - Durum kontrolü:</strong></div>
+                                                    <pre><?php echo htmlspecialchars('<?php
+// Sadece belirli durumdaki kayıtlar silinebilir
+if ($record[\'status\'] === \'active\') {
+    throw new Exception(\'Aktif kayıtlar silinemez! Önce pasif hale getirin.\');
+}
+
+if ($record[\'status\'] === \'locked\') {
+    throw new Exception(\'Kilitli kayıtlar silinemez!\');
+}
+?>'); ?></pre>
+                                                    
+                                                    <div class="mt-3 mb-2"><strong>Örnek 3 - Kaskad silme kontrolü:</strong></div>
+                                                    <pre><?php echo htmlspecialchars('<?php
+// Alt kayıtları kontrol et
+$stmt = $dbContext->prepare("SELECT COUNT(*) FROM child_table WHERE parent_id = ?");
+$stmt->execute([$record[\'id\']]);
+$children_count = $stmt->fetchColumn();
+
+if ($children_count > 0) {
+    // Önce alt kayıtları sil
+    $stmt = $dbContext->prepare("DELETE FROM child_table WHERE parent_id = ?");
+    $stmt->execute([$record[\'id\']]);
+    
+    // Veya hata ver
+    // throw new Exception(\'Önce alt kayıtları silmelisiniz!\');
+}
+?>'); ?></pre>
+                                                </div>
+                                            </details>
+                                        </div>
+                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu yazabilirsiniz. <code>$record</code> silinecek kayıt verisini içerir.</p>
                                     </div>
                                 </div>
                             </div>
@@ -430,4 +614,55 @@ include '../includes/header.php';
         </div>
     </main>
 </div>
+
+<script>
+// Initialize CodeMirror editors for rule fields
+document.addEventListener('DOMContentLoaded', function() {
+    // CodeMirror configuration
+    const editorConfig = {
+        lineNumbers: true,
+        mode: 'application/x-httpd-php',
+        theme: 'monokai',
+        indentUnit: 4,
+        indentWithTabs: false,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        styleActiveLine: true,
+        lineWrapping: true,
+        extraKeys: {
+            "Ctrl-Space": "autocomplete",
+            "Ctrl-Enter": function(cm) {
+                // Allow form submission with Ctrl+Enter
+                return true;
+            }
+        },
+        hintOptions: {
+            completeSingle: false
+        }
+    };
+    
+    // Initialize editors
+    const createRuleEditor = CodeMirror.fromTextArea(document.getElementById('create_rule'), editorConfig);
+    const updateRuleEditor = CodeMirror.fromTextArea(document.getElementById('update_rule'), editorConfig);
+    const deleteRuleEditor = CodeMirror.fromTextArea(document.getElementById('delete_rule'), editorConfig);
+    
+    // Sync editor content with textarea before form submission
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            createRuleEditor.save();
+            updateRuleEditor.save();
+            deleteRuleEditor.save();
+        });
+    }
+    
+    // Store editors for potential future use
+    window.ruleEditors = {
+        create: createRuleEditor,
+        update: updateRuleEditor,
+        delete: deleteRuleEditor
+    };
+});
+</script>
+
 <?php include '../includes/footer.php'; ?>
