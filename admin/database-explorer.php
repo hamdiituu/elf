@@ -5,8 +5,8 @@ requireLogin();
 $page_title = 'Database Explorer - Vira Stok Sistemi';
 
 $db = getDB();
-$error_message = null;
-$success_message = null;
+$error_message = $_GET['error'] ?? null;
+$success_message = $_GET['success'] ?? null;
 $table_name = $_GET['table'] ?? null;
 $query_result = null;
 $selected_table = null;
@@ -24,9 +24,18 @@ try {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         query TEXT NOT NULL,
+        user_id INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
     )");
+    
+    // Migrate existing queries (add user_id column if it doesn't exist)
+    try {
+        $db->exec("ALTER TABLE saved_queries ADD COLUMN user_id INTEGER");
+    } catch (PDOException $e) {
+        // Column might already exist
+    }
 } catch (PDOException $e) {
     // Table might already exist, ignore error
 }
@@ -34,9 +43,13 @@ try {
 // Handle save query
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_query' && $custom_query && $saved_query_name) {
     try {
-        $stmt = $db->prepare("INSERT INTO saved_queries (name, query) VALUES (?, ?)");
-        $stmt->execute([$saved_query_name, $custom_query]);
+        $stmt = $db->prepare("INSERT INTO saved_queries (name, query, user_id) VALUES (?, ?, ?)");
+        $stmt->execute([$saved_query_name, $custom_query, $_SESSION['user_id']]);
         $success_message = "Query başarıyla kaydedildi!";
+        
+        // Redirect to prevent form resubmission
+        header('Location: database-explorer.php?success=' . urlencode($success_message));
+        exit;
     } catch (PDOException $e) {
         $error_message = "Query kaydedilirken hata: " . $e->getMessage();
     }
@@ -45,9 +58,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Handle delete query
 if ($delete_query_id) {
     try {
-        $stmt = $db->prepare("DELETE FROM saved_queries WHERE id = ?");
-        $stmt->execute([$delete_query_id]);
-        $success_message = "Query başarıyla silindi!";
+        // Only allow deletion of user's own queries or queries with no user_id
+        $stmt = $db->prepare("DELETE FROM saved_queries WHERE id = ? AND (user_id = ? OR user_id IS NULL)");
+        $stmt->execute([$delete_query_id, $_SESSION['user_id']]);
+        if ($stmt->rowCount() > 0) {
+            $success_message = "Query başarıyla silindi!";
+            header('Location: database-explorer.php?success=' . urlencode($success_message));
+            exit;
+        } else {
+            $error_message = "Query bulunamadı veya silme izniniz yok!";
+        }
     } catch (PDOException $e) {
         $error_message = "Query silinirken hata: " . $e->getMessage();
     }
@@ -114,13 +134,70 @@ if ($delete_table) {
 }
 
 // Handle load query
-if ($load_query_id) {
+$run_query_id = $_GET['run_query'] ?? null;
+if ($load_query_id || $run_query_id) {
+    $query_id = $run_query_id ? $run_query_id : $load_query_id;
     try {
-        $stmt = $db->prepare("SELECT query FROM saved_queries WHERE id = ?");
-        $stmt->execute([$load_query_id]);
+        // Check if user_id column exists
+        $table_info = $db->query("PRAGMA table_info(saved_queries)")->fetchAll(PDO::FETCH_ASSOC);
+        $has_user_id = false;
+        foreach ($table_info as $col) {
+            if ($col['name'] === 'user_id') {
+                $has_user_id = true;
+                break;
+            }
+        }
+        
+        if ($has_user_id) {
+            $stmt = $db->prepare("SELECT query FROM saved_queries WHERE id = ? AND (user_id = ? OR user_id IS NULL)");
+            $stmt->execute([$query_id, $_SESSION['user_id']]);
+        } else {
+            $stmt = $db->prepare("SELECT query FROM saved_queries WHERE id = ?");
+            $stmt->execute([$query_id]);
+        }
         $saved_query = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($saved_query) {
             $custom_query = $saved_query['query'];
+            
+            // If run_query is set, also execute it
+            if ($run_query_id) {
+                try {
+                    $trimmed_query = trim($custom_query);
+                    $query_upper = strtoupper($trimmed_query);
+                    
+                    // Execute query
+                    $stmt = $db->prepare($trimmed_query);
+                    $stmt->execute();
+                    
+                    // Check if it's a SELECT query
+                    if (strpos($query_upper, 'SELECT') === 0) {
+                        $query_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        
+                        // Get column names from first row if available
+                        if (!empty($query_result)) {
+                            $table_columns = array_keys($query_result[0]);
+                        } else {
+                            // Try to get column info from statement
+                            $stmt2 = $db->prepare($trimmed_query);
+                            $stmt2->execute();
+                            $table_columns = [];
+                            for ($i = 0; $i < $stmt2->columnCount(); $i++) {
+                                $col = $stmt2->getColumnMeta($i);
+                                $table_columns[] = $col['name'] ?? "Column " . ($i + 1);
+                            }
+                        }
+                        $success_message = "Query başarıyla çalıştırıldı! " . count($query_result) . " satır bulundu.";
+                    } else {
+                        // For non-SELECT queries, show affected rows
+                        $affected_rows = $stmt->rowCount();
+                        $success_message = "Query başarıyla çalıştırıldı! Etkilenen satır sayısı: " . $affected_rows;
+                    }
+                } catch (PDOException $e) {
+                    $error_message = "Query çalıştırılırken hata: " . $e->getMessage();
+                }
+            }
+        } else {
+            $error_message = "Query bulunamadı veya erişim izniniz yok!";
         }
     } catch (PDOException $e) {
         $error_message = "Query yüklenirken hata: " . $e->getMessage();
@@ -248,12 +325,36 @@ if ($export_excel) {
     }
 }
 
-// Get saved queries
+// Get saved queries for current user
 $saved_queries = [];
 try {
-    $saved_queries = $db->query("SELECT * FROM saved_queries ORDER BY updated_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    // Check if table exists first
+    $table_check = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='saved_queries'")->fetch();
+    
+    if ($table_check) {
+        // Check if user_id column exists
+        $table_info = $db->query("PRAGMA table_info(saved_queries)")->fetchAll(PDO::FETCH_ASSOC);
+        $has_user_id = false;
+        foreach ($table_info as $col) {
+            if ($col['name'] === 'user_id') {
+                $has_user_id = true;
+                break;
+            }
+        }
+        
+        if ($has_user_id) {
+            $stmt = $db->prepare("SELECT * FROM saved_queries WHERE user_id = ? OR user_id IS NULL ORDER BY updated_at DESC");
+            $stmt->execute([$_SESSION['user_id']]);
+            $saved_queries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            // If user_id column doesn't exist, get all queries
+            $saved_queries = $db->query("SELECT * FROM saved_queries ORDER BY updated_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+        }
+    }
 } catch (PDOException $e) {
-    // Table might not exist yet
+    // Table might not exist yet or other error
+    error_log("Error loading saved queries: " . $e->getMessage());
+    $saved_queries = [];
 }
 
 // Get all tables
@@ -419,66 +520,94 @@ include '../includes/header.php';
                     <!-- Table Content / Query Result -->
                     <div class="lg:col-span-9 transition-all duration-300" id="query-panel">
                         <!-- Saved Queries Sidebar -->
-                        <?php if (!empty($saved_queries)): ?>
                         <div class="mb-6 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                             <div class="p-4 pb-0">
                                 <h3 class="text-sm font-semibold leading-none tracking-tight mb-3">Kaydedilmiş Query'ler</h3>
                             </div>
                             <div class="p-4 pt-2">
-                                <div class="space-y-2 max-h-[200px] overflow-y-auto">
-                                    <?php foreach ($saved_queries as $sq): ?>
-                                        <div class="flex items-center justify-between bg-muted/50 rounded p-2 hover:bg-muted transition-colors">
-                                            <div class="flex-1 min-w-0">
-                                                <div class="flex items-center gap-2">
-                                                    <span class="text-sm font-medium text-foreground truncate"><?php echo htmlspecialchars($sq['name']); ?></span>
-                                                    <span class="text-xs text-muted-foreground"><?php echo date('d.m.Y H:i', strtotime($sq['created_at'])); ?></span>
+                                <?php if (isset($saved_queries) && !empty($saved_queries)): ?>
+                                    <div class="space-y-2 max-h-[200px] overflow-y-auto">
+                                        <?php foreach ($saved_queries as $sq): ?>
+                                            <div class="flex items-center justify-between bg-muted/50 rounded p-2 hover:bg-muted transition-colors">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-sm font-medium text-foreground truncate"><?php echo htmlspecialchars($sq['name']); ?></span>
+                                                        <span class="text-xs text-muted-foreground"><?php echo date('d.m.Y H:i', strtotime($sq['created_at'] ?? $sq['updated_at'] ?? '')); ?></span>
+                                                    </div>
+                                                    <p class="text-xs text-muted-foreground truncate mt-1"><?php echo htmlspecialchars(substr($sq['query'], 0, 60)); ?>...</p>
                                                 </div>
-                                                <p class="text-xs text-muted-foreground truncate mt-1"><?php echo htmlspecialchars(substr($sq['query'], 0, 60)); ?>...</p>
+                                                <div class="flex items-center gap-1 ml-2 flex-shrink-0">
+                                                    <a
+                                                        href="?run_query=<?php echo $sq['id']; ?><?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>"
+                                                        class="p-1.5 rounded hover:bg-green-600 hover:text-white transition-colors"
+                                                        title="Çalıştır"
+                                                    >
+                                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                    </a>
+                                                    <a
+                                                        href="?load_query=<?php echo $sq['id']; ?><?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>"
+                                                        class="p-1.5 rounded hover:bg-primary hover:text-primary-foreground transition-colors"
+                                                        title="Yükle"
+                                                    >
+                                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                                        </svg>
+                                                    </a>
+                                                    <?php if (!isset($sq['user_id']) || $sq['user_id'] == $_SESSION['user_id'] || $sq['user_id'] === null): ?>
+                                                        <a
+                                                            href="?delete_query=<?php echo $sq['id']; ?><?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>"
+                                                            class="p-1.5 rounded hover:bg-red-500 hover:text-white transition-colors"
+                                                            title="Sil"
+                                                            onclick="return confirm('Bu sorguyu silmek istediğinizden emin misiniz?');"
+                                                        >
+                                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                        </a>
+                                                    <?php endif; ?>
+                                                </div>
                                             </div>
-                                            <div class="flex items-center gap-1 ml-2 flex-shrink-0">
-                                                <a
-                                                    href="?load_query=<?php echo $sq['id']; ?><?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>"
-                                                    class="p-1.5 rounded hover:bg-primary hover:text-primary-foreground transition-colors"
-                                                    title="Yükle"
-                                                >
-                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                                    </svg>
-                                                </a>
-                                                <a
-                                                    href="?delete_query=<?php echo $sq['id']; ?><?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>"
-                                                    class="p-1.5 rounded hover:bg-red-500 hover:text-white transition-colors"
-                                                    title="Sil"
-                                                    onclick="return confirm('Bu query'yi silmek istediğinizden emin misiniz?')"
-                                                >
-                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php else: ?>
+                                    <p class="text-sm text-muted-foreground">Henüz kayıtlı sorgu yok. Sorgunuzu yazıp "Kaydet" butonuna tıklayarak kaydedebilirsiniz.</p>
+                                <?php endif; ?>
                             </div>
                         </div>
-                        <?php endif; ?>
                         
                         <!-- Custom Query Section -->
                         <div class="mb-6 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                             <div class="p-6 pb-0">
                                 <div class="flex items-center justify-between mb-4">
                                     <h3 class="text-lg font-semibold leading-none tracking-tight">SQL Sorgusu</h3>
-                                    <?php if (!empty($saved_queries)): ?>
-                                        <select
-                                            id="load-saved-query"
-                                            class="text-sm px-3 py-1.5 border border-input bg-background text-foreground rounded-md hover:bg-accent transition-colors"
-                                            onchange="if(this.value) { window.location.href='?load_query=' + this.value + '<?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>'; }"
-                                        >
-                                            <option value="">Kaydedilmiş Query Seç...</option>
-                                            <?php foreach ($saved_queries as $sq): ?>
-                                                <option value="<?php echo $sq['id']; ?>"><?php echo htmlspecialchars($sq['name']); ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
+                                    <?php if (isset($saved_queries) && !empty($saved_queries)): ?>
+                                        <div class="flex items-center gap-2">
+                                            <select
+                                                id="load-saved-query"
+                                                class="text-sm px-3 py-1.5 border border-input bg-background text-foreground rounded-md hover:bg-accent transition-colors flex-1"
+                                                onchange="if(this.value) { handleSavedQuery(this.value); }"
+                                            >
+                                                <option value="">Kaydedilmiş Query Seç...</option>
+                                                <?php foreach ($saved_queries as $sq): ?>
+                                                    <option value="<?php echo $sq['id']; ?>" data-action="load"><?php echo htmlspecialchars($sq['name']); ?> (Yükle)</option>
+                                                    <option value="<?php echo $sq['id']; ?>" data-action="run"><?php echo htmlspecialchars($sq['name']); ?> (Çalıştır)</option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <button
+                                                type="button"
+                                                onclick="const select = document.getElementById('load-saved-query'); if(select.value) { handleSavedQuery(select.value); }"
+                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-green-600 text-white hover:bg-green-700 px-3 py-1.5 transition-colors"
+                                                title="Seçili Query'i Çalıştır"
+                                            >
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </button>
+                                        </div>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -506,17 +635,18 @@ include '../includes/header.php';
                                                 </svg>
                                                 Sorguyu Çalıştır
                                             </button>
+                                            <button
+                                                type="button"
+                                                onclick="showSaveDialog()"
+                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 transition-colors"
+                                                title="Sorguyu Kaydet"
+                                            >
+                                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                                </svg>
+                                                Kaydet
+                                            </button>
                                             <?php if ($custom_query): ?>
-                                                <button
-                                                    type="button"
-                                                    onclick="showSaveDialog()"
-                                                    class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 transition-colors"
-                                                >
-                                                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                                                    </svg>
-                                                    Kaydet
-                                                </button>
                                                 <a
                                                     href="database-explorer.php<?php echo $selected_table ? '?table=' . htmlspecialchars($selected_table) : ''; ?>"
                                                     class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-4 py-2 transition-colors"
@@ -874,6 +1004,20 @@ function hideCreateTableModal() {
 function deleteTable(tableName) {
     if (confirm('Tablo "' + tableName + '" silinecek. Bu işlem geri alınamaz. Emin misiniz?')) {
         window.location.href = '?delete_table=' + encodeURIComponent(tableName);
+    }
+}
+
+// Handle saved query selection
+function handleSavedQuery(queryId) {
+    const select = document.getElementById('load-saved-query');
+    const selectedOption = select.options[select.selectedIndex];
+    const action = selectedOption ? selectedOption.getAttribute('data-action') : 'run';
+    const tableParam = '<?php echo $selected_table ? '&table=' . htmlspecialchars($selected_table) : ''; ?>';
+    
+    if (action === 'run') {
+        window.location.href = '?run_query=' + queryId + tableParam;
+    } else {
+        window.location.href = '?load_query=' + queryId + tableParam;
     }
 }
 
