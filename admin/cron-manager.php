@@ -326,49 +326,61 @@ if ($daemon_action === 'start') {
     $daemon_path = __DIR__ . '/../cron/cron-daemon.php';
     $lock_file = __DIR__ . '/../cron/cron-daemon.lock';
     
-    // Check if already running
+    // Quick check if already running
     if (file_exists($lock_file)) {
         $pid = trim(@file_get_contents($lock_file));
-        if ($pid && function_exists('posix_getpgid') && posix_getpgid($pid)) {
-            $error_message = "Daemon zaten çalışıyor (PID: $pid)";
+        if ($pid && function_exists('posix_getpgid') && @posix_getpgid($pid)) {
+            // Already running
+            $success_message = "Cron daemon zaten çalışıyor!";
+            header('Location: cron-manager.php?success=' . urlencode($success_message));
+            exit;
         } else {
             // Stale lock file
             @unlink($lock_file);
         }
     }
     
-    if (!isset($error_message)) {
-        // Start daemon in background (completely non-blocking)
-        $log_file = __DIR__ . '/../cron/cron-daemon.log';
-        $php_path = PHP_BINARY ?: 'php'; // Use PHP binary path or fallback to 'php'
-        $cron_dir = dirname($daemon_path);
-        
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            // Windows - use start command with /B flag for background (non-blocking)
-            $command = "cd /d " . escapeshellarg($cron_dir) . " && start /B \"\" \"$php_path\" " . basename($daemon_path) . " >> " . basename($log_file) . " 2>&1";
-            // Use popen and immediately close to make it non-blocking
-            $handle = popen($command, 'r');
-            if ($handle) {
-                pclose($handle);
-            }
-        } else {
-            // Unix/Linux - use nohup and redirect output properly, run in background
-            // Change to cron directory first to ensure relative paths work
-            $daemon_name = basename($daemon_path);
-            $log_name = basename($log_file);
-            $command = "cd " . escapeshellarg($cron_dir) . " && nohup \"$php_path\" \"$daemon_name\" >> \"$log_name\" 2>&1 &";
-            // Use exec to make it truly non-blocking - don't wait for output
-            exec($command . ' > /dev/null 2>&1 &');
-        }
-        
-        // Give it a moment to create lock file
-        usleep(200000); // 0.2 seconds
-        
-        // Immediately redirect - don't wait for daemon to fully start
-        $success_message = "Cron daemon başlatıldı!";
-        header('Location: cron-manager.php?success=' . urlencode($success_message));
-        exit;
+    // Start daemon in background (completely non-blocking)
+    $log_file = __DIR__ . '/../cron/cron-daemon.log';
+    $php_path = PHP_BINARY ?: 'php';
+    $cron_dir = dirname($daemon_path);
+    $daemon_name = basename($daemon_path);
+    $log_name = basename($log_file);
+    
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        // Windows
+        $command = sprintf(
+            'cd /d %s && start /B "" %s %s >> %s 2>&1',
+            escapeshellarg($cron_dir),
+            escapeshellarg($php_path),
+            escapeshellarg($daemon_name),
+            escapeshellarg($log_name)
+        );
+        pclose(popen($command, 'r'));
+    } else {
+        // Unix/Linux - run in background completely detached
+        $command = sprintf(
+            'cd %s && nohup %s %s >> %s 2>&1 &',
+            escapeshellarg($cron_dir),
+            escapeshellarg($php_path),
+            escapeshellarg($daemon_name),
+            escapeshellarg($log_name)
+        );
+        // Execute in background - use shell_exec for truly non-blocking execution
+        // Wrap in parentheses and redirect to /dev/null, then background with &
+        shell_exec('(' . $command . ') > /dev/null 2>&1 &');
     }
+    
+    // Redirect immediately - don't wait for daemon
+    $success_message = "Cron daemon başlatıldı!";
+    header('Location: cron-manager.php?success=' . urlencode($success_message));
+    
+    // Close connection and continue in background if possible
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+    
+    exit;
 } elseif ($daemon_action === 'stop') {
     $lock_file = __DIR__ . '/../cron/cron-daemon.lock';
     $pid_file = __DIR__ . '/../cron/cron-daemon.pid';
@@ -1437,13 +1449,35 @@ document.addEventListener('keydown', function(e) {
 // Daemon control functions
 function startDaemon() {
     if (confirm('Cron daemon başlatılsın mı? Bu işlem arka planda çalışacak bir process başlatır ve zamanı gelen cron job\'ları otomatik çalıştırır.')) {
-        window.location.href = '?daemon_action=start';
+        // Show loading indicator
+        const btn = event.target.closest('button');
+        if (btn) {
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin">⏳</span> Başlatılıyor...';
+            
+            // Redirect immediately - server will handle background process
+            window.location.href = '?daemon_action=start';
+        } else {
+            window.location.href = '?daemon_action=start';
+        }
     }
 }
 
 function stopDaemon() {
     if (confirm('Cron daemon durdurulsun mu? Tüm otomatik cron job\'ları durur.')) {
-        window.location.href = '?daemon_action=stop';
+        // Show loading indicator
+        const btn = event.target.closest('button');
+        if (btn) {
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin">⏳</span> Durduruluyor...';
+            
+            // Redirect immediately - server will handle background process
+            window.location.href = '?daemon_action=stop';
+        } else {
+            window.location.href = '?daemon_action=stop';
+        }
     }
 }
 </script>

@@ -1,0 +1,38 @@
+[Sat Nov  1 18:31:59 2025] PHP 8.1.32 Development Server (http://localhost:8000) started
+[Sat Nov  1 18:32:07 2025] [::1]:65350 Accepted
+[Sat Nov  1 18:32:07 2025] [::1]:65350 [200]: GET /
+[Sat Nov  1 18:32:07 2025] [::1]:65350 Closing
+[Sat Nov  1 18:32:09 2025] [::1]:65352 Accepted
+[Sat Nov  1 18:32:09 2025] [::1]:65353 Accepted
+[Sat Nov  1 18:32:09 2025] [::1]:65352 [200]: GET /admin/cloud-functions.php?success=Fonksiyon+ba%C5%9Far%C4%B1yla+g%C3%BCncellendi%21
+[Sat Nov  1 18:32:09 2025] [::1]:65352 Closing
+[Sat Nov  1 18:32:09 2025] [::1]:65353 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:32:09 2025] [::1]:65353 Closing
+[Sat Nov  1 18:32:10 2025] [::1]:65355 Accepted
+[Sat Nov  1 18:32:10 2025] [::1]:65355 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:32:10 2025] [::1]:65355 Closing
+[Sat Nov  1 18:32:10 2025] [::1]:65356 Accepted
+[Sat Nov  1 18:32:10 2025] [::1]:65356 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:32:10 2025] [::1]:65356 Closing
+[Sat Nov  1 18:32:12 2025] [::1]:65358 Accepted
+[Sat Nov  1 18:32:12 2025] [::1]:65359 Accepted
+[Sat Nov  1 18:32:12 2025] [::1]:65358 [200]: GET /admin/cloud-functions.php
+[Sat Nov  1 18:32:12 2025] [::1]:65358 Closing
+[Sat Nov  1 18:32:12 2025] [::1]:65359 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:32:12 2025] [::1]:65359 Closing
+[Sat Nov  1 18:32:12 2025] [::1]:65362 Accepted
+[Sat Nov  1 18:32:12 2025] [::1]:65362 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:32:12 2025] [::1]:65362 Closing
+[Sat Nov  1 18:32:12 2025] [::1]:65363 Accepted
+[Sat Nov  1 18:32:12 2025] [::1]:65363 [200]: GET /uploads/favicon_1762000180.png?v=1762000180
+[Sat Nov  1 18:32:12 2025] [::1]:65363 Closing
+[Sat Nov  1 18:32:19 2025] [::1]:65368 Accepted
+[Sat Nov  1 18:32:19 2025] [::1]:65369 Accepted
+[Sat Nov  1 18:32:19 2025] [::1]:65368 [200]: GET /admin/cron-manager.php
+[Sat Nov  1 18:32:19 2025] [::1]:65368 Closing
+[Sat Nov  1 18:32:19 2025] [::1]:65369 [200]: GET /uploads/logo_1762000180.png
+[Sat Nov  1 18:32:19 2025] [::1]:65369 Closing
+[Sat Nov  1 18:32:22 2025] [::1]:65371 Accepted
+[Sat Nov  1 18:32:22 2025] [::1]:65372 Accepted
+
+Fatal error: Maximum execution time of 30+2 seconds exceeded (terminated) in /Users/hamditug/Hamdis/StockCountWeb/admin/cron-manager.php on line 361
