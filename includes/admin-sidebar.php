@@ -2,8 +2,8 @@
 // Get current page for active menu highlighting
 $current_page = basename($_SERVER['PHP_SELF']);
 
-// Get dynamic pages from database
-$dynamic_pages_list = [];
+// Get dynamic pages from database grouped by group_name
+$dynamic_pages_by_group = [];
 try {
     require_once __DIR__ . '/../config/config.php';
     $db = getDB();
@@ -13,6 +13,7 @@ try {
         page_name TEXT NOT NULL UNIQUE,
         page_title TEXT NOT NULL,
         table_name TEXT NOT NULL,
+        group_name TEXT,
         enable_list INTEGER DEFAULT 1,
         enable_create INTEGER DEFAULT 1,
         enable_update INTEGER DEFAULT 1,
@@ -21,8 +22,24 @@ try {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )");
     
-    $stmt = $db->query("SELECT page_name, page_title FROM dynamic_pages ORDER BY created_at ASC");
-    $dynamic_pages_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Add group_name column if it doesn't exist (migration)
+    try {
+        $db->exec("ALTER TABLE dynamic_pages ADD COLUMN group_name TEXT");
+    } catch (PDOException $e) {
+        // Column might already exist
+    }
+    
+    $stmt = $db->query("SELECT page_name, page_title, group_name FROM dynamic_pages ORDER BY group_name ASC, page_title ASC");
+    $all_pages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Group pages by group_name
+    foreach ($all_pages as $page) {
+        $group = $page['group_name'] ?: '_ungrouped';
+        if (!isset($dynamic_pages_by_group[$group])) {
+            $dynamic_pages_by_group[$group] = [];
+        }
+        $dynamic_pages_by_group[$group][] = $page;
+    }
 } catch (Exception $e) {
     // Ignore errors if table doesn't exist or DB not available
 }
@@ -161,26 +178,56 @@ try {
                 Pages Builder
             </a>
             
-            <?php if (!empty($dynamic_pages_list)): ?>
-                <!-- Divider - Dinamik Sayfalar -->
-                <div class="px-3 py-2">
-                    <div class="border-t border-border"></div>
-                    <div class="mt-2 px-2">
-                        <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dinamik Sayfalar</span>
-                    </div>
-                </div>
+            <?php if (!empty($dynamic_pages_by_group)): ?>
+                <?php 
+                // Sort groups: named groups first, then ungrouped
+                $sorted_groups = [];
+                $ungrouped = null;
+                foreach ($dynamic_pages_by_group as $group_name => $pages) {
+                    if ($group_name === '_ungrouped') {
+                        $ungrouped = $pages;
+                    } else {
+                        $sorted_groups[$group_name] = $pages;
+                    }
+                }
+                ksort($sorted_groups);
+                ?>
                 
-                <?php foreach ($dynamic_pages_list as $page): ?>
-                    <a
-                        href="<?php echo htmlspecialchars($page['page_name']); ?>.php"
-                        class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == $page['page_name'] . '.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
-                    >
-                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <?php echo htmlspecialchars($page['page_title']); ?>
-                    </a>
+                <?php foreach ($sorted_groups as $group_name => $pages): ?>
+                    <!-- Divider - Group -->
+                    <div class="px-3 py-2">
+                        <div class="border-t border-border"></div>
+                        <div class="mt-2 px-2">
+                            <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"><?php echo htmlspecialchars($group_name); ?></span>
+                        </div>
+                    </div>
+                    
+                    <?php foreach ($pages as $page): ?>
+                        <a
+                            href="<?php echo htmlspecialchars($page['page_name']); ?>.php"
+                            class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == $page['page_name'] . '.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
+                        >
+                            <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <?php echo htmlspecialchars($page['page_title']); ?>
+                        </a>
+                    <?php endforeach; ?>
                 <?php endforeach; ?>
+                
+                <?php if ($ungrouped && !empty($ungrouped)): ?>
+                    <?php foreach ($ungrouped as $page): ?>
+                        <a
+                            href="<?php echo htmlspecialchars($page['page_name']); ?>.php"
+                            class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors <?php echo $current_page == $page['page_name'] . '.php' ? 'text-foreground bg-accent' : 'text-muted-foreground hover:bg-accent hover:text-foreground'; ?>"
+                        >
+                            <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <?php echo htmlspecialchars($page['page_title']); ?>
+                        </a>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             <?php endif; ?>
         </nav>
         <div class="border-t border-border px-3 py-4 mt-auto">

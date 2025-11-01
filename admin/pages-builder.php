@@ -12,6 +12,7 @@ try {
         page_name TEXT NOT NULL UNIQUE,
         page_title TEXT NOT NULL,
         table_name TEXT NOT NULL,
+        group_name TEXT,
         enable_list INTEGER DEFAULT 1,
         enable_create INTEGER DEFAULT 1,
         enable_update INTEGER DEFAULT 1,
@@ -19,6 +20,13 @@ try {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )");
+    
+    // Add group_name column if it doesn't exist (migration)
+    try {
+        $db->exec("ALTER TABLE dynamic_pages ADD COLUMN group_name TEXT");
+    } catch (PDOException $e) {
+        // Column might already exist
+    }
 } catch (PDOException $e) {
     // Table might already exist
 }
@@ -34,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $page_name = trim($_POST['page_name'] ?? '');
                 $page_title = trim($_POST['page_title'] ?? '');
                 $table_name = trim($_POST['table_name'] ?? '');
+                $group_name = trim($_POST['group_name'] ?? '');
                 $enable_list = isset($_POST['enable_list']) ? 1 : 0;
                 $enable_create = isset($_POST['enable_create']) ? 1 : 0;
                 $enable_update = isset($_POST['enable_update']) ? 1 : 0;
@@ -59,8 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $error_message = "Bu sayfa adı zaten kullanılıyor!";
                                 } else {
                                     // Insert into dynamic_pages
-                                    $stmt = $db->prepare("INSERT INTO dynamic_pages (page_name, page_title, table_name, enable_list, enable_create, enable_update, enable_delete) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                                    $stmt->execute([$page_name, $page_title, $table_name, $enable_list, $enable_create, $enable_update, $enable_delete]);
+                                    $stmt = $db->prepare("INSERT INTO dynamic_pages (page_name, page_title, table_name, group_name, enable_list, enable_create, enable_update, enable_delete) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                                    $stmt->execute([$page_name, $page_title, $table_name, $group_name ?: null, $enable_list, $enable_create, $enable_update, $enable_delete]);
                                     
                                     // Generate PHP file
                                     if (generateDynamicPage($db, $page_name, $page_title, $table_name, $enable_list, $enable_create, $enable_update, $enable_delete)) {
@@ -263,10 +272,103 @@ function generateDynamicPage($db, $page_name, $page_title, $table_name, $enable_
     $php_code .= "    }\n";
     $php_code .= "}\n\n";
     
-    // Get all records
+    // Get filter parameters
     if ($enable_list) {
-        $php_code .= "// Get all records\n";
-        $php_code .= "\$records = \$db->query(\"SELECT * FROM $table_name ORDER BY $primary_key DESC\")->fetchAll(PDO::FETCH_ASSOC);\n\n";
+        $php_code .= "// Get filter parameters\n";
+        $php_code .= "\$filters = [];\n";
+        $php_code .= "\$where_conditions = [];\n";
+        $php_code .= "\$where_values = [];\n\n";
+        
+        foreach ($columns as $col) {
+            $col_name = $col['name'];
+            $col_type_lower = strtolower($col['type']);
+            
+            // Skip primary key and timestamps for basic filters
+            if ($col['pk'] == 1) continue;
+            if (strtolower($col_name) === 'created_at' || strtolower($col_name) === 'updated_at') continue;
+            
+            // Add filter for each column
+            $php_code .= "// Filter for $col_name\n";
+            if ($col_type_lower === 'text') {
+                // Text search (LIKE)
+                $php_code .= "if (!empty(\$_GET['filter_$col_name'])) {\n";
+                $php_code .= "    \$filters['$col_name'] = trim(\$_GET['filter_$col_name']);\n";
+                $php_code .= "    \$where_conditions[] = \"$col_name LIKE ?\";\n";
+                $php_code .= "    \$where_values[] = '%' . \$filters['$col_name'] . '%';\n";
+                $php_code .= "}\n";
+            } else if ($col_type_lower === 'integer' || $col_type_lower === 'real') {
+                // Exact match for numbers
+                $php_code .= "if (isset(\$_GET['filter_$col_name']) && \$_GET['filter_$col_name'] !== '') {\n";
+                $php_code .= "    \$filters['$col_name'] = trim(\$_GET['filter_$col_name']);\n";
+                $php_code .= "    \$where_conditions[] = \"$col_name = ?\";\n";
+                $php_code .= "    \$where_values[] = \$filters['$col_name'];\n";
+                $php_code .= "}\n";
+                // Range filters
+                $php_code .= "if (isset(\$_GET['filter_{$col_name}_min']) && \$_GET['filter_{$col_name}_min'] !== '') {\n";
+                $php_code .= "    \$where_conditions[] = \"$col_name >= ?\";\n";
+                $php_code .= "    \$where_values[] = intval(\$_GET['filter_{$col_name}_min']);\n";
+                $php_code .= "}\n";
+                $php_code .= "if (isset(\$_GET['filter_{$col_name}_max']) && \$_GET['filter_{$col_name}_max'] !== '') {\n";
+                $php_code .= "    \$where_conditions[] = \"$col_name <= ?\";\n";
+                $php_code .= "    \$where_values[] = intval(\$_GET['filter_{$col_name}_max']);\n";
+                $php_code .= "}\n";
+            }
+            $php_code .= "\n";
+        }
+        
+        // Pagination
+        $php_code .= "// Pagination\n";
+        $php_code .= "\$page = isset(\$_GET['page']) ? max(1, intval(\$_GET['page'])) : 1;\n";
+        $php_code .= "\$per_page = isset(\$_GET['per_page']) ? max(1, min(100, intval(\$_GET['per_page']))) : 20;\n";
+        $php_code .= "\$offset = (\$page - 1) * \$per_page;\n\n";
+        
+        // Build WHERE clause
+        $php_code .= "// Build WHERE clause\n";
+        $php_code .= "\$where_sql = '';\n";
+        $php_code .= "if (!empty(\$where_conditions)) {\n";
+        $php_code .= "    \$where_sql = 'WHERE ' . implode(' AND ', \$where_conditions);\n";
+        $php_code .= "}\n\n";
+        
+        // Get total count
+        $php_code .= "// Get total count\n";
+        $php_code .= "\$count_stmt = \$db->prepare(\"SELECT COUNT(*) FROM $table_name \$where_sql\");\n";
+        $php_code .= "if (!empty(\$where_values)) {\n";
+        $php_code .= "    \$count_stmt->execute(\$where_values);\n";
+        $php_code .= "} else {\n";
+        $php_code .= "    \$count_stmt->execute();\n";
+        $php_code .= "}\n";
+        $php_code .= "\$total_records = \$count_stmt->fetchColumn();\n";
+        $php_code .= "\$total_pages = ceil(\$total_records / \$per_page);\n\n";
+        
+        // Sorting
+        $php_code .= "// Sorting\n";
+        $php_code .= "\$sort_column = \$_GET['sort'] ?? '$primary_key';\n";
+        $php_code .= "\$sort_order = strtoupper(\$_GET['order'] ?? 'DESC');\n";
+        $php_code .= "if (!in_array(\$sort_order, ['ASC', 'DESC'])) {\n";
+        $php_code .= "    \$sort_order = 'DESC';\n";
+        $php_code .= "}\n";
+        // Validate sort_column against actual columns
+        $php_code .= "\$valid_columns = [";
+        $valid_cols = [];
+        foreach ($columns as $col) {
+            $valid_cols[] = "'" . $col['name'] . "'";
+        }
+        $php_code .= implode(", ", $valid_cols);
+        $php_code .= "];\n";
+        $php_code .= "if (!in_array(\$sort_column, \$valid_columns)) {\n";
+        $php_code .= "    \$sort_column = '$primary_key';\n";
+        $php_code .= "}\n\n";
+        
+        // Get records with pagination
+        $php_code .= "// Get records with pagination\n";
+        $php_code .= "\$sql = \"SELECT * FROM $table_name \$where_sql ORDER BY \$sort_column \$sort_order LIMIT \$per_page OFFSET \$offset\";\n";
+        $php_code .= "\$stmt = \$db->prepare(\$sql);\n";
+        $php_code .= "if (!empty(\$where_values)) {\n";
+        $php_code .= "    \$stmt->execute(\$where_values);\n";
+        $php_code .= "} else {\n";
+        $php_code .= "    \$stmt->execute();\n";
+        $php_code .= "}\n";
+        $php_code .= "\$records = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n\n";
     }
     
     // Get record for editing
@@ -399,15 +501,126 @@ function generateDynamicPage($db, $page_name, $page_title, $table_name, $enable_
     
     // List table
     if ($enable_list) {
+        $php_code .= "                <!-- Filter Form -->\n";
+        $php_code .= "                <div class=\"mb-8 rounded-lg border border-border bg-card text-card-foreground shadow-sm\">\n";
+        $php_code .= "                    <div class=\"p-6 pb-0\">\n";
+        $php_code .= "                        <h3 class=\"text-lg font-semibold leading-none tracking-tight mb-4\">Filtreleme</h3>\n";
+        $php_code .= "                    </div>\n";
+        $php_code .= "                    <div class=\"p-6 pt-0\">\n";
+        $php_code .= "                        <form method=\"GET\" action=\"\" class=\"space-y-4\">\n";
+        $php_code .= "                            <?php if (isset(\$_GET['edit'])): ?>\n";
+        $php_code .= "                                <input type=\"hidden\" name=\"edit\" value=\"<?php echo htmlspecialchars(\$_GET['edit']); ?>\">\n";
+        $php_code .= "                            <?php endif; ?>\n\n";
+        $php_code .= "                            <div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4\">\n";
+        
+        // Generate filter fields for each column
+        foreach ($columns as $col) {
+            $col_name = $col['name'];
+            $col_label = ucfirst(str_replace('_', ' ', $col_name));
+            $col_type_lower = strtolower($col['type']);
+            
+            // Skip primary key and timestamps
+            if ($col['pk'] == 1) continue;
+            if (strtolower($col_name) === 'created_at' || strtolower($col_name) === 'updated_at') continue;
+            
+            if ($col_type_lower === 'text') {
+                $php_code .= "                                <div>\n";
+                $php_code .= "                                    <label for=\"filter_$col_name\" class=\"block text-sm font-medium text-foreground mb-1.5\">$col_label</label>\n";
+                $php_code .= "                                    <input\n";
+                $php_code .= "                                        type=\"text\"\n";
+                $php_code .= "                                        id=\"filter_$col_name\"\n";
+                $php_code .= "                                        name=\"filter_$col_name\"\n";
+                $php_code .= "                                        value=\"<?php echo htmlspecialchars(\$_GET['filter_$col_name'] ?? ''); ?>\"\n";
+                $php_code .= "                                        placeholder=\"$col_label ara...\"\n";
+                $php_code .= "                                        class=\"w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent\"\n";
+                $php_code .= "                                    >\n";
+                $php_code .= "                                </div>\n";
+            } else if ($col_type_lower === 'integer' || $col_type_lower === 'real') {
+                $php_code .= "                                <div>\n";
+                $php_code .= "                                    <label for=\"filter_$col_name\" class=\"block text-sm font-medium text-foreground mb-1.5\">$col_label (Eşit)</label>\n";
+                $php_code .= "                                    <input\n";
+                $php_code .= "                                        type=\"number\"\n";
+                $php_code .= "                                        id=\"filter_$col_name\"\n";
+                $php_code .= "                                        name=\"filter_$col_name\"\n";
+                $php_code .= "                                        value=\"<?php echo htmlspecialchars(\$_GET['filter_$col_name'] ?? ''); ?>\"\n";
+                $php_code .= "                                        placeholder=\"$col_label\"\n";
+                $php_code .= "                                        class=\"w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent\"\n";
+                $php_code .= "                                    >\n";
+                $php_code .= "                                </div>\n";
+                $php_code .= "                                <div>\n";
+                $php_code .= "                                    <label for=\"filter_{$col_name}_min\" class=\"block text-sm font-medium text-foreground mb-1.5\">$col_label (Min)</label>\n";
+                $php_code .= "                                    <input\n";
+                $php_code .= "                                        type=\"number\"\n";
+                $php_code .= "                                        id=\"filter_{$col_name}_min\"\n";
+                $php_code .= "                                        name=\"filter_{$col_name}_min\"\n";
+                $php_code .= "                                        value=\"<?php echo htmlspecialchars(\$_GET['filter_{$col_name}_min'] ?? ''); ?>\"\n";
+                $php_code .= "                                        placeholder=\"Min\"\n";
+                $php_code .= "                                        class=\"w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent\"\n";
+                $php_code .= "                                    >\n";
+                $php_code .= "                                </div>\n";
+                $php_code .= "                                <div>\n";
+                $php_code .= "                                    <label for=\"filter_{$col_name}_max\" class=\"block text-sm font-medium text-foreground mb-1.5\">$col_label (Max)</label>\n";
+                $php_code .= "                                    <input\n";
+                $php_code .= "                                        type=\"number\"\n";
+                $php_code .= "                                        id=\"filter_{$col_name}_max\"\n";
+                $php_code .= "                                        name=\"filter_{$col_name}_max\"\n";
+                $php_code .= "                                        value=\"<?php echo htmlspecialchars(\$_GET['filter_{$col_name}_max'] ?? ''); ?>\"\n";
+                $php_code .= "                                        placeholder=\"Max\"\n";
+                $php_code .= "                                        class=\"w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent\"\n";
+                $php_code .= "                                    >\n";
+                $php_code .= "                                </div>\n";
+            }
+        }
+        
+        // Per page selector
+        $php_code .= "                                <div>\n";
+        $php_code .= "                                    <label for=\"per_page\" class=\"block text-sm font-medium text-foreground mb-1.5\">Sayfa Başına Kayıt</label>\n";
+        $php_code .= "                                    <select\n";
+        $php_code .= "                                        id=\"per_page\"\n";
+        $php_code .= "                                        name=\"per_page\"\n";
+        $php_code .= "                                        class=\"w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent\"\n";
+        $php_code .= "                                        onchange=\"this.form.submit()\"\n";
+        $php_code .= "                                    >\n";
+        $php_code .= "                                        <option value=\"10\" <?php echo (\$per_page == 10) ? 'selected' : ''; ?>>10</option>\n";
+        $php_code .= "                                        <option value=\"20\" <?php echo (\$per_page == 20) ? 'selected' : ''; ?>>20</option>\n";
+        $php_code .= "                                        <option value=\"50\" <?php echo (\$per_page == 50) ? 'selected' : ''; ?>>50</option>\n";
+        $php_code .= "                                        <option value=\"100\" <?php echo (\$per_page == 100) ? 'selected' : ''; ?>>100</option>\n";
+        $php_code .= "                                    </select>\n";
+        $php_code .= "                                </div>\n";
+        
+        $php_code .= "                            </div>\n\n";
+        $php_code .= "                            <div class=\"flex gap-2 pt-2\">\n";
+        $php_code .= "                                <button\n";
+        $php_code .= "                                    type=\"submit\"\n";
+        $php_code .= "                                    class=\"rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all\"\n";
+        $php_code .= "                                >\n";
+        $php_code .= "                                    Filtrele\n";
+        $php_code .= "                                </button>\n";
+        $php_code .= "                                <a\n";
+        $php_code .= "                                    href=\"$page_name.php\"\n";
+        $php_code .= "                                    class=\"rounded-md bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 transition-all\"\n";
+        $php_code .= "                                >\n";
+        $php_code .= "                                    Temizle\n";
+        $php_code .= "                                </a>\n";
+        $php_code .= "                            </div>\n";
+        $php_code .= "                        </form>\n";
+        $php_code .= "                    </div>\n";
+        $php_code .= "                </div>\n\n";
+        
         $php_code .= "                <!-- Records List -->\n";
         $php_code .= "                <div class=\"mb-8 rounded-lg border border-border bg-card text-card-foreground shadow-sm\">\n";
         $php_code .= "                    <div class=\"p-6 pb-0\">\n";
-        $php_code .= "                        <h3 class=\"text-lg font-semibold leading-none tracking-tight mb-4\">Tüm Kayıtlar</h3>\n";
+        $php_code .= "                        <div class=\"flex items-center justify-between mb-4\">\n";
+        $php_code .= "                            <h3 class=\"text-lg font-semibold leading-none tracking-tight\">Tüm Kayıtlar</h3>\n";
+        $php_code .= "                            <div class=\"text-sm text-muted-foreground\">\n";
+        $php_code .= "                                Toplam: <span class=\"font-medium text-foreground\"><?php echo \$total_records; ?></span> kayıt\n";
+        $php_code .= "                            </div>\n";
+        $php_code .= "                        </div>\n";
         $php_code .= "                    </div>\n";
         $php_code .= "                    <div class=\"p-6 pt-0\">\n";
         $php_code .= "                        <?php if (empty(\$records)): ?>\n";
         $php_code .= "                            <div class=\"text-center py-8 text-muted-foreground\">\n";
-        $php_code .= "                                Henüz kayıt eklenmemiş.\n";
+        $php_code .= "                                Henüz kayıt eklenmemiş veya filtre sonucu bulunamadı.\n";
         $php_code .= "                            </div>\n";
         $php_code .= "                        <?php else: ?>\n";
         $php_code .= "                            <div class=\"overflow-x-auto\">\n";
@@ -416,8 +629,29 @@ function generateDynamicPage($db, $page_name, $page_title, $table_name, $enable_
         $php_code .= "                                        <tr class=\"border-b border-border\">\n";
         
         foreach ($columns as $col) {
-            $col_label = ucfirst(str_replace('_', ' ', $col['name']));
-            $php_code .= "                                            <th class=\"h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm\">$col_label</th>\n";
+            $col_name = $col['name'];
+            $col_label = ucfirst(str_replace('_', ' ', $col_name));
+            
+            // Get current sort parameters
+            $php_code .= "                                            <th class=\"h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm\">\n";
+            $php_code .= "                                                <a href=\"?";
+            $php_code .= "<?php\n";
+            $php_code .= "                                                    \$params = \$_GET;\n";
+            $php_code .= "                                                    \$params['sort'] = '$col_name';\n";
+            $php_code .= "                                                    if (isset(\$params['sort']) && \$params['sort'] == '$col_name' && isset(\$params['order']) && \$params['order'] == 'ASC') {\n";
+            $php_code .= "                                                        \$params['order'] = 'DESC';\n";
+            $php_code .= "                                                    } else {\n";
+            $php_code .= "                                                        \$params['order'] = 'ASC';\n";
+            $php_code .= "                                                    }\n";
+            $php_code .= "                                                    echo http_build_query(\$params);\n";
+            $php_code .= "                                                ?>\n";
+            $php_code .= "\" class=\"flex items-center gap-1 hover:text-foreground\">\n";
+            $php_code .= "                                                    <span>$col_label</span>\n";
+            $php_code .= "                                                    <?php if (\$sort_column == '$col_name'): ?>\n";
+            $php_code .= "                                                        <span class=\"text-xs\"><?php echo \$sort_order == 'ASC' ? '↑' : '↓'; ?></span>\n";
+            $php_code .= "                                                    <?php endif; ?>\n";
+            $php_code .= "                                                </a>\n";
+            $php_code .= "                                            </th>\n";
         }
         
         if ($enable_update || $enable_delete) {
@@ -469,7 +703,82 @@ function generateDynamicPage($db, $page_name, $page_title, $table_name, $enable_
         $php_code .= "                                        <?php endforeach; ?>\n";
         $php_code .= "                                    </tbody>\n";
         $php_code .= "                                </table>\n";
-        $php_code .= "                            </div>\n";
+        $php_code .= "                            </div>\n\n";
+        
+        // Pagination
+        $php_code .= "                            <!-- Pagination -->\n";
+        $php_code .= "                            <?php if (\$total_pages > 1): ?>\n";
+        $php_code .= "                                <div class=\"mt-6 flex items-center justify-between border-t border-border pt-4\">\n";
+        $php_code .= "                                    <div class=\"text-sm text-muted-foreground\">\n";
+        $php_code .= "                                        Sayfa <span class=\"font-medium text-foreground\"><?php echo \$page; ?></span> / <span class=\"font-medium text-foreground\"><?php echo \$total_pages; ?></span>\n";
+        $php_code .= "                                        (Gösterilen: <?php echo min(\$offset + 1, \$total_records); ?> - <?php echo min(\$offset + \$per_page, \$total_records); ?> / <?php echo \$total_records; ?>)\n";
+        $php_code .= "                                    </div>\n";
+        $php_code .= "                                    <div class=\"flex gap-2\">\n";
+        
+        // Previous button
+        $php_code .= "                                        <?php if (\$page > 1): ?>\n";
+        $php_code .= "                                            <a\n";
+        $php_code .= "                                                href=\"?";
+        $php_code .= "<?php\n";
+        $php_code .= "                                                    \$params = \$_GET;\n";
+        $php_code .= "                                                    \$params['page'] = \$page - 1;\n";
+        $php_code .= "                                                    echo http_build_query(\$params);\n";
+        $php_code .= "                                                ?>\n";
+        $php_code .= "\"\n";
+        $php_code .= "                                                class=\"inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors\"\n";
+        $php_code .= "                                            >\n";
+        $php_code .= "                                                Önceki\n";
+        $php_code .= "                                            </a>\n";
+        $php_code .= "                                        <?php else: ?>\n";
+        $php_code .= "                                            <span class=\"inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground opacity-50 cursor-not-allowed\">\n";
+        $php_code .= "                                                Önceki\n";
+        $php_code .= "                                            </span>\n";
+        $php_code .= "                                        <?php endif; ?>\n\n";
+        
+        // Page numbers
+        $php_code .= "                                        <?php\n";
+        $php_code .= "                                            \$start_page = max(1, \$page - 2);\n";
+        $php_code .= "                                            \$end_page = min(\$total_pages, \$page + 2);\n";
+        $php_code .= "                                            for (\$i = \$start_page; \$i <= \$end_page; \$i++):\n";
+        $php_code .= "                                        ?>\n";
+        $php_code .= "                                            <a\n";
+        $php_code .= "                                                href=\"?";
+        $php_code .= "<?php\n";
+        $php_code .= "                                                    \$params = \$_GET;\n";
+        $php_code .= "                                                    \$params['page'] = \$i;\n";
+        $php_code .= "                                                    echo http_build_query(\$params);\n";
+        $php_code .= "                                                ?>\n";
+        $php_code .= "\"\n";
+        $php_code .= "                                                class=\"inline-flex items-center justify-center rounded-md border <?php echo \$i == \$page ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background text-foreground hover:bg-accent'; ?> px-3 py-2 text-sm font-medium transition-colors\"\n";
+        $php_code .= "                                            >\n";
+        $php_code .= "                                                <?php echo \$i; ?>\n";
+        $php_code .= "                                            </a>\n";
+        $php_code .= "                                        <?php endfor; ?>\n\n";
+        
+        // Next button
+        $php_code .= "                                        <?php if (\$page < \$total_pages): ?>\n";
+        $php_code .= "                                            <a\n";
+        $php_code .= "                                                href=\"?";
+        $php_code .= "<?php\n";
+        $php_code .= "                                                    \$params = \$_GET;\n";
+        $php_code .= "                                                    \$params['page'] = \$page + 1;\n";
+        $php_code .= "                                                    echo http_build_query(\$params);\n";
+        $php_code .= "                                                ?>\n";
+        $php_code .= "\"\n";
+        $php_code .= "                                                class=\"inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors\"\n";
+        $php_code .= "                                            >\n";
+        $php_code .= "                                                Sonraki\n";
+        $php_code .= "                                            </a>\n";
+        $php_code .= "                                        <?php else: ?>\n";
+        $php_code .= "                                            <span class=\"inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground opacity-50 cursor-not-allowed\">\n";
+        $php_code .= "                                                Sonraki\n";
+        $php_code .= "                                            </span>\n";
+        $php_code .= "                                        <?php endif; ?>\n";
+        
+        $php_code .= "                                    </div>\n";
+        $php_code .= "                                </div>\n";
+        $php_code .= "                            <?php endif; ?>\n";
+        
         $php_code .= "                        <?php endif; ?>\n";
         $php_code .= "                    </div>\n";
         $php_code .= "                </div>\n";
@@ -579,6 +888,20 @@ include '../includes/header.php';
                             </div>
                             
                             <div class="mb-4">
+                                <label for="group_name" class="block text-sm font-medium text-foreground mb-1.5">
+                                    Grup Adı
+                                </label>
+                                <input
+                                    type="text"
+                                    id="group_name"
+                                    name="group_name"
+                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                    placeholder="Örn: Sipariş Yönetimi"
+                                >
+                                <p class="mt-1 text-xs text-muted-foreground">Sayfa bu grup altında sidebar'da listelenecek. Boş bırakılırsa herhangi bir grup altında gösterilmez.</p>
+                            </div>
+                            
+                            <div class="mb-4">
                                 <label class="block text-sm font-medium text-foreground mb-2">
                                     Aktif İşlemler
                                 </label>
@@ -653,6 +976,7 @@ include '../includes/header.php';
                                         <tr class="border-b border-border">
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Sayfa Adı</th>
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Sayfa Başlığı</th>
+                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Grup</th>
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Tablo</th>
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">İşlemler</th>
                                             <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Oluşturulma</th>
@@ -668,6 +992,15 @@ include '../includes/header.php';
                                                     </a>
                                                 </td>
                                                 <td class="p-4 align-middle text-sm"><?php echo htmlspecialchars($page['page_title']); ?></td>
+                                                <td class="p-4 align-middle text-sm">
+                                                    <?php if (!empty($page['group_name'])): ?>
+                                                        <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                                                            <?php echo htmlspecialchars($page['group_name']); ?>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="text-muted-foreground">-</span>
+                                                    <?php endif; ?>
+                                                </td>
                                                 <td class="p-4 align-middle text-sm text-muted-foreground"><?php echo htmlspecialchars($page['table_name']); ?></td>
                                                 <td class="p-4 align-middle">
                                                     <div class="flex flex-wrap gap-1">
