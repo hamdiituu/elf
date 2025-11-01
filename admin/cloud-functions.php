@@ -448,93 +448,73 @@ include '../includes/header.php';
 </div>
 
 <script>
-    // Initialize CodeMirror (same approach as cloud-middlewares.php)
-    let codeEditor;
-    let isFullscreen = false;
-    
-    function initCodeEditor() {
-        const codeTextarea = document.getElementById('code');
-        if (!codeTextarea) {
-            console.error('Code textarea not found');
-            return;
-        }
-        
-        if (typeof CodeMirror === 'undefined') {
-            console.error('CodeMirror is not loaded, retrying...');
-            setTimeout(initCodeEditor, 300);
-            return;
-        }
-        
-        // Initialize CodeMirror (exact copy from cloud-middlewares.php)
-        codeEditor = CodeMirror.fromTextArea(codeTextarea, {
-            mode: {
-                name: 'php',
-                startOpen: true
-            },
-            theme: 'monokai',
-            lineNumbers: true,
-            autoCloseBrackets: true,
-            matchBrackets: true,
-            styleActiveLine: true,
-            indentUnit: 4,
-            indentWithTabs: false,
-            lineWrapping: true,
-            extraKeys: {
-                "Ctrl-Space": function(cm) {
-                    CodeMirror.commands.autocomplete(cm, CodeMirror.hint.anyword);
-                },
-                "Ctrl-F": "findPersistent"
-            },
-            hintOptions: {
-                hint: function(editor) {
-                    const cursor = editor.getCursor();
-                    const token = editor.getTokenAt(cursor);
-                    const word = token.string;
-                    
-                    // Custom hints for dbContext and common functions
-                    const hints = [
-                        'dbContext', 'request', 'method', 'headers', 'response',
-                        'query', 'prepare', 'execute', 'fetchAll', 'fetch', 'fetchColumn',
-                        'PDO::FETCH_ASSOC', 'PDO::FETCH_OBJ', 'PDO::FETCH_NUM',
-                        'success', 'data', 'message', 'error',
-                        'array', 'count', 'isset', 'empty', 'trim', 'htmlspecialchars',
-                        'json_encode', 'json_decode', 'date', 'time'
-                    ];
-                    
-                    const filtered = hints.filter(h => h.toLowerCase().startsWith(word.toLowerCase()));
-                    
-                    return {
-                        list: filtered,
-                        from: CodeMirror.Pos(cursor.line, token.start),
-                        to: CodeMirror.Pos(cursor.line, token.end)
-                    };
-                },
-                completeSingle: false
-            }
-        });
-        
-        // Auto-trigger autocomplete
-        codeEditor.on('inputRead', function(cm, change) {
-            if (change.text && change.text[0] && change.text[0].length > 0 && change.text[0][0].match(/[a-zA-Z]/)) {
-                setTimeout(function() {
-                    CodeMirror.commands.autocomplete(cm);
-                }, 100);
-            }
-        });
-        
-        // Sync editor with textarea
-        codeEditor.on('change', function(cm) {
-            cm.save();
-        });
-        
-        console.log('CodeMirror editor initialized successfully');
-        } catch (error) {
-            console.error('Error initializing CodeMirror:', error);
-        }
+    // Initialize CodeMirror (exact copy from cloud-middlewares.php)
+    const codeTextarea = document.getElementById('code');
+    if (!codeTextarea) {
+        console.error('Code textarea not found');
     }
+    const codeEditor = CodeMirror.fromTextArea(codeTextarea, {
+        mode: {
+            name: 'php',
+            startOpen: true
+        },
+        theme: 'monokai',
+        lineNumbers: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        styleActiveLine: true,
+        indentUnit: 4,
+        indentWithTabs: false,
+        lineWrapping: true,
+        extraKeys: {
+            "Ctrl-Space": function(cm) {
+                CodeMirror.commands.autocomplete(cm, CodeMirror.hint.anyword);
+            },
+            "Ctrl-F": "findPersistent"
+        },
+        hintOptions: {
+            hint: function(editor) {
+                const cursor = editor.getCursor();
+                const token = editor.getTokenAt(cursor);
+                const word = token.string;
+                
+                // Custom hints for dbContext and common functions
+                const hints = [
+                    'dbContext', 'request', 'method', 'headers', 'response',
+                    'query', 'prepare', 'execute', 'fetchAll', 'fetch', 'fetchColumn',
+                    'PDO::FETCH_ASSOC', 'PDO::FETCH_OBJ', 'PDO::FETCH_NUM',
+                    'success', 'data', 'message', 'error',
+                    'array', 'count', 'isset', 'empty', 'trim', 'htmlspecialchars',
+                    'json_encode', 'json_decode', 'date', 'time'
+                ];
+                
+                const filtered = hints.filter(h => h.toLowerCase().startsWith(word.toLowerCase()));
+                
+                return {
+                    list: filtered,
+                    from: CodeMirror.Pos(cursor.line, token.start),
+                    to: CodeMirror.Pos(cursor.line, token.end)
+                };
+            },
+            completeSingle: false
+        }
+    });
     
-    // Initialize CodeMirror immediately (exact same as cloud-middlewares.php)
-    initCodeEditor();
+    // Auto-trigger autocomplete
+    codeEditor.on('inputRead', function(cm, change) {
+        if (change.text[0].length > 0 && change.text[0][0].match(/[a-zA-Z]/)) {
+            setTimeout(function() {
+                CodeMirror.commands.autocomplete(cm);
+            }, 100);
+        }
+    });
+    
+    // Sync editor with textarea
+    codeEditor.on('change', function(cm) {
+        cm.save();
+    });
+    
+    let isFullscreen = false;
     
     // Initialize fullscreen functionality
     window.toggleFullscreen = function() {
@@ -607,7 +587,6 @@ include '../includes/header.php';
             });
         }
     });
-    
-
+</script>
 <?php include '../includes/footer.php'; ?>
 
