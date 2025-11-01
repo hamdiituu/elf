@@ -174,6 +174,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 header('Location: database-explorer.php?table=' . urlencode($edit_table_name) . '&success=' . urlencode($success_message));
                 exit;
                 
+            } elseif ($edit_action === 'modify_column') {
+                $modify_column_name = trim($_POST['modify_column_name'] ?? '');
+                $new_column_type = trim($_POST['modify_column_type'] ?? '');
+                $new_column_nullable = isset($_POST['modify_column_nullable']) && $_POST['modify_column_nullable'] === '1';
+                
+                if (empty($modify_column_name)) {
+                    throw new Exception("Column name is required!");
+                }
+                
+                if (empty($new_column_type)) {
+                    throw new Exception("Column type is required!");
+                }
+                
+                // Convert types for SQLite
+                if ($new_column_type === 'BOOLEAN') {
+                    $sql_type = 'INTEGER';
+                } elseif ($new_column_type === 'IMAGE') {
+                    $sql_type = 'TEXT';
+                } elseif ($new_column_type === 'RELATION') {
+                    $sql_type = 'INTEGER';
+                } else {
+                    $sql_type = $new_column_type;
+                }
+                
+                // MySQL supports MODIFY COLUMN
+                if ($dbType === 'mysql') {
+                    $column_def = "`$modify_column_name` $sql_type";
+                    if ($new_column_type === 'BOOLEAN') {
+                        if ($new_column_nullable) {
+                            $column_def .= " DEFAULT 0";
+                        } else {
+                            $column_def .= " NOT NULL DEFAULT 0";
+                        }
+                    } elseif (!$new_column_nullable) {
+                        $column_def .= " NOT NULL";
+                    }
+                    
+                    $sql = "ALTER TABLE `$escaped_table_name` MODIFY COLUMN $column_def";
+                    $db->exec($sql);
+                    
+                    // Update relation metadata if type is RELATION
+                    $modify_relation_target = trim($_POST['modify_relation_target'] ?? '');
+                    if ($new_column_type === 'RELATION' && !empty($modify_relation_target)) {
+                        try {
+                            $db->exec("CREATE TABLE IF NOT EXISTS relation_metadata (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                table_name TEXT NOT NULL,
+                                column_name TEXT NOT NULL,
+                                target_table TEXT NOT NULL,
+                                UNIQUE(table_name, column_name)
+                            )");
+                            
+                            $stmt = $db->prepare("INSERT OR REPLACE INTO relation_metadata (table_name, column_name, target_table) VALUES (?, ?, ?)");
+                            $stmt->execute([$edit_table_name, $modify_column_name, $modify_relation_target]);
+                        } catch (PDOException $e) {
+                            error_log("Failed to save relation metadata: " . $e->getMessage());
+                        }
+                    } elseif ($new_column_type !== 'RELATION') {
+                        // Remove relation metadata if type changed from RELATION
+                        try {
+                            $stmt = $db->prepare("DELETE FROM relation_metadata WHERE table_name = ? AND column_name = ?");
+                            $stmt->execute([$edit_table_name, $modify_column_name]);
+                        } catch (PDOException $e) {
+                            // Ignore if relation_metadata doesn't exist
+                        }
+                    }
+                    
+                    $success_message = "Column '{$modify_column_name}' modified successfully!";
+                    header('Location: database-explorer.php?table=' . urlencode($edit_table_name) . '&success=' . urlencode($success_message));
+                    exit;
+                } else {
+                    // SQLite: Doesn't support MODIFY COLUMN directly - need to recreate table
+                    throw new Exception("SQLite doesn't support MODIFY COLUMN directly. This feature requires MySQL or manual table recreation.");
+                }
+                
             } elseif ($edit_action === 'drop_column') {
                 $drop_column_name = trim($_POST['drop_column_name'] ?? '');
                 
@@ -1626,39 +1701,139 @@ include '../includes/header.php';
             <div class="space-y-4">
                 <!-- Current Columns -->
                 <div class="border border-input rounded-md p-4 bg-muted/30">
-                    <h4 class="text-sm font-semibold mb-3">Current Columns</h4>
-                    <div class="space-y-2">
+                    <h4 class="text-sm font-semibold mb-3">Current Columns (Edit)</h4>
+                    <div class="space-y-3">
                         <?php if (isset($table_info) && !empty($table_info)): ?>
-                            <?php foreach ($table_info as $col): ?>
-                                <div class="flex items-center justify-between p-2 bg-background rounded border border-input">
-                                    <div class="flex-1">
-                                        <span class="font-mono text-sm font-medium"><?php echo htmlspecialchars($col['name']); ?></span>
-                                        <span class="text-xs text-muted-foreground ml-2"><?php echo htmlspecialchars($col['type']); ?></span>
-                                        <?php 
-                                        $notnull = isset($col['notnull']) ? (int)$col['notnull'] : 0;
-                                        $pk = isset($col['pk']) ? (int)$col['pk'] : 0;
-                                        ?>
-                                        <?php if ($notnull === 1): ?><span class="text-xs text-muted-foreground ml-2">NOT NULL</span><?php endif; ?>
-                                        <?php if ($pk === 1): ?><span class="text-xs text-primary ml-2">PRIMARY KEY</span><?php endif; ?>
+                            <?php 
+                            $settings = getSettings();
+                            $dbType = $settings['db_type'] ?? 'sqlite';
+                            
+                            // Get relation metadata for current table
+                            $current_relations = [];
+                            try {
+                                $stmt = $db->prepare("SELECT column_name, target_table FROM relation_metadata WHERE table_name = ?");
+                                $stmt->execute([$selected_table ?? '']);
+                                $relation_rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                foreach ($relation_rows as $row) {
+                                    $current_relations[$row['column_name']] = $row['target_table'];
+                                }
+                            } catch (PDOException $e) {
+                                // relation_metadata table might not exist
+                            }
+                            
+                            foreach ($table_info as $col): 
+                                $notnull = isset($col['notnull']) ? (int)$col['notnull'] : 0;
+                                $pk = isset($col['pk']) ? (int)$col['pk'] : 0;
+                                
+                                // Determine current column type (check if it's BOOLEAN, IMAGE, or RELATION)
+                                $current_type = strtoupper($col['type']);
+                                $is_relation = isset($current_relations[$col['name']]);
+                                
+                                if ($is_relation) {
+                                    $display_type = 'RELATION';
+                                    $relation_target = $current_relations[$col['name']];
+                                } elseif ($current_type === 'INTEGER' && isset($col['dflt_value']) && ($col['dflt_value'] === '0' || $col['dflt_value'] === '1' || $col['dflt_value'] === 0 || $col['dflt_value'] === 1)) {
+                                    $display_type = 'BOOLEAN';
+                                } elseif ($current_type === 'TEXT' && preg_match('/\b(image|img|photo|picture|resim|foto)\b/i', $col['name'])) {
+                                    $display_type = 'IMAGE';
+                                } else {
+                                    $display_type = $current_type;
+                                }
+                                
+                                // Don't allow editing primary key
+                                $can_edit = ($pk !== 1);
+                                $can_drop = (count($table_info) > 1 && $pk !== 1 && $dbType === 'mysql');
+                            ?>
+                                <div class="p-3 bg-background rounded border border-input" data-column-name="<?php echo htmlspecialchars($col['name']); ?>">
+                                    <div class="grid grid-cols-12 gap-2 items-start">
+                                        <div class="col-span-2">
+                                            <label class="block text-xs font-medium mb-1">Column:</label>
+                                            <div class="px-2 py-1.5 text-sm font-mono bg-muted rounded border border-input">
+                                                <?php echo htmlspecialchars($col['name']); ?>
+                                                <?php if ($pk === 1): ?><span class="text-xs text-primary ml-1">(PK)</span><?php endif; ?>
+                                            </div>
+                                        </div>
+                                        <div class="col-span-3">
+                                            <label class="block text-xs font-medium mb-1">Type:</label>
+                                            <select
+                                                name="modify_column_type_<?php echo htmlspecialchars($col['name']); ?>"
+                                                id="modify_type_<?php echo htmlspecialchars($col['name']); ?>"
+                                                class="w-full px-2 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
+                                                onchange="updateModifyFieldTypeHint(this, '<?php echo htmlspecialchars(addslashes($col['name'])); ?>')"
+                                                <?php if (!$can_edit): ?>disabled<?php endif; ?>
+                                            >
+                                                <option value="TEXT" <?php echo $display_type === 'TEXT' ? 'selected' : ''; ?>>TEXT</option>
+                                                <option value="INTEGER" <?php echo $display_type === 'INTEGER' ? 'selected' : ''; ?>>INTEGER</option>
+                                                <option value="REAL" <?php echo $display_type === 'REAL' ? 'selected' : ''; ?>>REAL</option>
+                                                <option value="BLOB" <?php echo $display_type === 'BLOB' ? 'selected' : ''; ?>>BLOB</option>
+                                                <option value="NUMERIC" <?php echo $display_type === 'NUMERIC' ? 'selected' : ''; ?>>NUMERIC</option>
+                                                <option value="BOOLEAN" <?php echo $display_type === 'BOOLEAN' ? 'selected' : ''; ?>>BOOLEAN</option>
+                                                <option value="IMAGE" <?php echo $display_type === 'IMAGE' ? 'selected' : ''; ?>>IMAGE (Image - TEXT)</option>
+                                                <option value="RELATION" <?php echo $display_type === 'RELATION' ? 'selected' : ''; ?>>RELATION (Foreign Key - INTEGER)</option>
+                                            </select>
+                                            <span class="field-type-hint-<?php echo htmlspecialchars($col['name']); ?> text-xs text-muted-foreground mt-1 hidden"></span>
+                                        </div>
+                                        <div class="col-span-3">
+                                            <label class="block text-xs font-medium mb-1">Relation Target:</label>
+                                            <div class="modify-field-relation-target-<?php echo htmlspecialchars($col['name']); ?> <?php echo $display_type === 'RELATION' ? '' : 'hidden'; ?>">
+                                                <select
+                                                    name="modify_relation_target_<?php echo htmlspecialchars($col['name']); ?>"
+                                                    class="w-full px-2 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring"
+                                                    <?php if (!$can_edit): ?>disabled<?php endif; ?>
+                                                >
+                                                    <option value="">-- Select Table --</option>
+                                                    <?php foreach ($tables as $tbl): 
+                                                        if (in_array($tbl, ['sqlite_sequence', 'sqlite_master', 'relation_metadata']) || $tbl === $selected_table) continue;
+                                                        $selected = ($is_relation && $relation_target === $tbl) ? 'selected' : '';
+                                                    ?>
+                                                        <option value="<?php echo htmlspecialchars($tbl); ?>" <?php echo $selected; ?>><?php echo htmlspecialchars($tbl); ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-span-2">
+                                            <label class="flex items-center gap-1 text-xs font-medium cursor-pointer mt-6">
+                                                <input
+                                                    type="hidden"
+                                                    name="modify_column_nullable_<?php echo htmlspecialchars($col['name']); ?>_hidden"
+                                                    value="<?php echo $notnull === 1 ? '0' : '1'; ?>"
+                                                    class="modify-field-nullable-hidden-<?php echo htmlspecialchars($col['name']); ?>"
+                                                >
+                                                <input
+                                                    type="checkbox"
+                                                    name="modify_column_nullable_<?php echo htmlspecialchars($col['name']); ?>_checkbox"
+                                                    value="1"
+                                                    <?php echo $notnull === 0 ? 'checked' : ''; ?>
+                                                    class="rounded border-input modify-field-nullable-checkbox-<?php echo htmlspecialchars($col['name']); ?>"
+                                                    onchange="updateModifyNullableCheckbox(this, '<?php echo htmlspecialchars(addslashes($col['name'])); ?>')"
+                                                    <?php if (!$can_edit): ?>disabled<?php endif; ?>
+                                                >
+                                                <span>Nullable</span>
+                                            </label>
+                                        </div>
+                                        <div class="col-span-2 flex items-end gap-1">
+                                            <?php if ($can_edit): ?>
+                                                <button
+                                                    type="button"
+                                                    onclick="modifyColumn('<?php echo htmlspecialchars(addslashes($selected_table ?? '')); ?>', '<?php echo htmlspecialchars(addslashes($col['name'])); ?>')"
+                                                    class="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
+                                                    title="Save Changes"
+                                                >
+                                                    Save
+                                                </button>
+                                            <?php endif; ?>
+                                            <?php if ($can_drop): ?>
+                                                <button
+                                                    type="button"
+                                                    onclick="dropColumn('<?php echo htmlspecialchars(addslashes($selected_table ?? '')); ?>', '<?php echo htmlspecialchars(addslashes($col['name'])); ?>')"
+                                                    class="px-3 py-1.5 text-xs font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-colors"
+                                                    title="Drop Column"
+                                                >
+                                                    Delete
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
-                                    <?php 
-                                    // Don't allow dropping primary key or if only one column
-                                    $can_drop = (count($table_info) > 1 && $pk !== 1);
-                                    $settings = getSettings();
-                                    $dbType = $settings['db_type'] ?? 'sqlite';
-                                    // SQLite doesn't support DROP COLUMN easily
-                                    $can_drop = $can_drop && ($dbType === 'mysql');
-                                    ?>
-                                    <?php if ($can_drop): ?>
-                                        <button
-                                            type="button"
-                                            onclick="dropColumn('<?php echo htmlspecialchars(addslashes($selected_table ?? '')); ?>', '<?php echo htmlspecialchars(addslashes($col['name'])); ?>')"
-                                            class="ml-2 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
-                                            title="Drop Column"
-                                        >
-                                            Delete
-                                        </button>
-                                    <?php endif; ?>
                                 </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -1790,6 +1965,13 @@ window.showEditTableModal = function() {
         if (typeSelect) {
             updateEditFieldTypeHint(typeSelect);
         }
+        
+        // Initialize modify column hints for existing columns
+        const modifyTypeSelects = dialog.querySelectorAll('[id^="modify_type_"]');
+        modifyTypeSelects.forEach(function(select) {
+            const columnName = select.id.replace('modify_type_', '');
+            updateModifyFieldTypeHint(select, columnName);
+        });
     } catch (error) {
         console.error('Error in showEditTableModal:', error);
         alert('Error opening edit modal: ' + error.message);
@@ -1845,6 +2027,111 @@ function updateEditNullableCheckbox(checkbox) {
     if (hiddenInput) {
         hiddenInput.value = checkbox.checked ? '1' : '0';
     }
+}
+
+function updateModifyFieldTypeHint(select, columnName) {
+    const fieldContainer = select.closest('.col-span-3');
+    const hintSpan = fieldContainer ? fieldContainer.querySelector('.field-type-hint-' + columnName) : null;
+    const relationTargetDiv = document.querySelector('.modify-field-relation-target-' + columnName);
+    const relationTargetSelect = relationTargetDiv ? relationTargetDiv.querySelector('select') : null;
+    
+    if (hintSpan) {
+        const fieldType = select.value;
+        
+        if (fieldType === 'IMAGE') {
+            hintSpan.textContent = 'This field stores image path (saved as TEXT)';
+            hintSpan.classList.remove('hidden');
+            if (relationTargetDiv) {
+                relationTargetDiv.classList.add('hidden');
+            }
+        } else if (fieldType === 'RELATION') {
+            hintSpan.textContent = 'This field stores foreign key ID (saved as INTEGER)';
+            hintSpan.classList.remove('hidden');
+            
+            if (relationTargetDiv && relationTargetSelect) {
+                relationTargetDiv.classList.remove('hidden');
+            }
+        } else {
+            hintSpan.classList.add('hidden');
+            if (relationTargetDiv) {
+                relationTargetDiv.classList.add('hidden');
+            }
+        }
+    }
+}
+
+function updateModifyNullableCheckbox(checkbox, columnName) {
+    const hiddenInput = checkbox.closest('.col-span-2')?.querySelector('.modify-field-nullable-hidden-' + columnName);
+    if (hiddenInput) {
+        hiddenInput.value = checkbox.checked ? '1' : '0';
+    }
+}
+
+function modifyColumn(tableName, columnName) {
+    const typeSelect = document.getElementById('modify_type_' + columnName);
+    const nullableHidden = document.querySelector('.modify-field-nullable-hidden-' + columnName);
+    const relationTargetSelect = document.querySelector('select[name="modify_relation_target_' + columnName + '"]');
+    
+    if (!typeSelect) {
+        alert('Column type select not found!');
+        return;
+    }
+    
+    const newType = typeSelect.value;
+    const newNullable = nullableHidden ? nullableHidden.value === '1' : true;
+    const newRelationTarget = relationTargetSelect ? relationTargetSelect.value : '';
+    
+    // Create form and submit
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '';
+    
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = 'edit_table';
+    form.appendChild(actionInput);
+    
+    const tableInput = document.createElement('input');
+    tableInput.type = 'hidden';
+    tableInput.name = 'edit_table_name';
+    tableInput.value = tableName;
+    form.appendChild(tableInput);
+    
+    const editActionInput = document.createElement('input');
+    editActionInput.type = 'hidden';
+    editActionInput.name = 'edit_action';
+    editActionInput.value = 'modify_column';
+    form.appendChild(editActionInput);
+    
+    const columnInput = document.createElement('input');
+    columnInput.type = 'hidden';
+    columnInput.name = 'modify_column_name';
+    columnInput.value = columnName;
+    form.appendChild(columnInput);
+    
+    const typeInput = document.createElement('input');
+    typeInput.type = 'hidden';
+    typeInput.name = 'modify_column_type';
+    typeInput.value = newType;
+    form.appendChild(typeInput);
+    
+    const nullableInput = document.createElement('input');
+    nullableInput.type = 'hidden';
+    nullableInput.name = 'modify_column_nullable';
+    nullableInput.value = newNullable ? '1' : '0';
+    form.appendChild(nullableInput);
+    
+    if (newType === 'RELATION' && newRelationTarget) {
+        const relationInput = document.createElement('input');
+        relationInput.type = 'hidden';
+        relationInput.name = 'modify_relation_target';
+        relationInput.value = newRelationTarget;
+        form.appendChild(relationInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
 }
 
 function dropColumn(tableName, columnName) {
