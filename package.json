@@ -1,7 +1,7 @@
 {
-  "name": "stockcount-web",
+  "name": "elf-cms",
   "version": "1.0.0",
-  "description": "StockCount Web Application",
+  "description": "ELF - Enterprise Content Management Framework",
   "scripts": {
     "start": "npm run start:node && npm run start:php",
     "start:node": "node api/nodejs-server.js",

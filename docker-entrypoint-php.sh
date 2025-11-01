@@ -23,7 +23,7 @@ mkdir -p /var/www/html/config
 chown -R www-data:www-data /var/www/html/config
 
 # Run initialization script if database doesn't exist (SQLite) or if explicitly requested
-if [ ! -f /var/www/html/database/stockcount.db ] || [ "$FORCE_INIT_DB" = "true" ]; then
+if [ ! -f /var/www/html/database/elf.db ] || [ "$FORCE_INIT_DB" = "true" ]; then
     echo "Initializing database..."
     php /var/www/html/scripts/init_db.php || echo "Database initialization completed or skipped"
 fi

@@ -1,6 +1,8 @@
-# StockCount Web Application
+# ELF - Enterprise Content Management Framework
 
-A modern stock/inventory management system built with PHP, Node.js, and supporting both SQLite and MySQL databases. The application is fully containerized with Docker Compose for easy deployment and development.
+**ELF** is a powerful, extensible, and developer-friendly Content Management System (CMS) designed for building custom web applications and content-driven platforms. Built with modern web technologies including PHP and Node.js, ELF offers flexible database support (SQLite and MySQL), cloud-based functions, dynamic page builder, and a fully containerized architecture for seamless deployment and scalability.
+
+ELF empowers developers and content managers to create custom applications, build dynamic pages and forms, manage content efficiently, automate workflows through cloud functions, and customize the system to fit any business requirement. With its comprehensive developer tools and robust architecture, ELF adapts to projects of all sizes—from simple content sites to complex enterprise applications.
 
 ## Table of Contents
 
@@ -20,13 +22,17 @@ A modern stock/inventory management system built with PHP, Node.js, and supporti
 ## Features
 
 - **Dual Database Support**: SQLite (default, for development) and MySQL (for production)
-- **User Authentication**: Secure login system with password hashing
-- **Inventory Management**: Create and manage stock counts
-- **Barcode Scanning**: Barcode-based product entry
-- **Cloud Functions**: JavaScript-based cloud functions execution
-- **Dynamic Pages**: Build custom pages and forms
-- **Developer Tools**: Database explorer, API playground, cron manager
-- **Docker Support**: Fully containerized with Docker Compose
+- **User Management**: Role-based authentication system (user and developer roles) with secure password hashing
+- **Dynamic Page Builder**: Create custom pages and forms with database-backed content management
+- **Cloud Functions**: Execute custom JavaScript code server-side for automation and custom logic
+- **Cloud Middlewares**: Intercept and modify requests/responses with custom middleware functions
+- **Database Explorer**: Visual database browser with query builder and table management
+- **API Playground**: Test and debug API endpoints interactively
+- **Cron Manager**: Schedule and manage background tasks with built-in cron system
+- **Dashboard Widgets**: Create custom dashboard widgets with SQL queries
+- **Content Management**: Flexible content structure with custom tables and dynamic forms
+- **Developer Tools**: Comprehensive set of tools for developers to extend and customize
+- **Docker Support**: Fully containerized with Docker Compose for easy deployment
 - **Node.js Integration**: Backend services for cloud functions execution
 
 ## Requirements
@@ -98,7 +104,7 @@ Edit `.env` file with your settings:
 ```env
 # Application Configuration
 APP_PORT=8080
-APP_NAME=Vira Stock
+APP_NAME=ELF
 
 # Database Configuration
 DB_TYPE=sqlite  # or 'mysql' for MySQL
@@ -106,9 +112,9 @@ DB_TYPE=sqlite  # or 'mysql' for MySQL
 # MySQL Configuration (only required if DB_TYPE=mysql)
 MYSQL_HOST=mysql
 MYSQL_PORT=3306
-MYSQL_DATABASE=stockcount
-MYSQL_USER=stockcount
-MYSQL_PASSWORD=stockcount123
+MYSQL_DATABASE=elf
+MYSQL_USER=elf
+MYSQL_PASSWORD=elf123
 MYSQL_ROOT_PASSWORD=rootpassword
 
 # Node.js Configuration
@@ -158,7 +164,7 @@ Configuration in `config/settings.json`:
   "db_type": "sqlite",
   "db_config": {
     "sqlite": {
-      "path": "database/stockcount.db"
+      "path": "database/elf.db"
     }
   }
 }
@@ -173,8 +179,8 @@ For production environments or when you need a full database server:
    DB_TYPE=mysql
    MYSQL_HOST=mysql
    MYSQL_PORT=3306
-   MYSQL_DATABASE=stockcount
-   MYSQL_USER=stockcount
+   MYSQL_DATABASE=elf
+   MYSQL_USER=elf
    MYSQL_PASSWORD=your_secure_password
    MYSQL_ROOT_PASSWORD=your_root_password
    ```
@@ -186,8 +192,8 @@ For production environments or when you need a full database server:
    - Enter MySQL connection details:
      - Host: `mysql` (Docker) or `localhost` (external)
      - Port: `3306`
-     - Database: `stockcount`
-     - Username: `stockcount`
+     - Database: `elf`
+     - Username: `elf`
      - Password: (your password)
    - Click "Save Settings"
 
@@ -241,19 +247,30 @@ The application creates the following tables:
 - `user_type`: User type (`user` or `developer`)
 - `created_at`: Creation timestamp
 
-#### `sayimlar` (Inventories)
+#### `dynamic_pages`
 - `id`: Primary key
-- `sayim_no`: Unique inventory number
-- `aktif`: Active status (1 = active, 0 = inactive)
+- `page_name`: Unique page identifier
+- `page_title`: Display title
+- `table_name`: Associated database table
+- `group_name`: Grouping category
+- `enable_list`, `enable_create`, `enable_update`, `enable_delete`: CRUD permissions
+- `create_rule`, `update_rule`, `delete_rule`: Custom JavaScript validation rules
 - `created_at`: Creation timestamp
 - `updated_at`: Last update timestamp
 
-#### `sayim_icerikleri` (Inventory Contents)
+#### `dashboard_widgets`
 - `id`: Primary key
-- `sayim_id`: Foreign key to `sayimlar`
-- `barkod`: Product barcode
-- `urun_adi`: Product name
-- `okutulma_zamani`: Scan timestamp
+- `user_id`: Foreign key to `users`
+- `title`: Widget title
+- `widget_type`: Type (sql_count, sql_query, sql_single)
+- `widget_config`: SQL query configuration
+- `position`: Display order
+- `width`: Grid width class
+- `enabled`: Active status
+- `created_at`: Creation timestamp
+- `updated_at`: Last update timestamp
+
+Note: Additional tables are created dynamically through the Dynamic Pages Builder feature.
 
 ### Migrations
 
@@ -354,7 +371,7 @@ Docker Compose creates persistent volumes:
 
 ### Network
 
-All services are on `stockcount-network` bridge network, allowing them to communicate using service names (e.g., `mysql`, `php`).
+All services are on `elf-network` bridge network, allowing them to communicate using service names (e.g., `mysql`, `php`).
 
 ## Development
 
@@ -410,17 +427,18 @@ All services are on `stockcount-network` bridge network, allowing them to commun
 
 The application includes several developer tools (requires `developer` user type):
 
-- **Database Explorer**: Browse and query database tables
-- **API Playground**: Test API endpoints
-- **Cloud Functions**: Create and manage JavaScript cloud functions
-- **Cloud Middlewares**: Create request/response middlewares
-- **Cron Manager**: Schedule and manage cron jobs
-- **Dynamic Pages Builder**: Create custom pages and forms
+- **Database Explorer**: Browse tables, execute queries, create/edit tables, and manage database schema
+- **API Playground**: Test API endpoints with interactive interface
+- **Cloud Functions**: Create and manage JavaScript cloud functions for server-side logic
+- **Cloud Middlewares**: Create request/response middlewares to intercept and modify API calls
+- **Cron Manager**: Schedule and manage background tasks with built-in cron daemon
+- **Dynamic Pages Builder**: Create custom pages and forms with database-backed content
+- **Dashboard Widgets**: Create custom dashboard widgets with SQL queries for data visualization
 
 ## Project Structure
 
 ```
-StockCountWeb/
+ELF/
 ├── admin/                  # Admin panel pages
 │   ├── admin.php          # Main admin dashboard
 │   ├── settings.php       # Application settings
@@ -438,7 +456,7 @@ StockCountWeb/
 │   ├── cron-daemon.php    # Cron daemon
 │   └── common/            # Cron helpers
 ├── database/               # Database files
-│   ├── stockcount.db      # SQLite database (if using SQLite)
+│   ├── elf.db             # SQLite database (if using SQLite)
 │   └── init.sql           # MySQL initialization
 ├── docs/                  # Documentation
 ├── includes/              # Common includes
@@ -496,20 +514,23 @@ StockCountWeb/
    - Select user type: `user` or `developer`
    - Click "Create User"
 
-### Creating Inventory Counts
+### Creating Dynamic Pages
 
 1. **Navigate to Admin Dashboard**
-2. **Go to Inventory Management**
-3. **Create new count:**
-   - Click "New Inventory"
-   - Enter inventory number
-   - Set active status
+2. **Go to Pages Builder** (`/admin/pages-builder.php`)
+3. **Create new page:**
+   - Click "Create New Page"
+   - Enter page name (URL-friendly identifier)
+   - Enter page title (display name)
+   - Define table structure or use existing table
+   - Configure CRUD permissions (list, create, update, delete)
+   - Add custom validation rules (optional)
    - Save
 
-4. **Add products:**
-   - Select inventory
-   - Scan or enter barcode
-   - Product details will be added automatically
+4. **Access your dynamic page:**
+   - Navigate to `/admin/dynamic-page.php?page=your_page_name`
+   - Use the interface to manage content
+   - Data is stored in the associated database table
 
 ### Cloud Functions
 
@@ -530,19 +551,24 @@ Cloud functions allow you to execute custom JavaScript code:
    }
    ```
 
-### Dynamic Pages
+### Dashboard Widgets
 
-Create custom pages and forms:
+Create custom dashboard widgets to display data:
 
-1. **Go to Pages Builder** (`/admin/pages-builder.php`)
-2. **Create new page:**
-   - Enter page name and title
-   - Define table structure
-   - Configure permissions
+1. **Go to Dashboard Widgets** (`/admin/dashboard-widgets.php`)
+2. **Create new widget:**
+   - Enter widget title
+   - Select widget type:
+     - **SQL Count**: Returns a single count number
+     - **SQL Query**: Returns multiple rows of data
+     - **SQL Single**: Returns a single value
+   - Enter SQL query
+   - Configure width and position
    - Save
 
-3. **Access page:**
-   - Go to `/admin/dynamic-page.php?page=page_name`
+3. **View widgets:**
+   - Widgets appear on the main dashboard
+   - Arrange and customize as needed
 
 ## API Documentation
 
@@ -590,7 +616,7 @@ The Node.js server (port 3001) handles cloud function execution:
 **MySQL:**
 - Verify MySQL container is running: `docker-compose ps mysql`
 - Check credentials in `config/settings.json`
-- Test connection: `docker-compose exec mysql mysql -u stockcount -p`
+- Test connection: `docker-compose exec mysql mysql -u elf -p`
 - Check MySQL logs: `docker-compose logs mysql`
 
 #### 2. Port Already in Use
@@ -654,19 +680,19 @@ Enable PHP error reporting:
 **SQLite:**
 ```bash
 # Backup
-docker-compose exec php cp database/stockcount.db database/stockcount.db.backup
+docker-compose exec php cp database/elf.db database/elf.db.backup
 
 # Restore
-docker-compose exec php cp database/stockcount.db.backup database/stockcount.db
+docker-compose exec php cp database/elf.db.backup database/elf.db
 ```
 
 **MySQL:**
 ```bash
 # Backup
-docker-compose exec mysql mysqldump -u stockcount -p stockcount > backup.sql
+docker-compose exec mysql mysqldump -u elf -p elf > backup.sql
 
 # Restore
-docker-compose exec -T mysql mysql -u stockcount -p stockcount < backup.sql
+docker-compose exec -T mysql mysql -u elf -p elf < backup.sql
 ```
 
 ## Security Considerations

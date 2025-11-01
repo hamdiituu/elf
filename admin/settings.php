@@ -206,7 +206,7 @@ include '../includes/header.php';
                                 type="text"
                                 id="app_name"
                                 name="app_name"
-                                value="<?php echo htmlspecialchars($current_settings['app_name'] ?? 'Vira Stok'); ?>"
+                                value="<?php echo htmlspecialchars($current_settings['app_name'] ?? 'ELF'); ?>"
                                 required
                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent sm:text-sm"
                                 placeholder="Enter application name"

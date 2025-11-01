@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.php
-    container_name: stockcount-php
+    container_name: elf-php
     volumes:
       - .:/var/www/html
       - ./database:/var/www/html/database
@@ -15,7 +15,7 @@ services:
     environment:
       - PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d:/usr/local/etc/php/conf.d/custom
     networks:
-      - stockcount-network
+      - elf-network
     depends_on:
       - mysql
     restart: unless-stopped
@@ -26,7 +26,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.nginx
-    container_name: stockcount-nginx
+    container_name: elf-nginx
     ports:
       - "${APP_PORT:-8080}:80"
     volumes:
@@ -35,7 +35,7 @@ services:
     depends_on:
       - php
     networks:
-      - stockcount-network
+      - elf-network
     restart: unless-stopped
 
   # Node.js Server (for cloud functions)
@@ -43,7 +43,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.nodejs
-    container_name: stockcount-nodejs
+    container_name: elf-nodejs
     volumes:
       - .:/var/www/html
       - ./database:/var/www/html/database
@@ -52,7 +52,7 @@ services:
       - NODE_ENV=production
       - PORT=3001
     networks:
-      - stockcount-network
+      - elf-network
     depends_on:
       - php
       - mysql
@@ -62,19 +62,19 @@ services:
   # MySQL Database Service (optional - only used if db_type=mysql)
   mysql:
     image: mysql:8.0
-    container_name: stockcount-mysql
+    container_name: elf-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-stockcount}
-      MYSQL_USER: ${MYSQL_USER:-stockcount}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-stockcount123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-elf}
+      MYSQL_USER: ${MYSQL_USER:-elf}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-elf123}
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
-      - stockcount-network
+      - elf-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
@@ -87,6 +87,6 @@ volumes:
     driver: local
 
 networks:
-  stockcount-network:
+  elf-network:
     driver: bridge
 

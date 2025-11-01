@@ -1,7 +1,7 @@
 <?php
 // Settings file path
 define('SETTINGS_FILE', __DIR__ . '/settings.json');
-define('DB_PATH', __DIR__ . '/../database/stockcount.db');
+define('DB_PATH', __DIR__ . '/../database/elf.db');
 
 // Session configuration
 session_start();
@@ -12,7 +12,7 @@ session_start();
  */
 function getSettings() {
     $defaultSettings = [
-        'app_name' => 'Vira Stok',
+        'app_name' => 'ELF',
         'logo' => '', // Path to logo image
         'favicon' => '', // Path to favicon image
         'db_type' => 'sqlite', // 'sqlite' or 'mysql'
@@ -61,7 +61,7 @@ function saveSettings($settings) {
  */
 function getAppName() {
     $settings = getSettings();
-    return $settings['app_name'] ?? 'Vira Stok';
+    return $settings['app_name'] ?? 'ELF';
 }
 
 /**
