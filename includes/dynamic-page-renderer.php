@@ -43,7 +43,37 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                 <?php endif; ?>
                             </label>
                             
-                            <?php if ($col_type === 'text' && (strlen($col['dflt_value'] ?? '') > 50 || strpos($col_name, 'description') !== false || strpos($col_name, 'aciklama') !== false)): ?>
+                            <?php 
+                            // Check if field is boolean (INTEGER with default 0/1 or field name suggests boolean)
+                            $is_boolean = false;
+                            if ($col_type === 'integer') {
+                                $dflt_val = $col['dflt_value'] ?? '';
+                                if ($dflt_val === '0' || $dflt_val === '1' || 
+                                    preg_match('/^(is_|has_|can_|should_|must_|.*_(mi|mu|mi_durum|durum)$)/i', $col_name)) {
+                                    $is_boolean = true;
+                                }
+                            }
+                            
+                            if ($is_boolean): 
+                                $checked = false;
+                                if ($edit_record && isset($edit_record[$col_name])) {
+                                    $checked = (intval($edit_record[$col_name]) === 1);
+                                } elseif (!$edit_record && isset($col['dflt_value']) && $col['dflt_value'] === '1') {
+                                    $checked = true;
+                                }
+                                ?>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        id="<?php echo $col_name; ?>"
+                                        name="<?php echo $col_name; ?>"
+                                        value="1"
+                                        <?php echo $checked ? 'checked' : ''; ?>
+                                        class="rounded border-input text-primary focus:ring-2 focus:ring-ring"
+                                    >
+                                    <span class="text-sm text-foreground"><?php echo $col_label; ?></span>
+                                </label>
+                            <?php elseif ($col_type === 'text' && (strlen($col['dflt_value'] ?? '') > 50 || strpos($col_name, 'description') !== false || strpos($col_name, 'aciklama') !== false)): ?>
                                 <textarea
                                     id="<?php echo $col_name; ?>"
                                     name="<?php echo $col_name; ?>"
@@ -122,7 +152,32 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                             if ($col['pk'] == 1) continue;
                             if (strtolower($col_name) === 'created_at' || strtolower($col_name) === 'updated_at') continue;
                             
-                            if ($col_type_lower === 'text') {
+                            // Check if field is boolean
+                            $is_boolean = false;
+                            if ($col_type_lower === 'integer') {
+                                $dflt_val = $col['dflt_value'] ?? '';
+                                if ($dflt_val === '0' || $dflt_val === '1' || 
+                                    preg_match('/^(is_|has_|can_|should_|must_|.*_(mi|mu|mi_durum|durum)$)/i', $col_name)) {
+                                    $is_boolean = true;
+                                }
+                            }
+                            
+                            if ($is_boolean) {
+                                ?>
+                                <div>
+                                    <label for="filter_<?php echo $col_name; ?>" class="block text-sm font-medium text-foreground mb-1.5"><?php echo $col_label; ?></label>
+                                    <select
+                                        id="filter_<?php echo $col_name; ?>"
+                                        name="filter_<?php echo $col_name; ?>"
+                                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                    >
+                                        <option value="">Tümü</option>
+                                        <option value="1" <?php echo (isset($_GET['filter_' . $col_name]) && $_GET['filter_' . $col_name] === '1') ? 'selected' : ''; ?>>Evet</option>
+                                        <option value="0" <?php echo (isset($_GET['filter_' . $col_name]) && $_GET['filter_' . $col_name] === '0') ? 'selected' : ''; ?>>Hayır</option>
+                                    </select>
+                                </div>
+                                <?php
+                            } elseif ($col_type_lower === 'text') {
                                 ?>
                                 <div>
                                     <label for="filter_<?php echo $col_name; ?>" class="block text-sm font-medium text-foreground mb-1.5"><?php echo $col_label; ?></label>
@@ -263,11 +318,37 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($records as $record): ?>
-                                    <tr class="border-b border-border transition-colors hover:bg-muted/50">
-                                        <?php foreach ($columns as $col): ?>
-                                            <td class="p-4 align-middle text-sm"><?php echo htmlspecialchars($record[$col['name']] ?? ''); ?></td>
-                                        <?php endforeach; ?>
+                                    <?php foreach ($records as $record): ?>
+                                        <tr class="border-b border-border transition-colors hover:bg-muted/50">
+                                            <?php foreach ($columns as $col): 
+                                                $col_name = $col['name'];
+                                                $col_type = strtolower($col['type']);
+                                                $value = $record[$col_name] ?? null;
+                                                
+                                                // Check if field is boolean
+                                                $is_boolean = false;
+                                                if ($col_type === 'integer') {
+                                                    $dflt_val = $col['dflt_value'] ?? '';
+                                                    if ($dflt_val === '0' || $dflt_val === '1' || 
+                                                        preg_match('/^(is_|has_|can_|should_|must_|.*_(mi|mu|mi_durum|durum)$)/i', $col_name)) {
+                                                        $is_boolean = true;
+                                                    }
+                                                }
+                                                ?>
+                                                <td class="p-4 align-middle text-sm">
+                                                    <?php if ($is_boolean && $value !== null): ?>
+                                                        <?php if (intval($value) === 1): ?>
+                                                            <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Evet</span>
+                                                        <?php else: ?>
+                                                            <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">Hayır</span>
+                                                        <?php endif; ?>
+                                                    <?php elseif ($value === null): ?>
+                                                        <span class="text-muted-foreground italic">NULL</span>
+                                                    <?php else: ?>
+                                                        <?php echo htmlspecialchars($value); ?>
+                                                    <?php endif; ?>
+                                                </td>
+                                            <?php endforeach; ?>
                                         
                                         <?php if ($enable_update || $enable_delete): ?>
                                             <td class="p-4 align-middle">

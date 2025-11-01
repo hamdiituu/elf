@@ -68,7 +68,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $insert_columns[] = $col_name;
                             $insert_placeholders[] = "?";
                             
-                            if (isset($_POST[$col_name])) {
+                            // Check if field is boolean (INTEGER with default 0/1)
+                            $is_boolean = false;
+                            if (strtolower($col['type']) === 'integer') {
+                                $dflt_val = $col['dflt_value'] ?? '';
+                                if ($dflt_val === '0' || $dflt_val === '1' || 
+                                    preg_match('/^(is_|has_|can_|should_|must_|.*_(mi|mu|mi_durum|durum)$)/i', $col_name)) {
+                                    $is_boolean = true;
+                                }
+                            }
+                            
+                            if ($is_boolean) {
+                                // For boolean fields, checkbox sends value "1" if checked, or nothing if unchecked
+                                $values[] = isset($_POST[$col_name]) ? 1 : 0;
+                            } elseif (isset($_POST[$col_name])) {
                                 $col_type_lower = strtolower($col['type']);
                                 if ($col_type_lower === 'integer' || $col_type_lower === 'real') {
                                     $values[] = intval($_POST[$col_name]);
@@ -107,7 +120,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 if (strtolower($col['name']) === 'created_at') continue; // Skip created_at
                                 
                                 $col_name = $col['name'];
-                                if (isset($_POST[$col_name])) {
+                                
+                                // Check if field is boolean
+                                $is_boolean = false;
+                                if (strtolower($col['type']) === 'integer') {
+                                    $dflt_val = $col['dflt_value'] ?? '';
+                                    if ($dflt_val === '0' || $dflt_val === '1' || 
+                                        preg_match('/^(is_|has_|can_|should_|must_|.*_(mi|mu|mi_durum|durum)$)/i', $col_name)) {
+                                        $is_boolean = true;
+                                    }
+                                }
+                                
+                                if ($is_boolean) {
+                                    // For boolean fields, always update (checkbox sends "1" if checked, nothing if unchecked)
+                                    $set_parts[] = "$col_name = ?";
+                                    $values[] = isset($_POST[$col_name]) ? 1 : 0;
+                                } elseif (isset($_POST[$col_name])) {
                                     $set_parts[] = "$col_name = ?";
                                     $col_type_lower = strtolower($col['type']);
                                     if ($col_type_lower === 'integer' || $col_type_lower === 'real') {
@@ -175,8 +203,25 @@ if ($enable_list) {
         if ($col['pk'] == 1) continue;
         if (strtolower($col_name) === 'created_at' || strtolower($col_name) === 'updated_at') continue;
         
+        // Check if field is boolean
+        $is_boolean = false;
+        if ($col_type_lower === 'integer') {
+            $dflt_val = $col['dflt_value'] ?? '';
+            if ($dflt_val === '0' || $dflt_val === '1' || 
+                preg_match('/^(is_|has_|can_|should_|must_|.*_(mi|mu|mi_durum|durum)$)/i', $col_name)) {
+                $is_boolean = true;
+            }
+        }
+        
         // Filter for each column
-        if ($col_type_lower === 'text') {
+        if ($is_boolean) {
+            // Boolean filter (exact match: 0 or 1)
+            if (isset($_GET['filter_' . $col_name]) && $_GET['filter_' . $col_name] !== '') {
+                $filters[$col_name] = trim($_GET['filter_' . $col_name]);
+                $where_conditions[] = "$col_name = ?";
+                $where_values[] = intval($filters[$col_name]);
+            }
+        } elseif ($col_type_lower === 'text') {
             // Text search (LIKE)
             if (!empty($_GET['filter_' . $col_name])) {
                 $filters[$col_name] = trim($_GET['filter_' . $col_name]);

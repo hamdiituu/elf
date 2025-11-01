@@ -125,9 +125,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         throw new Exception("Geçersiz alan adı: '$field_name'");
                     }
                     
-                    $column_def = "`$field_name` $field_type";
+                    // Convert BOOLEAN to INTEGER for SQLite
+                    $sql_type = $field_type === 'BOOLEAN' ? 'INTEGER' : $field_type;
                     
-                    if ($is_primary) {
+                    $column_def = "`$field_name` $sql_type";
+                    
+                    // For BOOLEAN, add DEFAULT 0 if nullable, or NOT NULL DEFAULT 0
+                    if ($field_type === 'BOOLEAN') {
+                        if ($is_nullable) {
+                            $column_def .= " DEFAULT 0";
+                        } else {
+                            $column_def .= " NOT NULL DEFAULT 0";
+                        }
+                    } elseif ($is_primary) {
                         $primary_keys[] = $field_name;
                         if ($field_type === 'INTEGER') {
                             $column_def .= " PRIMARY KEY AUTOINCREMENT";
@@ -973,13 +983,23 @@ include '../includes/header.php';
                 <div>
                     <div class="flex items-center justify-between mb-2">
                         <label class="block text-sm font-medium">Alanlar:</label>
-                        <button
-                            type="button"
-                            onclick="addTableField()"
-                            class="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
-                        >
-                            + Alan Ekle
-                        </button>
+                        <div class="flex gap-2">
+                            <button
+                                type="button"
+                                onclick="addTimestamps()"
+                                class="px-3 py-1 text-xs font-medium bg-blue-500 text-white hover:bg-blue-600 rounded-md transition-colors"
+                                title="created_at ve updated_at alanlarını otomatik ekle"
+                            >
+                                + Timestamps
+                            </button>
+                            <button
+                                type="button"
+                                onclick="addTableField()"
+                                class="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
+                            >
+                                + Alan Ekle
+                            </button>
+                        </div>
                     </div>
                     <div id="table-fields-container" class="space-y-3">
                         <!-- Fields will be added here -->
@@ -1105,6 +1125,7 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
                         <option value="REAL" ${fieldType === 'REAL' ? 'selected' : ''}>REAL</option>
                         <option value="BLOB" ${fieldType === 'BLOB' ? 'selected' : ''}>BLOB</option>
                         <option value="NUMERIC" ${fieldType === 'NUMERIC' ? 'selected' : ''}>NUMERIC</option>
+                        <option value="BOOLEAN" ${fieldType === 'BOOLEAN' ? 'selected' : ''}>BOOLEAN</option>
                     </select>
                 </div>
                 <div class="col-span-2">
@@ -1208,6 +1229,33 @@ function hideCreateTableModal() {
     const container = document.getElementById('table-fields-container');
     container.innerHTML = '';
     fieldCounter = 0;
+}
+
+function addTimestamps() {
+    // Check if timestamps already exist
+    const container = document.getElementById('table-fields-container');
+    const existingFields = container.querySelectorAll('input[name="field_names[]"]');
+    const existingNames = Array.from(existingFields).map(input => input.value.toLowerCase());
+    
+    if (!existingNames.includes('created_at')) {
+        addTableField('created_at', 'TEXT', false, false);
+        // Update the field type to use DATETIME/TIMESTAMP pattern
+        const lastField = container.lastElementChild;
+        const typeSelect = lastField.querySelector('select[name="field_types[]"]');
+        if (typeSelect) {
+            typeSelect.value = 'TEXT';
+        }
+    }
+    
+    if (!existingNames.includes('updated_at')) {
+        addTableField('updated_at', 'TEXT', false, false);
+        // Update the field type to use DATETIME/TIMESTAMP pattern
+        const lastField = container.lastElementChild;
+        const typeSelect = lastField.querySelector('select[name="field_types[]"]');
+        if (typeSelect) {
+            typeSelect.value = 'TEXT';
+        }
+    }
 }
 
 // Delete Table function
