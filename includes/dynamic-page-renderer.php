@@ -32,7 +32,18 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                 class="overflow-hidden transition-all duration-300 <?php echo $is_edit_mode ? 'max-h-[9999px]' : 'max-h-0'; ?>"
             >
                 <div class="p-6 pt-0">
-                <form method="POST" action="">
+                <?php
+                // Check if form has image fields (need multipart/form-data)
+                $has_image_fields = false;
+                foreach ($columns as $col) {
+                    $col_name = $col['name'];
+                    if (preg_match('/\b(image|img|photo|picture|resim|foto)\b/i', $col_name)) {
+                        $has_image_fields = true;
+                        break;
+                    }
+                }
+                ?>
+                <form method="POST" action="" <?php echo $has_image_fields ? 'enctype="multipart/form-data"' : ''; ?>>
                     <input type="hidden" name="action" value="<?php echo $edit_record ? 'update' : 'add'; ?>">
                     <?php if ($edit_record): ?>
                         <input type="hidden" name="record_id" value="<?php echo $edit_record[$primary_key]; ?>">
@@ -62,9 +73,14 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                             </label>
                             
                             <?php 
-                            // Check if field is image (column name contains 'image' or 'img' or 'photo' or 'picture')
+                            // Check if field is image (column name contains 'image' or 'img' or 'photo' or 'picture' or 'avatar' or 'thumbnail')
                             $is_image = false;
-                            if (preg_match('/\b(image|img|photo|picture|resim|foto)\b/i', $col_name)) {
+                            if (preg_match('/\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i', $col_name)) {
+                                $is_image = true;
+                            }
+                            
+                            // Also check column type for TEXT fields that might be images (stored as file paths)
+                            if (!$is_image && $col_type === 'text' && preg_match('/(picture|image|photo|avatar)/i', $col_name)) {
                                 $is_image = true;
                             }
                             
@@ -458,8 +474,8 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                 ?>
                                                 <td class="p-4 align-middle text-sm">
                                                     <?php 
-                                                    // Check if field is image
-                                                    $is_image_col = preg_match('/\b(image|img|photo|picture|resim|foto)\b/i', $col_name);
+                                                    // Check if field is image (support profile_picture, avatar, thumbnail, etc.)
+                                                    $is_image_col = preg_match('/\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i', $col_name);
                                                     
                                                     if ($is_boolean && $value !== null): ?>
                                                         <?php if (intval($value) === 1): ?>

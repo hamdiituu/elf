@@ -160,8 +160,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         // Process image uploads
                         foreach ($columns as $col) {
                             $col_name = $col['name'];
-                            // Check if field is image
-                            if (preg_match('/\b(image|img|photo|picture|resim|foto)\b/i', $col_name)) {
+                            // Check if field is image (support profile_picture, avatar, thumbnail, etc.)
+                            if (preg_match('/\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i', $col_name)) {
                                 if (isset($_FILES[$col_name]) && $_FILES[$col_name]['error'] === UPLOAD_ERR_OK) {
                                     $file = $_FILES[$col_name];
                                     $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
@@ -338,8 +338,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             // Process image uploads
                             foreach ($columns as $col) {
                                 $col_name = $col['name'];
-                                // Check if field is image
-                                if (preg_match('/\b(image|img|photo|picture|resim|foto)\b/i', $col_name)) {
+                                // Check if field is image (support profile_picture, avatar, thumbnail, etc.)
+                                if (preg_match('/\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i', $col_name)) {
                                     if (isset($_FILES[$col_name]) && $_FILES[$col_name]['error'] === UPLOAD_ERR_OK) {
                                         $file = $_FILES[$col_name];
                                         $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
