@@ -320,6 +320,66 @@ try {
     }
 }
 
+// Handle daemon start/stop
+$daemon_action = $_GET['daemon_action'] ?? null;
+if ($daemon_action === 'start') {
+    $daemon_path = __DIR__ . '/../cron/cron-daemon.php';
+    $lock_file = __DIR__ . '/../cron/cron-daemon.lock';
+    
+    // Check if already running
+    if (file_exists($lock_file)) {
+        $pid = trim(file_get_contents($lock_file));
+        if ($pid && function_exists('posix_getpgid') && posix_getpgid($pid)) {
+            $error_message = "Daemon zaten çalışıyor (PID: $pid)";
+        } else {
+            // Stale lock file
+            @unlink($lock_file);
+        }
+    }
+    
+    if (!isset($error_message)) {
+        // Start daemon
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows
+            pclose(popen("start /B php " . escapeshellarg($daemon_path) . " > NUL 2>&1", "r"));
+        } else {
+            // Unix/Linux
+            exec("nohup php " . escapeshellarg($daemon_path) . " > " . escapeshellarg(__DIR__ . '/../cron/cron-daemon.log') . " 2>&1 &");
+        }
+        $success_message = "Cron daemon başlatıldı!";
+        header('Location: cron-manager.php?success=' . urlencode($success_message));
+        exit;
+    }
+} elseif ($daemon_action === 'stop') {
+    $lock_file = __DIR__ . '/../cron/cron-daemon.lock';
+    $pid_file = __DIR__ . '/../cron/cron-daemon.pid';
+    
+    if (file_exists($lock_file)) {
+        $pid = trim(file_get_contents($lock_file));
+        if ($pid) {
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                // Windows
+                exec("taskkill /F /PID $pid 2>&1", $output, $return_var);
+            } else {
+                // Unix/Linux
+                posix_kill($pid, SIGTERM);
+                // Wait a bit, then force kill if still running
+                sleep(2);
+                if (function_exists('posix_getpgid') && posix_getpgid($pid)) {
+                    posix_kill($pid, SIGKILL);
+                }
+            }
+        }
+        @unlink($lock_file);
+        @unlink($pid_file);
+        $success_message = "Cron daemon durduruldu!";
+        header('Location: cron-manager.php?success=' . urlencode($success_message));
+        exit;
+    } else {
+        $error_message = "Daemon çalışmıyor!";
+    }
+}
+
 // Handle cron execution
 $run_cron = $_GET['run'] ?? null;
 if ($run_cron) {
@@ -391,7 +451,173 @@ include '../includes/header.php';
     <main class="flex-1 overflow-y-auto">
         <div class="py-6">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-                <h1 class="text-3xl font-bold text-foreground mb-8">Cron Manager</h1>
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-foreground mb-2">Cron Manager</h1>
+                    <p class="text-sm text-muted-foreground">Otomatik görev yöneticisi ve zamanlayıcı</p>
+                </div>
+                
+                <?php
+                // Check if daemon is running
+                $daemon_pid_file = __DIR__ . '/../cron/cron-daemon.pid';
+                $daemon_lock_file = __DIR__ . '/../cron/cron-daemon.lock';
+                $daemon_running = false;
+                $daemon_pid = null;
+                
+                if (file_exists($daemon_lock_file)) {
+                    $pid = trim(file_get_contents($daemon_lock_file));
+                    if ($pid && function_exists('posix_getpgid')) {
+                        if (posix_getpgid($pid)) {
+                            $daemon_running = true;
+                            $daemon_pid = $pid;
+                        } else {
+                            // Stale lock file
+                            @unlink($daemon_lock_file);
+                            @unlink($daemon_pid_file);
+                        }
+                    } elseif ($pid) {
+                        // On Windows or without posix, assume running if file exists
+                        $daemon_running = true;
+                        $daemon_pid = $pid;
+                    }
+                }
+                
+                // Get cron statistics
+                $total_jobs = count($web_cron_jobs);
+                $enabled_jobs = 0;
+                $disabled_jobs = 0;
+                $success_count = 0;
+                $failed_count = 0;
+                
+                foreach ($web_cron_jobs as $job) {
+                    if ($job['enabled']) {
+                        $enabled_jobs++;
+                    } else {
+                        $disabled_jobs++;
+                    }
+                    
+                    $latest = $latest_logs[$job['name']] ?? null;
+                    if ($latest) {
+                        if ($latest['status'] === 'success') {
+                            $success_count++;
+                        } elseif ($latest['status'] === 'failed') {
+                            $failed_count++;
+                        }
+                    }
+                }
+                ?>
+                
+                <!-- Daemon Status -->
+                <div class="mb-6 rounded-lg border border-border bg-card text-card-foreground shadow-sm p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="h-12 w-12 rounded-full <?php echo $daemon_running ? 'bg-green-100 dark:bg-green-900/20' : 'bg-red-100 dark:bg-red-900/20'; ?> flex items-center justify-center">
+                                <?php if ($daemon_running): ?>
+                                    <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                <?php else: ?>
+                                    <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                <?php endif; ?>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-semibold text-foreground">Cron Daemon</h3>
+                                <p class="text-xs text-muted-foreground">
+                                    <?php if ($daemon_running): ?>
+                                        Çalışıyor <?php if ($daemon_pid): ?>(PID: <?php echo $daemon_pid; ?>)<?php endif; ?>
+                                    <?php else: ?>
+                                        Çalışmıyor
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <?php if ($daemon_running): ?>
+                                <button
+                                    onclick="stopDaemon()"
+                                    class="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-md transition-colors"
+                                >
+                                    <svg class="h-4 w-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                                    </svg>
+                                    Durdur
+                                </button>
+                            <?php else: ?>
+                                <button
+                                    onclick="startDaemon()"
+                                    class="px-4 py-2 text-sm font-medium bg-green-600 text-white hover:bg-green-700 rounded-md transition-colors"
+                                >
+                                    <svg class="h-4 w-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Başlat
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Statistics -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Toplam Job</p>
+                                <p class="text-2xl font-bold text-foreground"><?php echo $total_jobs; ?></p>
+                            </div>
+                            <div class="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                                <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Aktif Job</p>
+                                <p class="text-2xl font-bold text-foreground"><?php echo $enabled_jobs; ?></p>
+                            </div>
+                            <div class="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                                <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Başarılı</p>
+                                <p class="text-2xl font-bold text-foreground"><?php echo $success_count; ?></p>
+                            </div>
+                            <div class="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                                <svg class="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-muted-foreground mb-1">Başarısız</p>
+                                <p class="text-2xl font-bold text-foreground"><?php echo $failed_count; ?></p>
+                            </div>
+                            <div class="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                                <svg class="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
                 <?php if ($error_message): ?>
                     <div class="mb-4 rounded-md bg-red-50 border border-red-200 p-4">
@@ -417,104 +643,125 @@ include '../includes/header.php';
                     </div>
                 <?php endif; ?>
                 
-                <div class="mb-6 flex items-center justify-between">
-                    <h1 class="text-3xl font-bold text-foreground">Cron Manager</h1>
-                    <button
-                        onclick="showCreateCronModal()"
-                        class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 transition-colors"
-                    >
-                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Yeni Cron Job
-                    </button>
-                </div>
-                
-                <div class="grid gap-6 lg:grid-cols-2">
+                <div class="grid gap-6 lg:grid-cols-1">
                     <!-- Web-Based Cron Jobs -->
                     <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                         <div class="p-6 pb-0">
                             <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-semibold leading-none tracking-tight">Web Cron Job'ları</h3>
+                                <div>
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight mb-1">Web Cron Job'ları</h3>
+                                    <p class="text-xs text-muted-foreground">Veritabanında kayıtlı otomatik görevler</p>
+                                </div>
+                                <div class="text-xs text-muted-foreground">
+                                    Toplam: <span class="font-semibold text-foreground"><?php echo $total_jobs; ?></span> · 
+                                    Aktif: <span class="font-semibold text-green-600"><?php echo $enabled_jobs; ?></span>
+                                </div>
                             </div>
                         </div>
                         <div class="p-6 pt-0">
                             <?php if (empty($web_cron_jobs)): ?>
-                                <div class="text-center py-8 text-muted-foreground">
-                                    Henüz web cron job'ı yok. "Yeni Cron Job" butonuna tıklayarak oluşturun.
+                                <div class="text-center py-12 text-muted-foreground">
+                                    <svg class="mx-auto h-12 w-12 text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p class="text-sm font-medium mb-1">Henüz cron job yok</p>
+                                    <p class="text-xs">"Yeni Cron Job" butonuna tıklayarak oluşturun.</p>
                                 </div>
                             <?php else: ?>
-                                <div class="space-y-3">
+                                <div class="space-y-4">
                                     <?php foreach ($web_cron_jobs as $cron): ?>
                                         <?php 
                                         $latest = $latest_logs[$cron['name']] ?? null;
-                                        $status_bg_class = 'bg-gray-100';
-                                        $status_text_class = 'text-gray-800';
+                                        $status_bg_class = 'bg-gray-100 dark:bg-gray-900/30';
+                                        $status_text_class = 'text-gray-800 dark:text-gray-200';
                                         $status_text = 'Bilinmiyor';
                                         
                                         if ($latest) {
                                             switch ($latest['status']) {
                                                 case 'success':
-                                                    $status_bg_class = 'bg-green-100';
-                                                    $status_text_class = 'text-green-800';
+                                                    $status_bg_class = 'bg-green-100 dark:bg-green-900/30';
+                                                    $status_text_class = 'text-green-800 dark:text-green-200';
                                                     $status_text = 'Başarılı';
                                                     break;
                                                 case 'failed':
-                                                    $status_bg_class = 'bg-red-100';
-                                                    $status_text_class = 'text-red-800';
+                                                    $status_bg_class = 'bg-red-100 dark:bg-red-900/30';
+                                                    $status_text_class = 'text-red-800 dark:text-red-200';
                                                     $status_text = 'Başarısız';
                                                     break;
                                                 case 'started':
-                                                    $status_bg_class = 'bg-yellow-100';
-                                                    $status_text_class = 'text-yellow-800';
+                                                    $status_bg_class = 'bg-yellow-100 dark:bg-yellow-900/30';
+                                                    $status_text_class = 'text-yellow-800 dark:text-yellow-200';
                                                     $status_text = 'Çalışıyor';
                                                     break;
                                             }
                                         }
                                         ?>
-                                        <div class="rounded-md border border-border p-4 bg-muted/30">
-                                            <div class="flex items-center justify-between mb-3">
-                                                <div class="flex-1">
-                                                    <div class="flex items-center gap-2">
-                                                        <h4 class="font-medium text-sm text-foreground"><?php echo htmlspecialchars($cron['name']); ?></h4>
-                                                        <?php if ($cron['enabled']): ?>
-                                                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800">Aktif</span>
-                                                        <?php else: ?>
-                                                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">Pasif</span>
+                                        <div class="rounded-lg border border-border p-5 bg-card shadow-sm hover:shadow-md transition-all">
+                                            <div class="flex items-start justify-between mb-4">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-3 mb-2">
+                                                        <div class="h-10 w-10 rounded-full <?php echo $cron['enabled'] ? 'bg-primary/10' : 'bg-muted'; ?> flex items-center justify-center flex-shrink-0">
+                                                            <svg class="h-5 w-5 <?php echo $cron['enabled'] ? 'text-primary' : 'text-muted-foreground'; ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                                                <h4 class="font-semibold text-base text-foreground truncate"><?php echo htmlspecialchars($cron['name']); ?></h4>
+                                                                <?php if ($cron['enabled']): ?>
+                                                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800">Aktif</span>
+                                                                <?php else: ?>
+                                                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-800">Pasif</span>
+                                                                <?php endif; ?>
+                                                                <?php if ($latest): ?>
+                                                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium <?php echo $status_bg_class . ' ' . $status_text_class; ?> border">
+                                                                        <?php echo $status_text; ?>
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                            <?php if ($cron['description']): ?>
+                                                                <p class="text-sm text-muted-foreground mb-2"><?php echo htmlspecialchars($cron['description']); ?></p>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                                                        <div class="bg-muted/50 dark:bg-muted/30 rounded-md p-2 border border-border">
+                                                            <p class="text-xs text-muted-foreground mb-0.5">Zamanlama</p>
+                                                            <p class="text-xs font-mono font-semibold text-foreground"><?php echo htmlspecialchars($cron['schedule']); ?></p>
+                                                        </div>
+                                                        <?php if ($cron['next_run_at']): ?>
+                                                            <div class="bg-muted/50 dark:bg-muted/30 rounded-md p-2 border border-border">
+                                                                <p class="text-xs text-muted-foreground mb-0.5">Sonraki Çalışma</p>
+                                                                <p class="text-xs font-semibold text-foreground"><?php echo date('d.m.Y H:i', strtotime($cron['next_run_at'])); ?></p>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        <?php if ($cron['last_run_at']): ?>
+                                                            <div class="bg-muted/50 dark:bg-muted/30 rounded-md p-2 border border-border">
+                                                                <p class="text-xs text-muted-foreground mb-0.5">Son Çalışma</p>
+                                                                <p class="text-xs font-semibold text-foreground"><?php echo date('d.m.Y H:i', strtotime($cron['last_run_at'])); ?></p>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        <?php if ($latest && isset($latest['execution_time_ms'])): ?>
+                                                            <div class="bg-muted/50 dark:bg-muted/30 rounded-md p-2 border border-border">
+                                                                <p class="text-xs text-muted-foreground mb-0.5">Çalışma Süresi</p>
+                                                                <p class="text-xs font-semibold text-foreground"><?php echo number_format($latest['execution_time_ms'], 2); ?> ms</p>
+                                                            </div>
                                                         <?php endif; ?>
                                                     </div>
-                                                    <?php if ($cron['description']): ?>
-                                                        <p class="text-xs text-muted-foreground mt-1"><?php echo htmlspecialchars($cron['description']); ?></p>
-                                                    <?php endif; ?>
-                                                    <p class="text-xs text-muted-foreground font-mono mt-1">Zamanlama: <?php echo htmlspecialchars($cron['schedule']); ?></p>
-                                                    <?php if ($cron['next_run_at']): ?>
-                                                        <p class="text-xs text-muted-foreground mt-1">Sonraki çalışma: <?php echo date('d.m.Y H:i:s', strtotime($cron['next_run_at'])); ?></p>
-                                                    <?php endif; ?>
-                                                </div>
-                                                <div class="ml-4">
-                                                    <?php if ($latest): ?>
-                                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium <?php echo $status_bg_class . ' ' . $status_text_class; ?>">
-                                                            <?php echo $status_text; ?>
-                                                        </span>
+                                                    
+                                                    <?php if ($latest && $latest['message']): ?>
+                                                        <div class="mt-3 p-2 bg-muted/30 rounded-md border border-border">
+                                                            <p class="text-xs text-muted-foreground mb-1">Son Mesaj:</p>
+                                                            <p class="text-xs text-foreground truncate" title="<?php echo htmlspecialchars($latest['message']); ?>">
+                                                                <?php echo htmlspecialchars($latest['message']); ?>
+                                                            </p>
+                                                        </div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
                                             
-                                            <?php if ($latest): ?>
-                                                <div class="mb-3 text-xs text-muted-foreground space-y-1">
-                                                    <div>Son çalışma: <?php echo $cron['last_run_at'] ? date('d.m.Y H:i:s', strtotime($cron['last_run_at'])) : 'Henüz çalışmadı'; ?></div>
-                                                    <?php if ($latest['execution_time_ms']): ?>
-                                                        <div>Süre: <?php echo number_format($latest['execution_time_ms'], 2); ?> ms</div>
-                                                    <?php endif; ?>
-                                                    <?php if ($latest['message']): ?>
-                                                        <div class="truncate" title="<?php echo htmlspecialchars($latest['message']); ?>">
-                                                            Mesaj: <?php echo htmlspecialchars(substr($latest['message'], 0, 60)); ?>...
-                                                        </div>
-                                                    <?php endif; ?>
-                                                </div>
-                                            <?php endif; ?>
-                                            
-                                            <div class="flex items-center gap-2 flex-wrap">
+                                            <div class="flex items-center gap-2 flex-wrap pt-4 border-t border-border">
                                                 <a
                                                     href="?run_web=<?php echo $cron['id']; ?>"
                                                     onclick="return confirm('Bu cron job\'ı şimdi çalıştırmak istediğinizden emin misiniz?');"
@@ -564,138 +811,177 @@ include '../includes/header.php';
                     </div>
 
                     <!-- File-Based Cron Jobs -->
+                    <?php if (!empty($file_cron_jobs)): ?>
                     <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                         <div class="p-6 pb-0">
-                            <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Dosya Tabanlı Cron Job'lar</h3>
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight mb-1">Dosya Tabanlı Cron Job'lar</h3>
+                                    <p class="text-xs text-muted-foreground">Dosya sistemi tabanlı cron job'lar</p>
+                                </div>
+                                <div class="text-xs text-muted-foreground">
+                                    Toplam: <span class="font-semibold text-foreground"><?php echo count($file_cron_jobs); ?></span>
+                                </div>
+                            </div>
                         </div>
                         <div class="p-6 pt-0">
-                            <?php if (empty($file_cron_jobs)): ?>
-                                <div class="text-center py-8 text-muted-foreground">
-                                    Cron job bulunamadı.
-                                </div>
-                            <?php else: ?>
-                                <div class="space-y-3">
-                                    <?php foreach ($file_cron_jobs as $cron): ?>
-                                        <?php 
-                                        $latest = $latest_logs[$cron['name']] ?? null;
-                                        $status_bg_class = 'bg-gray-100';
-                                        $status_text_class = 'text-gray-800';
-                                        $status_text = 'Bilinmiyor';
-                                        
-                                        if ($latest) {
-                                            switch ($latest['status']) {
-                                                case 'success':
-                                                    $status_bg_class = 'bg-green-100';
-                                                    $status_text_class = 'text-green-800';
-                                                    $status_text = 'Başarılı';
-                                                    break;
-                                                case 'failed':
-                                                    $status_bg_class = 'bg-red-100';
-                                                    $status_text_class = 'text-red-800';
-                                                    $status_text = 'Başarısız';
-                                                    break;
-                                                case 'started':
-                                                    $status_bg_class = 'bg-yellow-100';
-                                                    $status_text_class = 'text-yellow-800';
-                                                    $status_text = 'Çalışıyor';
-                                                    break;
-                                            }
+                            <div class="space-y-4">
+                                <?php foreach ($file_cron_jobs as $cron): ?>
+                                    <?php 
+                                    $latest = $latest_logs[$cron['name']] ?? null;
+                                    $status_bg_class = 'bg-gray-100 dark:bg-gray-900/30';
+                                    $status_text_class = 'text-gray-800 dark:text-gray-200';
+                                    $status_text = 'Bilinmiyor';
+                                    
+                                    if ($latest) {
+                                        switch ($latest['status']) {
+                                            case 'success':
+                                                $status_bg_class = 'bg-green-100 dark:bg-green-900/30';
+                                                $status_text_class = 'text-green-800 dark:text-green-200';
+                                                $status_text = 'Başarılı';
+                                                break;
+                                            case 'failed':
+                                                $status_bg_class = 'bg-red-100 dark:bg-red-900/30';
+                                                $status_text_class = 'text-red-800 dark:text-red-200';
+                                                $status_text = 'Başarısız';
+                                                break;
+                                            case 'started':
+                                                $status_bg_class = 'bg-yellow-100 dark:bg-yellow-900/30';
+                                                $status_text_class = 'text-yellow-800 dark:text-yellow-200';
+                                                $status_text = 'Çalışıyor';
+                                                break;
                                         }
-                                        ?>
-                                        <div class="rounded-md border border-border p-4 bg-muted/30">
-                                            <div class="flex items-center justify-between mb-3">
-                                                <div class="flex-1">
-                                                    <h4 class="font-medium text-sm text-foreground"><?php echo htmlspecialchars($cron['name']); ?></h4>
-                                                    <p class="text-xs text-muted-foreground font-mono mt-1"><?php echo htmlspecialchars($cron['file']); ?></p>
-                                                </div>
-                                                <div class="ml-4">
-                                                    <?php if ($latest): ?>
-                                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium <?php echo $status_bg_class . ' ' . $status_text_class; ?>">
-                                                            <?php echo $status_text; ?>
-                                                        </span>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-                                            
-                                            <?php if ($latest): ?>
-                                                <div class="mb-3 text-xs text-muted-foreground space-y-1">
-                                                    <div>Son çalışma: <?php echo date('d.m.Y H:i:s', strtotime($latest['started_at'])); ?></div>
-                                                    <?php if ($latest['execution_time_ms']): ?>
-                                                        <div>Süre: <?php echo number_format($latest['execution_time_ms'], 2); ?> ms</div>
-                                                    <?php endif; ?>
-                                                    <?php if ($latest['message']): ?>
-                                                        <div class="truncate" title="<?php echo htmlspecialchars($latest['message']); ?>">
-                                                            Mesaj: <?php echo htmlspecialchars(substr($latest['message'], 0, 60)); ?>...
+                                    }
+                                    ?>
+                                    <div class="rounded-lg border border-border p-5 bg-card shadow-sm hover:shadow-md transition-all">
+                                        <div class="flex items-start justify-between mb-4">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center gap-3 mb-2">
+                                                    <div class="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
+                                                        <svg class="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                                            <h4 class="font-semibold text-base text-foreground truncate"><?php echo htmlspecialchars($cron['name']); ?></h4>
+                                                            <?php if ($latest): ?>
+                                                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium <?php echo $status_bg_class . ' ' . $status_text_class; ?> border">
+                                                                    <?php echo $status_text; ?>
+                                                                </span>
+                                                            <?php endif; ?>
                                                         </div>
-                                                    <?php endif; ?>
+                                                        <p class="text-xs text-muted-foreground font-mono truncate" title="<?php echo htmlspecialchars($cron['file']); ?>">
+                                                            <?php echo htmlspecialchars($cron['file']); ?>
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            <?php endif; ?>
-                                            
-                                            <div class="flex items-center gap-2">
-                                                <a
-                                                    href="?run=<?php echo urlencode($cron['name']); ?>"
-                                                    onclick="return confirm('Bu cron job\'ı şimdi çalıştırmak istediğinizden emin misiniz?');"
-                                                    class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-1.5 transition-colors"
-                                                >
-                                                    <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    Çalıştır
-                                                </a>
-                                                <a
-                                                    href="database-explorer.php?table=cron_log"
-                                                    class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-3 py-1.5 transition-colors"
-                                                >
-                                                    <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                    </svg>
-                                                    Loglar
-                                                </a>
+                                                
+                                                <?php if ($latest): ?>
+                                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
+                                                        <div class="bg-muted/50 dark:bg-muted/30 rounded-md p-2 border border-border">
+                                                            <p class="text-xs text-muted-foreground mb-0.5">Son Çalışma</p>
+                                                            <p class="text-xs font-semibold text-foreground"><?php echo date('d.m.Y H:i', strtotime($latest['started_at'])); ?></p>
+                                                        </div>
+                                                        <?php if ($latest['execution_time_ms']): ?>
+                                                            <div class="bg-muted/50 dark:bg-muted/30 rounded-md p-2 border border-border">
+                                                                <p class="text-xs text-muted-foreground mb-0.5">Çalışma Süresi</p>
+                                                                <p class="text-xs font-semibold text-foreground"><?php echo number_format($latest['execution_time_ms'], 2); ?> ms</p>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        <?php if ($latest['message']): ?>
+                                                            <div class="bg-muted/50 dark:bg-muted/30 rounded-md p-2 border border-border">
+                                                                <p class="text-xs text-muted-foreground mb-0.5">Mesaj</p>
+                                                                <p class="text-xs font-semibold text-foreground truncate" title="<?php echo htmlspecialchars($latest['message']); ?>">
+                                                                    <?php echo htmlspecialchars(substr($latest['message'], 0, 30)); ?>...
+                                                                </p>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
+                                        
+                                        <div class="flex items-center gap-2 flex-wrap pt-4 border-t border-border">
+                                            <a
+                                                href="?run=<?php echo urlencode($cron['name']); ?>"
+                                                onclick="return confirm('Bu cron job\'ı şimdi çalıştırmak istediğinizden emin misiniz?');"
+                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-1.5 transition-colors"
+                                            >
+                                                <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                Çalıştır
+                                            </a>
+                                            <a
+                                                href="database-explorer.php?table=cron_log&search=<?php echo urlencode($cron['name']); ?>"
+                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-3 py-1.5 transition-colors"
+                                            >
+                                                <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                Loglar
+                                            </a>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <!-- Cron Logs -->
                     <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                         <div class="p-6 pb-0">
-                            <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Son Cron Log'ları</h3>
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight mb-1">Son Cron Log'ları</h3>
+                                    <p class="text-xs text-muted-foreground">Son 50 cron job çalıştırma kaydı</p>
+                                </div>
+                                <a
+                                    href="database-explorer.php?table=cron_log"
+                                    class="text-xs font-medium text-primary hover:underline"
+                                >
+                                    Tümünü Gör →
+                                </a>
+                            </div>
                         </div>
                         <div class="p-6 pt-0">
                             <?php if (empty($cron_logs)): ?>
-                                <div class="text-center py-8 text-muted-foreground">
-                                    Henüz cron log kaydı yok.
+                                <div class="text-center py-12 text-muted-foreground">
+                                    <svg class="mx-auto h-12 w-12 text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <p class="text-sm font-medium mb-1">Henüz cron log kaydı yok</p>
+                                    <p class="text-xs">Cron job'lar çalıştıkça burada görünecektir.</p>
                                 </div>
                             <?php else: ?>
                                 <div class="space-y-3 max-h-[600px] overflow-y-auto">
                                     <?php foreach ($cron_logs as $log): ?>
                                         <?php
-                                        $status_bg_class = 'bg-gray-100';
-                                        $status_text_class = 'text-gray-800';
+                                        $status_bg_class = 'bg-gray-100 dark:bg-gray-900/30';
+                                        $status_text_class = 'text-gray-800 dark:text-gray-200';
                                         switch ($log['status']) {
                                             case 'success':
-                                                $status_bg_class = 'bg-green-100';
-                                                $status_text_class = 'text-green-800';
+                                                $status_bg_class = 'bg-green-100 dark:bg-green-900/30';
+                                                $status_text_class = 'text-green-800 dark:text-green-200';
                                                 break;
                                             case 'failed':
-                                                $status_bg_class = 'bg-red-100';
-                                                $status_text_class = 'text-red-800';
+                                                $status_bg_class = 'bg-red-100 dark:bg-red-900/30';
+                                                $status_text_class = 'text-red-800 dark:text-red-200';
                                                 break;
                                             case 'started':
-                                                $status_bg_class = 'bg-yellow-100';
-                                                $status_text_class = 'text-yellow-800';
+                                                $status_bg_class = 'bg-yellow-100 dark:bg-yellow-900/30';
+                                                $status_text_class = 'text-yellow-800 dark:text-yellow-200';
                                                 break;
                                         }
                                         ?>
-                                        <div class="rounded-md border border-border p-3 bg-muted/20">
+                                        <div class="rounded-lg border border-border p-4 bg-card shadow-sm hover:shadow-md transition-all">
                                             <div class="flex items-center justify-between mb-2">
                                                 <div class="flex items-center gap-2">
-                                                    <span class="font-medium text-sm"><?php echo htmlspecialchars($log['cron_name']); ?></span>
-                                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium <?php echo $status_bg_class . ' ' . $status_text_class; ?>">
+                                                    <span class="font-semibold text-sm text-foreground"><?php echo htmlspecialchars($log['cron_name']); ?></span>
+                                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium <?php echo $status_bg_class . ' ' . $status_text_class; ?> border">
                                                         <?php 
                                                         switch ($log['status']) {
                                                             case 'success': echo 'Başarılı'; break;
@@ -706,34 +992,41 @@ include '../includes/header.php';
                                                         ?>
                                                     </span>
                                                 </div>
-                                                <span class="text-xs text-muted-foreground">
+                                                <span class="text-xs text-muted-foreground font-medium">
                                                     <?php echo date('d.m.Y H:i:s', strtotime($log['started_at'])); ?>
                                                 </span>
                                             </div>
                                             <?php if ($log['message']): ?>
-                                                <p class="text-xs text-muted-foreground mb-1"><?php echo htmlspecialchars($log['message']); ?></p>
+                                                <p class="text-xs text-foreground mb-2"><?php echo htmlspecialchars($log['message']); ?></p>
                                             <?php endif; ?>
                                             <div class="flex items-center gap-4 text-xs text-muted-foreground">
                                                 <?php if ($log['execution_time_ms']): ?>
-                                                    <span>Süre: <?php echo number_format($log['execution_time_ms'], 2); ?> ms</span>
+                                                    <span class="flex items-center gap-1">
+                                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        <?php echo number_format($log['execution_time_ms'], 2); ?> ms
+                                                    </span>
                                                 <?php endif; ?>
                                                 <?php if ($log['finished_at']): ?>
-                                                    <span>Bitti: <?php echo date('H:i:s', strtotime($log['finished_at'])); ?></span>
+                                                    <span class="flex items-center gap-1">
+                                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        Bitti: <?php echo date('H:i:s', strtotime($log['finished_at'])); ?>
+                                                    </span>
                                                 <?php endif; ?>
                                                 <?php if ($log['error_message']): ?>
-                                                    <span class="text-red-600">Hata: <?php echo htmlspecialchars(substr($log['error_message'], 0, 50)); ?>...</span>
+                                                    <span class="flex items-center gap-1 text-red-600 dark:text-red-400">
+                                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        Hata: <?php echo htmlspecialchars(substr($log['error_message'], 0, 50)); ?>...
+                                                    </span>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
                                     <?php endforeach; ?>
-                                </div>
-                                <div class="mt-4">
-                                    <a
-                                        href="database-explorer.php?table=cron_log"
-                                        class="inline-flex items-center justify-center rounded-md text-sm font-medium text-primary hover:underline"
-                                    >
-                                        Tüm logları görüntüle →
-                                    </a>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -1112,6 +1405,19 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
+
+// Daemon control functions
+function startDaemon() {
+    if (confirm('Cron daemon başlatılsın mı? Bu işlem arka planda çalışacak bir process başlatır ve zamanı gelen cron job\'ları otomatik çalıştırır.')) {
+        window.location.href = '?daemon_action=start';
+    }
+}
+
+function stopDaemon() {
+    if (confirm('Cron daemon durdurulsun mu? Tüm otomatik cron job\'ları durur.')) {
+        window.location.href = '?daemon_action=stop';
+    }
+}
 </script>
 
 <style>
