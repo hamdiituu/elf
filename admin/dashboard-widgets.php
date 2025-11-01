@@ -121,10 +121,81 @@ include '../includes/header.php';
 <div class="flex h-screen overflow-hidden">
     <?php include '../includes/admin-sidebar.php'; ?>
 
-    <main class="flex-1 overflow-y-auto">
+    <main class="flex-1 overflow-y-auto bg-muted/30">
         <div class="py-6">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-                <h1 class="text-3xl font-bold text-foreground mb-8">Dashboard Widgets</h1>
+            <div class="mx-auto max-w-[1600px] px-4 sm:px-6 md:px-8">
+                <!-- Header -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h1 class="text-3xl font-bold text-foreground">Dashboard Widgets</h1>
+                            <p class="mt-2 text-sm text-muted-foreground">Create custom widgets for your dashboard</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Dashboard -->
+                    <div class="grid gap-4 md:grid-cols-4 mb-6">
+                        <?php 
+                        $total_widgets = count($widgets);
+                        $active_widgets = count(array_filter($widgets, fn($w) => $w['enabled']));
+                        $sql_count = count(array_filter($widgets, fn($w) => $w['widget_type'] === 'sql_count'));
+                        $sql_query = count(array_filter($widgets, fn($w) => $w['widget_type'] === 'sql_query'));
+                        $sql_single = count(array_filter($widgets, fn($w) => $w['widget_type'] === 'sql_single'));
+                        ?>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Widgets</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $total_widgets; ?></p>
+                                </div>
+                                <div class="rounded-full bg-blue-100 p-3">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $active_widgets; ?></p>
+                                </div>
+                                <div class="rounded-full bg-green-100 p-3">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">SQL Count</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $sql_count; ?></p>
+                                </div>
+                                <div class="rounded-full bg-purple-100 p-3">
+                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">SQL Query</p>
+                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $sql_query + $sql_single; ?></p>
+                                </div>
+                                <div class="rounded-full bg-yellow-100 p-3">
+                                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
                 <?php if ($error_message): ?>
                     <div class="mb-6 rounded-md bg-red-50 p-4 border border-red-200">
@@ -144,37 +215,68 @@ include '../includes/header.php';
                 
                 <!-- Create/Edit Widget Form -->
                 <div class="mb-8 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
-                    <div class="p-6 pb-0">
-                        <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">
-                            <?php echo $edit_widget ? 'Widget Düzenle' : 'Yeni Widget Ekle'; ?>
-                        </h3>
+                    <div class="p-6 border-b border-border bg-muted/30">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold leading-none tracking-tight">
+                                <?php echo $edit_widget ? 'Edit Widget' : 'Create New Widget'; ?>
+                            </h3>
+                            <?php if ($edit_widget): ?>
+                                <a
+                                    href="dashboard-widgets.php"
+                                    class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-3 py-1.5 transition-colors"
+                                >
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Cancel
+                                </a>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <div class="p-6 pt-0">
+                    <div class="p-6">
                         <form method="POST" action="">
                             <input type="hidden" name="action" value="<?php echo $edit_widget ? 'update_widget' : 'create_widget'; ?>">
                             <?php if ($edit_widget): ?>
                                 <input type="hidden" name="widget_id" value="<?php echo $edit_widget['id']; ?>">
                             <?php endif; ?>
                             
-                            <div class="space-y-4">
-                                <div>
-                                    <label for="title" class="block text-sm font-medium text-foreground mb-1.5">
-                                        Başlık <span class="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="title"
-                                        name="title"
-                                        required
-                                        value="<?php echo htmlspecialchars($edit_widget['title'] ?? ''); ?>"
-                                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                                        placeholder="Widget Başlığı"
-                                    >
+                            <div class="space-y-6">
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label for="title" class="block text-sm font-medium text-foreground mb-2">
+                                            Widget Title <span class="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="title"
+                                            name="title"
+                                            required
+                                            value="<?php echo htmlspecialchars($edit_widget['title'] ?? ''); ?>"
+                                            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                            placeholder="Widget Title"
+                                        >
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="width" class="block text-sm font-medium text-foreground mb-2">
+                                            Width
+                                        </label>
+                                        <select
+                                            id="width"
+                                            name="width"
+                                            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                        >
+                                            <option value="md:col-span-1" <?php echo ($edit_widget['width'] ?? 'md:col-span-1') === 'md:col-span-1' ? 'selected' : ''; ?>>1 Column</option>
+                                            <option value="md:col-span-2" <?php echo ($edit_widget['width'] ?? '') === 'md:col-span-2' ? 'selected' : ''; ?>>2 Columns</option>
+                                            <option value="md:col-span-3" <?php echo ($edit_widget['width'] ?? '') === 'md:col-span-3' ? 'selected' : ''; ?>>3 Columns</option>
+                                            <option value="md:col-span-4" <?php echo ($edit_widget['width'] ?? '') === 'md:col-span-4' ? 'selected' : ''; ?>>4 Columns</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 
                                 <div>
-                                    <label for="widget_type" class="block text-sm font-medium text-foreground mb-1.5">
-                                        Widget Tipi <span class="text-red-500">*</span>
+                                    <label for="widget_type" class="block text-sm font-medium text-foreground mb-2">
+                                        Widget Type <span class="text-red-500">*</span>
                                     </label>
                                     <select
                                         id="widget_type"
@@ -183,63 +285,48 @@ include '../includes/header.php';
                                         class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                                         onchange="updateWidgetConfigPlaceholder()"
                                     >
-                                        <option value="">Seçiniz</option>
-                                        <option value="sql_count" <?php echo ($edit_widget['widget_type'] ?? '') === 'sql_count' ? 'selected' : ''; ?>>SQL COUNT Sorgusu</option>
-                                        <option value="sql_query" <?php echo ($edit_widget['widget_type'] ?? '') === 'sql_query' ? 'selected' : ''; ?>>SQL Sorgusu (Liste)</option>
-                                        <option value="sql_single" <?php echo ($edit_widget['widget_type'] ?? '') === 'sql_single' ? 'selected' : ''; ?>>SQL Sorgusu (Tek Değer)</option>
+                                        <option value="">Select Type</option>
+                                        <option value="sql_count" <?php echo ($edit_widget['widget_type'] ?? '') === 'sql_count' ? 'selected' : ''; ?>>SQL COUNT Query</option>
+                                        <option value="sql_query" <?php echo ($edit_widget['widget_type'] ?? '') === 'sql_query' ? 'selected' : ''; ?>>SQL Query (List)</option>
+                                        <option value="sql_single" <?php echo ($edit_widget['widget_type'] ?? '') === 'sql_single' ? 'selected' : ''; ?>>SQL Query (Single Value)</option>
                                     </select>
+                                    <div class="mt-2 rounded-lg bg-blue-50 border border-blue-200 p-3">
+                                        <p class="text-xs text-blue-800 font-medium mb-2">Widget Types:</p>
+                                        <ul class="text-xs text-blue-700 space-y-1">
+                                            <li><code class="bg-blue-100 px-1.5 py-0.5 rounded">sql_count</code> - Shows COUNT result (e.g., SELECT COUNT(*) FROM table)</li>
+                                            <li><code class="bg-blue-100 px-1.5 py-0.5 rounded">sql_query</code> - Shows multiple rows (e.g., SELECT * FROM table LIMIT 5)</li>
+                                            <li><code class="bg-blue-100 px-1.5 py-0.5 rounded">sql_single</code> - Shows single value (e.g., SELECT column FROM table LIMIT 1)</li>
+                                        </ul>
+                                    </div>
                                 </div>
                                 
                                 <div>
-                                    <label for="widget_config" class="block text-sm font-medium text-foreground mb-1.5">
-                                        SQL Sorgusu <span class="text-red-500">*</span>
+                                    <label for="widget_config" class="block text-sm font-medium text-foreground mb-2">
+                                        SQL Query <span class="text-red-500">*</span>
                                     </label>
                                     <textarea
                                         id="widget_config"
                                         name="widget_config"
                                         required
-                                        rows="6"
-                                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                        rows="8"
+                                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                                         placeholder="SELECT COUNT(*) FROM sayimlar WHERE aktif = 1"
                                     ><?php echo htmlspecialchars($edit_widget['widget_config'] ?? ''); ?></textarea>
-                                    <p class="text-xs text-muted-foreground mt-1">
-                                        <strong>sql_count:</strong> COUNT sonucunu gösterir (örn: SELECT COUNT(*) FROM sayimlar)<br>
-                                        <strong>sql_query:</strong> Birden fazla satır gösterir (örn: SELECT * FROM sayimlar LIMIT 5)<br>
-                                        <strong>sql_single:</strong> Tek bir değer gösterir (örn: SELECT sayim_no FROM sayimlar WHERE aktif = 1 LIMIT 1)
+                                    <p class="text-xs text-muted-foreground mt-2">
+                                        Enter your SQL query. The result will be displayed in the dashboard widget.
                                     </p>
                                 </div>
                                 
-                                <div>
-                                    <label for="width" class="block text-sm font-medium text-foreground mb-1.5">
-                                        Genişlik
-                                    </label>
-                                    <select
-                                        id="width"
-                                        name="width"
-                                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                                    >
-                                        <option value="md:col-span-1" <?php echo ($edit_widget['width'] ?? 'md:col-span-1') === 'md:col-span-1' ? 'selected' : ''; ?>>1 Sütun</option>
-                                        <option value="md:col-span-2" <?php echo ($edit_widget['width'] ?? '') === 'md:col-span-2' ? 'selected' : ''; ?>>2 Sütun</option>
-                                        <option value="md:col-span-3" <?php echo ($edit_widget['width'] ?? '') === 'md:col-span-3' ? 'selected' : ''; ?>>3 Sütun</option>
-                                        <option value="md:col-span-4" <?php echo ($edit_widget['width'] ?? '') === 'md:col-span-4' ? 'selected' : ''; ?>>4 Sütun</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="flex gap-2">
+                                <div class="flex items-center gap-3 pt-4 border-t border-border">
                                     <button
                                         type="submit"
-                                        class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
+                                        class="inline-flex items-center justify-center rounded-md text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2.5 transition-colors shadow-sm"
                                     >
-                                        <?php echo $edit_widget ? 'Güncelle' : 'Oluştur'; ?>
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <?php echo $edit_widget ? 'Update Widget' : 'Create Widget'; ?>
                                     </button>
-                                    <?php if ($edit_widget): ?>
-                                        <a
-                                            href="dashboard-widgets.php"
-                                            class="rounded-md bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 transition-all"
-                                        >
-                                            İptal
-                                        </a>
-                                    <?php endif; ?>
                                 </div>
                             </div>
                         </form>
@@ -248,24 +335,33 @@ include '../includes/header.php';
                 
                 <!-- Existing Widgets -->
                 <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
-                    <div class="p-6 pb-0">
-                        <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Widget'larım</h3>
+                    <div class="p-6 border-b border-border bg-muted/30">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold leading-none tracking-tight">My Widgets</h3>
+                            <span class="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                                <?php echo count($widgets); ?> widgets
+                            </span>
+                        </div>
                     </div>
-                    <div class="p-6 pt-0">
+                    <div class="p-6">
                         <?php if (empty($widgets)): ?>
-                            <div class="text-center py-8 text-muted-foreground">
-                                Henüz widget eklenmemiş.
+                            <div class="text-center py-16 text-muted-foreground">
+                                <svg class="mx-auto h-16 w-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <p class="text-base font-medium">No widgets created yet</p>
+                                <p class="text-xs mt-1">Create your first dashboard widget above</p>
                             </div>
                         <?php else: ?>
                             <div class="overflow-x-auto">
                                 <table class="w-full border-collapse">
                                     <thead>
-                                        <tr class="border-b border-border">
-                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Başlık</th>
-                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Tip</th>
-                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Genişlik</th>
-                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">Durum</th>
-                                            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-sm">İşlemler</th>
+                                        <tr class="border-b border-border bg-muted/50">
+                                            <th class="h-12 px-4 text-left align-middle font-semibold text-muted-foreground text-sm">Title</th>
+                                            <th class="h-12 px-4 text-left align-middle font-semibold text-muted-foreground text-sm">Type</th>
+                                            <th class="h-12 px-4 text-left align-middle font-semibold text-muted-foreground text-sm">Width</th>
+                                            <th class="h-12 px-4 text-left align-middle font-semibold text-muted-foreground text-sm">Status</th>
+                                            <th class="h-12 px-4 text-left align-middle font-semibold text-muted-foreground text-sm">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
