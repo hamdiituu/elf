@@ -1416,11 +1416,11 @@ function addTableField(fieldName = '', fieldType = 'TEXT', isNullable = true, is
                         required
                         pattern="[a-zA-Z_][a-zA-Z0-9_]*"
                         class="w-full px-2 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring font-mono"
-                        placeholder="alan_adi"
+                        placeholder="field_name"
                     >
                 </div>
                 <div class="col-span-3">
-                    <label class="block text-xs font-medium mb-1">Tip:</label>
+                    <label class="block text-xs font-medium mb-1">Type:</label>
                     <select
                         name="field_types[]"
                         class="w-full px-2 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-ring"

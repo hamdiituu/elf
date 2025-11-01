@@ -341,7 +341,7 @@ include '../includes/header.php';
                                     name="mysql_database"
                                     value="<?php echo htmlspecialchars($current_settings['db_config']['mysql']['database'] ?? ''); ?>"
                                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent sm:text-sm"
-                                    placeholder="veritabani_adi"
+                                    placeholder="database_name"
                                 >
                             </div>
                             
@@ -355,7 +355,7 @@ include '../includes/header.php';
                                     name="mysql_username"
                                     value="<?php echo htmlspecialchars($current_settings['db_config']['mysql']['username'] ?? ''); ?>"
                                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent sm:text-sm"
-                                    placeholder="kullanici_adi"
+                                    placeholder="username"
                                 >
                             </div>
                             

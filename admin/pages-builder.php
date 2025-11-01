@@ -361,7 +361,7 @@ include '../includes/header.php';
                                     value="<?php echo htmlspecialchars($edit_page['page_name'] ?? ''); ?>"
                                     <?php echo $edit_page ? 'readonly' : ''; ?>
                                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent <?php echo $edit_page ? 'bg-muted cursor-not-allowed' : ''; ?>"
-                                    placeholder="ornek-sayfa"
+                                    placeholder="example-page"
                                 >
                                     <p class="mt-1 text-xs text-muted-foreground">Only lowercase letters, numbers, underscore (_) and dash (-)</p>
                                 </div>

@@ -194,7 +194,7 @@ include '../includes/header.php';
                                 pattern="[a-zA-Z0-9_]+"
                                 <?php echo $edit_cron ? 'readonly' : ''; ?>
                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                placeholder="ornek_cron_job"
+                                placeholder="example_cron_job"
                             />
                             <p class="mt-1 text-xs text-muted-foreground">
                                 Only letters, numbers and underscore allowed. <?php echo $edit_cron ? '(Cannot be edited)' : ''; ?>

@@ -981,7 +981,7 @@ include '../includes/header.php';
                         required
                         pattern="[a-zA-Z_][a-zA-Z0-9_]*"
                         class="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring font-mono"
-                        placeholder="ornek_cron"
+                        placeholder="example_cron"
                     >
                     <p class="text-xs text-muted-foreground mt-1">Only letters, numbers and underscore allowed</p>
                 </div>
