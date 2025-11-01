@@ -218,5 +218,48 @@ function handleMethod($handlers) {
         sendErrorResponse($e->getMessage(), 500);
     }
 }
+
+/**
+ * Get request body as array (JSON or form data)
+ * @return array Request body data
+ */
+function getRequestBody() {
+    return getJsonBody();
+}
+
+/**
+ * Get all request headers
+ * @return array Headers as key-value pairs
+ */
+function getAllHeaders() {
+    $headers = [];
+    
+    if (function_exists('getallheaders')) {
+        $headers = getallheaders();
+    } else {
+        foreach ($_SERVER as $key => $value) {
+            if (strpos($key, 'HTTP_') === 0) {
+                $header = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($key, 5)))));
+                $headers[$header] = $value;
+            }
+        }
+    }
+    
+    return $headers;
+}
+
+/**
+ * Ensure CORS is enabled
+ */
+function ensureCors() {
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    
+    if ($_SERVER['REQUEST_METHOD'] === HttpMethod::OPTIONS) {
+        http_response_code(200);
+        exit;
+    }
+}
 ?>
 
