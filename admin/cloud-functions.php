@@ -440,7 +440,7 @@ include '../includes/header.php';
                                             ><?php 
                                             $defaultCode = "// Cloud Function Code\n// Available variables:\n// \$dbContext - Database connection (PDO object)\n// \$request - Request body data (array)\n// \$method - HTTP method (string: GET, POST, PUT, DELETE)\n// \$headers - Request headers (array)\n// \$response - Response array (must set this)\n\n// Example: Get users\n\$stmt = \$dbContext->query(\"SELECT * FROM users LIMIT 10\");\n\$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n\n// Set response\n\$response['success'] = true;\n\$response['data'] = \$users;\n\$response['message'] = 'Users retrieved successfully';\n\n// Example: With parameters from request\n// \$limit = isset(\$request['limit']) ? intval(\$request['limit']) : 10;\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM users LIMIT ?\");\n// \$stmt->execute([\$limit]);\n// \$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n// \$response['success'] = true;\n// \$response['data'] = \$users;\n\n// Example: Check if record exists\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM table WHERE id = ?\");\n// \$stmt->execute([\$id]);\n// \$record = \$stmt->fetch(PDO::FETCH_ASSOC);\n// if (!\$record) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Record not found';\n//     return;\n// }\n";
                                             
-                                            $defaultJsCode = "// Cloud Function Code (JavaScript/Node.js)\n// Available variables:\n// request - Request body data (object)\n// method - HTTP method (string: GET, POST, PUT, DELETE)\n// headers - Request headers (object)\n// response - Response object (must set this)\n// dbQuery(sql, params) - Execute SELECT query (returns array)\n// dbQueryOne(sql, params) - Execute SELECT query (returns single row)\n// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid})\n\n// Example: Simple response\nresponse.success = true;\nresponse.data = { message: 'Hello from Node.js!' };\nresponse.message = 'Function executed successfully';\n\n// Example: Database query (SELECT)\n// try {\n//     const users = await dbQuery('SELECT * FROM users LIMIT ?', [10]);\n//     response.success = true;\n//     response.data = users;\n//     response.message = 'Users retrieved successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n//     response.error = error.message;\n// }\n\n// Example: Single row query\n// try {\n//     const user = await dbQueryOne('SELECT * FROM users WHERE id = ?', [request.user_id]);\n//     if (!user) {\n//         response.success = false;\n//         response.message = 'User not found';\n//         return;\n//     }\n//     response.success = true;\n//     response.data = user;\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: INSERT query\n// try {\n//     const result = await dbExecute(\n//         'INSERT INTO users (name, email) VALUES (?, ?)',\n//         [request.name, request.email]\n//     );\n//     response.success = true;\n//     response.data = { id: result.lastInsertRowid, changes: result.changes };\n//     response.message = 'User created successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: UPDATE query\n// try {\n//     const result = await dbExecute(\n//         'UPDATE users SET name = ? WHERE id = ?',\n//         [request.name, request.user_id]\n//     );\n//     response.success = true;\n//     response.data = { changes: result.changes };\n//     response.message = 'User updated successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: Using request data\n// const limit = request.limit || 10;\n// try {\n//     const users = await dbQuery('SELECT * FROM users LIMIT ?', [limit]);\n//     response.success = true;\n//     response.data = users;\n// } catch (error) {\n//     response.success = false;\n//     response.message = error.message;\n// }\n";
+                                            $defaultJsCode = "// Cloud Function Code (JavaScript/Node.js)\n// Available variables:\n// request - Request body data (object)\n// method - HTTP method (string: GET, POST, PUT, DELETE)\n// headers - Request headers (object)\n// response - Response object (must set this)\n// dbQuery(sql, params) - Execute SELECT query (returns array) - Works with SQLite & MySQL\n// dbQueryOne(sql, params) - Execute SELECT query (returns single row) - Works with SQLite & MySQL\n// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid}) - Works with SQLite & MySQL\n\n// Example: Simple response\nresponse.success = true;\nresponse.data = { message: 'Hello from Node.js!' };\nresponse.message = 'Function executed successfully';\n\n// Example: Database query (SELECT) - Works with both SQLite and MySQL\n// try {\n//     const users = await dbQuery('SELECT * FROM users LIMIT ?', [10]);\n//     response.success = true;\n//     response.data = users;\n//     response.message = 'Users retrieved successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n//     response.error = error.message;\n// }\n\n// Example: Single row query - Works with both SQLite and MySQL\n// try {\n//     const user = await dbQueryOne('SELECT * FROM users WHERE id = ?', [request.user_id]);\n//     if (!user) {\n//         response.success = false;\n//         response.message = 'User not found';\n//         return;\n//     }\n//     response.success = true;\n//     response.data = user;\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: INSERT query - Works with both SQLite and MySQL\n// try {\n//     const result = await dbExecute(\n//         'INSERT INTO users (name, email) VALUES (?, ?)',\n//         [request.name, request.email]\n//     );\n//     response.success = true;\n//     response.data = { id: result.lastInsertRowid, changes: result.changes };\n//     response.message = 'User created successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: UPDATE query - Works with both SQLite and MySQL\n// try {\n//     const result = await dbExecute(\n//         'UPDATE users SET name = ? WHERE id = ?',\n//         [request.name, request.user_id]\n//     );\n//     response.success = true;\n//     response.data = { changes: result.changes };\n//     response.message = 'User updated successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: MySQL JOIN query\n// try {\n//     const data = await dbQuery(\n//         'SELECT u.*, p.name as profile_name FROM users u LEFT JOIN profiles p ON u.id = p.user_id WHERE u.id = ?',\n//         [request.user_id]\n//     );\n//     response.success = true;\n//     response.data = data;\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: Using request data\n// const limit = request.limit || 10;\n// try {\n//     const users = await dbQuery('SELECT * FROM users LIMIT ?', [limit]);\n//     response.success = true;\n//     response.data = users;\n// } catch (error) {\n//     response.success = false;\n//     response.message = error.message;\n// }\n";
                                             
                                             $selectedLanguage = $edit_function['language'] ?? 'php';
                                             $codeToShow = ($selectedLanguage === 'js' || $selectedLanguage === 'javascript') ? $defaultJsCode : $defaultCode;
@@ -589,16 +589,16 @@ include '../includes/header.php';
 // method - HTTP method (string: GET, POST, PUT, DELETE)
 // headers - Request headers (object)
 // response - Response object (must set this)
-// dbQuery(sql, params) - Execute SELECT query (returns array)
-// dbQueryOne(sql, params) - Execute SELECT query (returns single row)
-// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid})
+// dbQuery(sql, params) - Execute SELECT query (returns array) - Works with SQLite & MySQL
+// dbQueryOne(sql, params) - Execute SELECT query (returns single row) - Works with SQLite & MySQL
+// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid}) - Works with SQLite & MySQL
 
 // Example: Simple response
 response.success = true;
 response.data = { message: 'Hello from Node.js!' };
 response.message = 'Function executed successfully';
 
-// Example: Database query (SELECT)
+// Example: Database query (SELECT) - Works with both SQLite and MySQL
 // try {
 //     const users = await dbQuery('SELECT * FROM users LIMIT ?', [10]);
 //     response.success = true;
@@ -610,7 +610,7 @@ response.message = 'Function executed successfully';
 //     response.error = error.message;
 // }
 
-// Example: Single row query
+// Example: Single row query - Works with both SQLite and MySQL
 // try {
 //     const user = await dbQueryOne('SELECT * FROM users WHERE id = ?', [request.user_id]);
 //     if (!user) {
@@ -625,7 +625,7 @@ response.message = 'Function executed successfully';
 //     response.message = 'Database error: ' + error.message;
 // }
 
-// Example: INSERT query
+// Example: INSERT query - Works with both SQLite and MySQL
 // try {
 //     const result = await dbExecute(
 //         'INSERT INTO users (name, email) VALUES (?, ?)',
@@ -639,7 +639,7 @@ response.message = 'Function executed successfully';
 //     response.message = 'Database error: ' + error.message;
 // }
 
-// Example: UPDATE query
+// Example: UPDATE query - Works with both SQLite and MySQL
 // try {
 //     const result = await dbExecute(
 //         'UPDATE users SET name = ? WHERE id = ?',
@@ -648,6 +648,19 @@ response.message = 'Function executed successfully';
 //     response.success = true;
 //     response.data = { changes: result.changes };
 //     response.message = 'User updated successfully';
+// } catch (error) {
+//     response.success = false;
+//     response.message = 'Database error: ' + error.message;
+// }
+
+// Example: MySQL JOIN query
+// try {
+//     const data = await dbQuery(
+//         'SELECT u.*, p.name as profile_name FROM users u LEFT JOIN profiles p ON u.id = p.user_id WHERE u.id = ?',
+//         [request.user_id]
+//     );
+//     response.success = true;
+//     response.data = data;
 // } catch (error) {
 //     response.success = false;
 //     response.message = 'Database error: ' + error.message;

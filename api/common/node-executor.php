@@ -21,13 +21,17 @@ function executeNodeCode($code, $context = []) {
         ];
     }
     
-    // Get database path from settings
+    // Get database configuration from settings
     $db_path = null;
+    $db_config = null;
+    $db_type = 'sqlite';
+    
     try {
         require_once __DIR__ . '/../../config/config.php';
         $settings = getSettings();
+        $db_type = $settings['db_type'] ?? 'sqlite';
         
-        if ($settings['db_type'] === 'sqlite' && !empty($settings['db_config']['sqlite']['path'])) {
+        if ($db_type === 'sqlite' && !empty($settings['db_config']['sqlite']['path'])) {
             $db_path = $settings['db_config']['sqlite']['path'];
             // Convert relative path to absolute
             if (!file_exists($db_path) || !is_file($db_path)) {
@@ -35,9 +39,11 @@ function executeNodeCode($code, $context = []) {
             }
             // Ensure absolute path
             $db_path = realpath($db_path);
+        } elseif ($db_type === 'mysql') {
+            $db_config = $settings['db_config']['mysql'] ?? null;
         }
     } catch (Exception $e) {
-        // Could not get database path
+        // Could not get database config
     }
     
     // Get project root directory
@@ -48,11 +54,13 @@ function executeNodeCode($code, $context = []) {
     $node_modules = $project_root . '/node_modules';
     $better_sqlite3 = $node_modules . '/better-sqlite3';
     $sqlite3 = $node_modules . '/sqlite3';
+    $mysql2 = $node_modules . '/mysql2';
     
-    // Check if database module is installed
-    $db_module_installed = file_exists($better_sqlite3) || file_exists($sqlite3);
+    // Check which database modules are needed
+    $needs_sqlite = ($db_type === 'sqlite' && !file_exists($better_sqlite3) && !file_exists($sqlite3));
+    $needs_mysql = ($db_type === 'mysql' && !file_exists($mysql2));
     
-    if (!$db_module_installed) {
+    if ($needs_sqlite || $needs_mysql) {
         // Create package.json if it doesn't exist
         if (!file_exists($package_json)) {
             $default_package_json = [
@@ -64,22 +72,34 @@ function executeNodeCode($code, $context = []) {
             file_put_contents($package_json, json_encode($default_package_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         }
         
-        // Try to install better-sqlite3 first
+        // Install required modules
         $npm_path = trim(shell_exec('which npm 2>/dev/null'));
         if (!empty($npm_path)) {
             try {
-                // Try better-sqlite3 first
-                $install_command = sprintf(
-                    'cd %s && %s install better-sqlite3 --save --no-audit --no-fund 2>&1',
-                    escapeshellarg($project_root),
-                    escapeshellarg($npm_path)
-                );
-                exec($install_command, $output, $return_var);
-                
-                // If better-sqlite3 failed, try sqlite3
-                if ($return_var !== 0 || !file_exists($better_sqlite3)) {
+                if ($needs_sqlite) {
+                    // Try better-sqlite3 first
                     $install_command = sprintf(
-                        'cd %s && %s install sqlite3 --save --no-audit --no-fund 2>&1',
+                        'cd %s && %s install better-sqlite3 --save --no-audit --no-fund 2>&1',
+                        escapeshellarg($project_root),
+                        escapeshellarg($npm_path)
+                    );
+                    exec($install_command, $output, $return_var);
+                    
+                    // If better-sqlite3 failed, try sqlite3
+                    if ($return_var !== 0 || !file_exists($better_sqlite3)) {
+                        $install_command = sprintf(
+                            'cd %s && %s install sqlite3 --save --no-audit --no-fund 2>&1',
+                            escapeshellarg($project_root),
+                            escapeshellarg($npm_path)
+                        );
+                        exec($install_command, $output, $return_var);
+                    }
+                }
+                
+                if ($needs_mysql) {
+                    // Install mysql2
+                    $install_command = sprintf(
+                        'cd %s && %s install mysql2 --save --no-audit --no-fund 2>&1',
                         escapeshellarg($project_root),
                         escapeshellarg($npm_path)
                     );
@@ -94,7 +114,9 @@ function executeNodeCode($code, $context = []) {
     // Prepare context as JSON
     $context_data = [
         'dbContext' => serialize($context['dbContext'] ?? null), // Serialize PDO connection info
+        'dbType' => $db_type, // Database type: 'sqlite' or 'mysql'
         'dbPath' => $db_path, // SQLite database file path
+        'dbConfig' => $db_config, // MySQL connection config (host, port, database, username, password)
         'projectRoot' => $project_root, // Project root directory for npm install
         'request' => $context['request'] ?? [],
         'method' => $context['method'] ?? 'POST',
@@ -152,10 +174,11 @@ const headers = context.headers || {};
 const dbContextInfo = context.dbContext || null;
 
 // Database helper function
-// Automatically installs better-sqlite3 if not available
+// Automatically installs better-sqlite3 or mysql2 if not available
 let dbHelper = null;
+let dbType = context.dbType || 'sqlite';
 
-function installDbModule() {
+function installDbModule(moduleName) {
     try {
         const { execSync } = require('child_process');
         const path = require('path');
@@ -173,9 +196,9 @@ function installDbModule() {
             fs.writeFileSync(packageJsonPath, JSON.stringify(defaultPackageJson, null, 2));
         }
         
-        // Try to install better-sqlite3 first (synchronous, recommended)
+        // Install specified module
         try {
-            execSync('npm install better-sqlite3 --save --no-audit --no-fund', {
+            execSync(\`npm install \${moduleName} --save --no-audit --no-fund\`, {
                 stdio: 'pipe',
                 timeout: 60000,
                 cwd: projectRoot,
@@ -183,19 +206,8 @@ function installDbModule() {
             });
             return true;
         } catch (e) {
-            // If better-sqlite3 fails, try sqlite3
-            try {
-                execSync('npm install sqlite3 --save --no-audit --no-fund', {
-                    stdio: 'pipe',
-                    timeout: 60000,
-                    cwd: projectRoot,
-                    env: { ...process.env, NODE_ENV: 'production' }
-                });
-                return true;
-            } catch (e2) {
-                console.error('Failed to install database modules. Please install manually: npm install better-sqlite3');
-                return false;
-            }
+            console.error(\`Failed to install \${moduleName}. Please install manually: npm install \${moduleName}\`);
+            return false;
         }
     } catch (err) {
         console.error('Error installing database modules:', err.message);
@@ -204,59 +216,112 @@ function installDbModule() {
 }
 
 function initDatabase() {
-    // Try better-sqlite3 first (synchronous, recommended)
-    try {
-        const Database = require('better-sqlite3');
-        const dbPath = context.dbPath || null;
-        if (dbPath && fs.existsSync(dbPath)) {
-            dbHelper = new Database(dbPath);
-            return true;
-        }
-    } catch (e) {
-        // If better-sqlite3 is not available, try sqlite3
+    dbType = context.dbType || 'sqlite';
+    
+    if (dbType === 'mysql') {
+        // Initialize MySQL connection
         try {
-            const sqlite3 = require('sqlite3');
-            const dbPath = context.dbPath || null;
-            if (dbPath && fs.existsSync(dbPath)) {
-                dbHelper = new sqlite3.Database(dbPath, (err) => {
-                    if (err) {
-                        console.error('Database connection error:', err);
-                        dbHelper = null;
-                    }
-                });
-                return dbHelper !== null;
+            const mysql = require('mysql2/promise');
+            const dbConfig = context.dbConfig || {};
+            
+            if (!dbConfig.host || !dbConfig.database || !dbConfig.username) {
+                console.error('MySQL configuration incomplete');
+                return false;
             }
-        } catch (e2) {
+            
+            dbHelper = mysql.createPool({
+                host: dbConfig.host || 'localhost',
+                port: dbConfig.port || 3306,
+                database: dbConfig.database,
+                user: dbConfig.username,
+                password: dbConfig.password || '',
+                waitForConnections: true,
+                connectionLimit: 5,
+                queueLimit: 0
+            });
+            return true;
+        } catch (e) {
             // Module not found - try to install
-            if (installDbModule()) {
-                // Try again after installation
+            if (installDbModule('mysql2')) {
                 try {
-                    const Database = require('better-sqlite3');
-                    const dbPath = context.dbPath || null;
-                    if (dbPath && fs.existsSync(dbPath)) {
-                        dbHelper = new Database(dbPath);
-                        return true;
-                    }
-                } catch (e3) {
-                    try {
-                        const sqlite3 = require('sqlite3');
-                        const dbPath = context.dbPath || null;
-                        if (dbPath && fs.existsSync(dbPath)) {
-                            dbHelper = new sqlite3.Database(dbPath, (err) => {
-                                if (err) {
-                                    console.error('Database connection error:', err);
-                                    dbHelper = null;
-                                }
-                            });
-                            return dbHelper !== null;
-                        }
-                    } catch (e4) {
-                        // Still no module available
+                    const mysql = require('mysql2/promise');
+                    const dbConfig = context.dbConfig || {};
+                    
+                    if (!dbConfig.host || !dbConfig.database || !dbConfig.username) {
                         return false;
                     }
+                    
+                    dbHelper = mysql.createPool({
+                        host: dbConfig.host || 'localhost',
+                        port: dbConfig.port || 3306,
+                        database: dbConfig.database,
+                        user: dbConfig.username,
+                        password: dbConfig.password || '',
+                        waitForConnections: true,
+                        connectionLimit: 5,
+                        queueLimit: 0
+                    });
+                    return true;
+                } catch (e2) {
+                    return false;
                 }
             }
             return false;
+        }
+    } else {
+        // Initialize SQLite connection
+        try {
+            const Database = require('better-sqlite3');
+            const dbPath = context.dbPath || null;
+            if (dbPath && fs.existsSync(dbPath)) {
+                dbHelper = new Database(dbPath);
+                return true;
+            }
+        } catch (e) {
+            // If better-sqlite3 is not available, try sqlite3
+            try {
+                const sqlite3 = require('sqlite3');
+                const dbPath = context.dbPath || null;
+                if (dbPath && fs.existsSync(dbPath)) {
+                    dbHelper = new sqlite3.Database(dbPath, (err) => {
+                        if (err) {
+                            console.error('Database connection error:', err);
+                            dbHelper = null;
+                        }
+                    });
+                    return dbHelper !== null;
+                }
+            } catch (e2) {
+                // Module not found - try to install
+                if (installDbModule('better-sqlite3')) {
+                    try {
+                        const Database = require('better-sqlite3');
+                        const dbPath = context.dbPath || null;
+                        if (dbPath && fs.existsSync(dbPath)) {
+                            dbHelper = new Database(dbPath);
+                            return true;
+                        }
+                    } catch (e3) {
+                        try {
+                            const sqlite3 = require('sqlite3');
+                            const dbPath = context.dbPath || null;
+                            if (dbPath && fs.existsSync(dbPath)) {
+                                dbHelper = new sqlite3.Database(dbPath, (err) => {
+                                    if (err) {
+                                        console.error('Database connection error:', err);
+                                        dbHelper = null;
+                                    }
+                                });
+                                return dbHelper !== null;
+                            }
+                        } catch (e4) {
+                            // Still no module available
+                            return false;
+                        }
+                    }
+                }
+                return false;
+            }
         }
     }
     return false;
@@ -265,32 +330,42 @@ function initDatabase() {
 // Initialize database connection
 initDatabase();
 
-// Helper function for database queries (async wrapper for sqlite3)
+// Helper function for database queries (works with both SQLite and MySQL)
 function dbQuery(sql, params = []) {
     return new Promise((resolve, reject) => {
         if (!dbHelper) {
-            reject(new Error('Database module not available. Install: npm install better-sqlite3 or npm install sqlite3'));
+            reject(new Error('Database module not available. Please ensure database is configured correctly.'));
             return;
         }
         
-        // Check if it's better-sqlite3 (synchronous)
-        if (dbHelper.prepare) {
-            try {
-                const stmt = dbHelper.prepare(sql);
-                const result = stmt.all(params);
-                resolve(result);
-            } catch (err) {
-                reject(err);
-            }
-        } else {
-            // sqlite3 (async)
-            dbHelper.all(sql, params, (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
+        if (dbType === 'mysql') {
+            // MySQL (mysql2/promise)
+            dbHelper.execute(sql, params)
+                .then(([rows]) => {
                     resolve(rows);
+                })
+                .catch(reject);
+        } else {
+            // SQLite
+            // Check if it's better-sqlite3 (synchronous)
+            if (dbHelper.prepare) {
+                try {
+                    const stmt = dbHelper.prepare(sql);
+                    const result = stmt.all(params);
+                    resolve(result);
+                } catch (err) {
+                    reject(err);
                 }
-            });
+            } else {
+                // sqlite3 (async)
+                dbHelper.all(sql, params, (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(rows);
+                    }
+                });
+            }
         }
     });
 }
@@ -299,26 +374,36 @@ function dbQuery(sql, params = []) {
 function dbQueryOne(sql, params = []) {
     return new Promise((resolve, reject) => {
         if (!dbHelper) {
-            reject(new Error('Database module not available. Install: npm install better-sqlite3 or npm install sqlite3'));
+            reject(new Error('Database module not available. Please ensure database is configured correctly.'));
             return;
         }
         
-        if (dbHelper.prepare) {
-            try {
-                const stmt = dbHelper.prepare(sql);
-                const result = stmt.get(params);
-                resolve(result);
-            } catch (err) {
-                reject(err);
-            }
+        if (dbType === 'mysql') {
+            // MySQL (mysql2/promise)
+            dbHelper.execute(sql, params)
+                .then(([rows]) => {
+                    resolve(rows.length > 0 ? rows[0] : null);
+                })
+                .catch(reject);
         } else {
-            dbHelper.get(sql, params, (err, row) => {
-                if (err) {
+            // SQLite
+            if (dbHelper.prepare) {
+                try {
+                    const stmt = dbHelper.prepare(sql);
+                    const result = stmt.get(params);
+                    resolve(result || null);
+                } catch (err) {
                     reject(err);
-                } else {
-                    resolve(row);
                 }
-            });
+            } else {
+                dbHelper.get(sql, params, (err, row) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(row || null);
+                    }
+                });
+            }
         }
     });
 }
@@ -327,26 +412,39 @@ function dbQueryOne(sql, params = []) {
 function dbExecute(sql, params = []) {
     return new Promise((resolve, reject) => {
         if (!dbHelper) {
-            reject(new Error('Database module not available. Install: npm install better-sqlite3 or npm install sqlite3'));
+            reject(new Error('Database module not available. Please ensure database is configured correctly.'));
             return;
         }
         
-        if (dbHelper.prepare) {
-            try {
-                const stmt = dbHelper.prepare(sql);
-                const result = stmt.run(params);
-                resolve({ changes: result.changes, lastInsertRowid: result.lastInsertRowid });
-            } catch (err) {
-                reject(err);
-            }
+        if (dbType === 'mysql') {
+            // MySQL (mysql2/promise)
+            dbHelper.execute(sql, params)
+                .then(([result]) => {
+                    resolve({ 
+                        changes: result.affectedRows, 
+                        lastInsertRowid: result.insertId 
+                    });
+                })
+                .catch(reject);
         } else {
-            dbHelper.run(sql, params, function(err) {
-                if (err) {
+            // SQLite
+            if (dbHelper.prepare) {
+                try {
+                    const stmt = dbHelper.prepare(sql);
+                    const result = stmt.run(params);
+                    resolve({ changes: result.changes, lastInsertRowid: result.lastInsertRowid });
+                } catch (err) {
                     reject(err);
-                } else {
-                    resolve({ changes: this.changes, lastInsertRowid: this.lastInsertRowid });
                 }
-            });
+            } else {
+                dbHelper.run(sql, params, function(err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve({ changes: this.changes, lastInsertRowid: this.lastInsertRowid });
+                    }
+                });
+            }
         }
     });
 }
