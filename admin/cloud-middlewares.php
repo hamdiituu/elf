@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireDeveloper();
 
-$page_title = 'Cloud Middlewares - Vira Stok Sistemi';
+$page_title = 'Cloud Middlewares';
 
 $db = getDB();
 $error_message = null;

@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireLogin();
 
-$page_title = 'Kullanıcılar - Vira Stok Sistemi';
+$page_title = 'Kullanıcılar';
 $db = getDB();
 
 // Handle user operations

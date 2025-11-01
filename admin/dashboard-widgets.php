@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../config/config.php';
 requireDeveloper();
 
-$page_title = 'Dashboard Widgets - Vira Stok Sistemi';
+$page_title = 'Dashboard Widgets';
 $db = getDB();
 
 // Ensure dashboard_widgets table exists

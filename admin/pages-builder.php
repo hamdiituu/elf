@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../config/config.php';
 requireDeveloper();
 
-$page_title = 'Pages Builder - Vira Stok Sistemi';
+$page_title = 'Pages Builder';
 $db = getDB();
 
 // Ensure dynamic_pages table exists

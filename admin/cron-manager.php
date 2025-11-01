@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireDeveloper();
 
-$page_title = 'Cron Manager - Vira Stok Sistemi';
+$page_title = 'Cron Manager';
 
 $db = getDB();
 $error_message = null;

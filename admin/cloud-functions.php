@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireDeveloper();
 
-$page_title = 'Cloud Functions - Vira Stok Sistemi';
+$page_title = 'Cloud Functions';
 
 $db = getDB();
 $error_message = null;

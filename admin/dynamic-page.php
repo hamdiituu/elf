@@ -21,7 +21,7 @@ if (!$page_config) {
     exit;
 }
 
-$page_title = $page_config['page_title'] . ' - Vira Stok Sistemi';
+$page_title = $page_config['page_title'] . '';
 $table_name = $page_config['table_name'];
 $enable_list = $page_config['enable_list'];
 $enable_create = $page_config['enable_create'];

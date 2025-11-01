@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireDeveloper();
 
-$page_title = 'API Playground - Vira Stok Sistemi';
+$page_title = 'API Playground';
 
 $db = getDB();
 

@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireLogin();
 
-$page_title = 'Ana Sayfa - Vira Stok Sistemi';
+$page_title = 'Ana Sayfa';
 $db = getDB();
 
 // Ensure dashboard_widgets table exists

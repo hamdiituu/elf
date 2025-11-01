@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 requireDeveloper();
 
-$page_title = 'Database Explorer - Vira Stok Sistemi';
+$page_title = 'Database Explorer';
 
 $db = getDB();
 $error_message = $_GET['error'] ?? null;
