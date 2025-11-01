@@ -92,6 +92,7 @@ try {
         name TEXT NOT NULL UNIQUE,
         description TEXT,
         code TEXT NOT NULL,
+        language TEXT DEFAULT 'php',
         http_method TEXT NOT NULL DEFAULT 'POST',
         endpoint TEXT NOT NULL UNIQUE,
         enabled INTEGER DEFAULT 1,
@@ -107,15 +108,22 @@ try {
     $stmt = $db->query("PRAGMA table_info(cloud_functions)");
     $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $hasMiddlewareId = false;
+    $hasLanguage = false;
     foreach ($columns as $col) {
         if ($col['name'] === 'middleware_id') {
             $hasMiddlewareId = true;
-            break;
+        }
+        if ($col['name'] === 'language') {
+            $hasLanguage = true;
         }
     }
     if (!$hasMiddlewareId) {
         $db->exec("ALTER TABLE cloud_functions ADD COLUMN middleware_id INTEGER REFERENCES cloud_middlewares(id)");
         echo "   ✓ Added 'middleware_id' column.\n";
+    }
+    if (!$hasLanguage) {
+        $db->exec("ALTER TABLE cloud_functions ADD COLUMN language TEXT DEFAULT 'php'");
+        echo "   ✓ Added 'language' column.\n";
     }
     
     $db->exec("CREATE INDEX IF NOT EXISTS idx_cloud_functions_endpoint ON cloud_functions(endpoint)");
@@ -129,12 +137,30 @@ try {
         name TEXT NOT NULL UNIQUE,
         description TEXT,
         code TEXT NOT NULL,
+        language TEXT DEFAULT 'php',
         enabled INTEGER DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         created_by INTEGER,
         FOREIGN KEY (created_by) REFERENCES users(id)
     )");
+    
+    // Add language column if it doesn't exist
+    $stmt = $db->query("PRAGMA table_info(cloud_middlewares)");
+    $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $hasLanguage = false;
+    foreach ($columns as $col) {
+        if ($col['name'] === 'language') {
+            $hasLanguage = true;
+            break;
+        }
+    }
+    if (!$hasLanguage) {
+        $db->exec("ALTER TABLE cloud_middlewares ADD COLUMN language TEXT DEFAULT 'php'");
+        echo "   ✓ Added 'language' column.\n";
+    }
+    
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_cloud_middlewares_enabled ON cloud_middlewares(enabled)");
     echo "   ✓ cloud_middlewares table ensured.\n";
     
     // 5. Create cron_jobs table

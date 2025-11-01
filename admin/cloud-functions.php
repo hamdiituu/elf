@@ -15,6 +15,7 @@ try {
         name TEXT NOT NULL UNIQUE,
         description TEXT,
         code TEXT NOT NULL,
+        language TEXT DEFAULT 'php',
         http_method TEXT NOT NULL DEFAULT 'POST',
         endpoint TEXT NOT NULL UNIQUE,
         enabled INTEGER DEFAULT 1,
@@ -25,6 +26,13 @@ try {
         FOREIGN KEY (created_by) REFERENCES users(id),
         FOREIGN KEY (middleware_id) REFERENCES cloud_middlewares(id)
     )");
+    
+    // Add language column if it doesn't exist
+    try {
+        $db->exec("ALTER TABLE cloud_functions ADD COLUMN language TEXT DEFAULT 'php'");
+    } catch (PDOException $e) {
+        // Column might already exist
+    }
 } catch (PDOException $e) {
     // Table might already exist
 }
@@ -56,9 +64,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $function_name = trim($_POST['function_name'] ?? '');
             $description = trim($_POST['description'] ?? '');
             $code = $_POST['code'] ?? '';
+            $language = $_POST['language'] ?? 'php';
             $http_method = 'POST'; // Always POST
             $enabled = isset($_POST['enabled']) ? 1 : 0;
             $middleware_id = !empty($_POST['middleware_id']) ? intval($_POST['middleware_id']) : null;
+            
+            // Validate language
+            if (!in_array($language, ['php', 'js', 'javascript'])) {
+                $language = 'php';
+            }
+            if ($language === 'javascript') {
+                $language = 'js';
+            }
             
             if (empty($function_name) || empty($code)) {
                 $error_message = "Fonksiyon adı ve kod gereklidir!";
@@ -72,18 +89,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Update existing function
                         $stmt = $db->prepare("
                             UPDATE cloud_functions 
-                            SET name = ?, description = ?, code = ?, http_method = ?, endpoint = ?, enabled = ?, middleware_id = ?, updated_at = CURRENT_TIMESTAMP
+                            SET name = ?, description = ?, code = ?, language = ?, http_method = ?, endpoint = ?, enabled = ?, middleware_id = ?, updated_at = CURRENT_TIMESTAMP
                             WHERE id = ?
                         ");
-                        $stmt->execute([$function_name, $description, $code, $http_method, $endpoint, $enabled, $middleware_id, $function_id]);
+                        $stmt->execute([$function_name, $description, $code, $language, $http_method, $endpoint, $enabled, $middleware_id, $function_id]);
                         $success_message = "Fonksiyon başarıyla güncellendi!";
                     } else {
                         // Create new function
                         $stmt = $db->prepare("
-                            INSERT INTO cloud_functions (name, description, code, http_method, endpoint, enabled, middleware_id, created_by)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO cloud_functions (name, description, code, language, http_method, endpoint, enabled, middleware_id, created_by)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ");
-                        $stmt->execute([$function_name, $description, $code, $http_method, $endpoint, $enabled, $middleware_id, $_SESSION['user_id']]);
+                        $stmt->execute([$function_name, $description, $code, $language, $http_method, $endpoint, $enabled, $middleware_id, $_SESSION['user_id']]);
                         $success_message = "Fonksiyon başarıyla oluşturuldu!";
                     }
                 } catch (PDOException $e) {
@@ -152,6 +169,7 @@ include '../includes/header.php';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/php/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
@@ -351,6 +369,25 @@ include '../includes/header.php';
                                         
                                         <div>
                                             <label class="block text-sm font-medium text-foreground mb-1.5">
+                                                Dil *
+                                            </label>
+                                            <select
+                                                name="language"
+                                                id="language"
+                                                required
+                                                onchange="updateCodeEditorMode()"
+                                                class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                            >
+                                                <option value="php" <?php echo (!isset($edit_function['language']) || $edit_function['language'] === 'php') ? 'selected' : ''; ?>>PHP</option>
+                                                <option value="js" <?php echo (isset($edit_function['language']) && ($edit_function['language'] === 'js' || $edit_function['language'] === 'javascript')) ? 'selected' : ''; ?>>JavaScript (Node.js)</option>
+                                            </select>
+                                            <p class="mt-1 text-xs text-muted-foreground">
+                                                Fonksiyon kodunun yazılacağı programlama dili
+                                            </p>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-1.5">
                                                 Middleware (Opsiyonel)
                                             </label>
                                             <select
@@ -400,7 +437,15 @@ include '../includes/header.php';
                                                 required
                                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                                                 rows="20"
-                                            ><?php echo htmlspecialchars($edit_function['code'] ?? "// Cloud Function Code\n// Available variables:\n// \$dbContext - Database connection (PDO object)\n// \$request - Request body data (array)\n// \$method - HTTP method (string: GET, POST, PUT, DELETE)\n// \$headers - Request headers (array)\n// \$response - Response array (must set this)\n\n// Example: Get users\n\$stmt = \$dbContext->query(\"SELECT * FROM users LIMIT 10\");\n\$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n\n// Set response\n\$response['success'] = true;\n\$response['data'] = \$users;\n\$response['message'] = 'Users retrieved successfully';\n\n// Example: With parameters from request\n// \$limit = isset(\$request['limit']) ? intval(\$request['limit']) : 10;\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM users LIMIT ?\");\n// \$stmt->execute([\$limit]);\n// \$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n// \$response['success'] = true;\n// \$response['data'] = \$users;\n\n// Example: Check if record exists\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM table WHERE id = ?\");\n// \$stmt->execute([\$id]);\n// \$record = \$stmt->fetch(PDO::FETCH_ASSOC);\n// if (!\$record) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Record not found';\n//     return;\n// }\n"); ?></textarea>
+                                            ><?php 
+                                            $defaultCode = "// Cloud Function Code\n// Available variables:\n// \$dbContext - Database connection (PDO object)\n// \$request - Request body data (array)\n// \$method - HTTP method (string: GET, POST, PUT, DELETE)\n// \$headers - Request headers (array)\n// \$response - Response array (must set this)\n\n// Example: Get users\n\$stmt = \$dbContext->query(\"SELECT * FROM users LIMIT 10\");\n\$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n\n// Set response\n\$response['success'] = true;\n\$response['data'] = \$users;\n\$response['message'] = 'Users retrieved successfully';\n\n// Example: With parameters from request\n// \$limit = isset(\$request['limit']) ? intval(\$request['limit']) : 10;\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM users LIMIT ?\");\n// \$stmt->execute([\$limit]);\n// \$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n// \$response['success'] = true;\n// \$response['data'] = \$users;\n\n// Example: Check if record exists\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM table WHERE id = ?\");\n// \$stmt->execute([\$id]);\n// \$record = \$stmt->fetch(PDO::FETCH_ASSOC);\n// if (!\$record) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Record not found';\n//     return;\n// }\n";
+                                            
+                                            $defaultJsCode = "// Cloud Function Code (JavaScript/Node.js)\n// Available variables:\n// request - Request body data (object)\n// method - HTTP method (string: GET, POST, PUT, DELETE)\n// headers - Request headers (object)\n// response - Response object (must set this)\n// dbQuery(sql, params) - Execute SELECT query (returns array)\n// dbQueryOne(sql, params) - Execute SELECT query (returns single row)\n// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid})\n\n// Example: Simple response\nresponse.success = true;\nresponse.data = { message: 'Hello from Node.js!' };\nresponse.message = 'Function executed successfully';\n\n// Example: Database query (SELECT)\n// try {\n//     const users = await dbQuery('SELECT * FROM users LIMIT ?', [10]);\n//     response.success = true;\n//     response.data = users;\n//     response.message = 'Users retrieved successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n//     response.error = error.message;\n// }\n\n// Example: Single row query\n// try {\n//     const user = await dbQueryOne('SELECT * FROM users WHERE id = ?', [request.user_id]);\n//     if (!user) {\n//         response.success = false;\n//         response.message = 'User not found';\n//         return;\n//     }\n//     response.success = true;\n//     response.data = user;\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: INSERT query\n// try {\n//     const result = await dbExecute(\n//         'INSERT INTO users (name, email) VALUES (?, ?)',\n//         [request.name, request.email]\n//     );\n//     response.success = true;\n//     response.data = { id: result.lastInsertRowid, changes: result.changes };\n//     response.message = 'User created successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: UPDATE query\n// try {\n//     const result = await dbExecute(\n//         'UPDATE users SET name = ? WHERE id = ?',\n//         [request.name, request.user_id]\n//     );\n//     response.success = true;\n//     response.data = { changes: result.changes };\n//     response.message = 'User updated successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: Using request data\n// const limit = request.limit || 10;\n// try {\n//     const users = await dbQuery('SELECT * FROM users LIMIT ?', [limit]);\n//     response.success = true;\n//     response.data = users;\n// } catch (error) {\n//     response.success = false;\n//     response.message = error.message;\n// }\n";
+                                            
+                                            $selectedLanguage = $edit_function['language'] ?? 'php';
+                                            $codeToShow = ($selectedLanguage === 'js' || $selectedLanguage === 'javascript') ? $defaultJsCode : $defaultCode;
+                                            echo htmlspecialchars($edit_function['code'] ?? $codeToShow); 
+                                            ?></textarea>
                                             </div>
                                         </div>
                                         
@@ -448,13 +493,19 @@ include '../includes/header.php';
 </div>
 
 <script>
-    // Initialize CodeMirror (exact copy from cloud-middlewares.php)
+    // Initialize CodeMirror
     const codeTextarea = document.getElementById('code');
     if (!codeTextarea) {
         console.error('Code textarea not found');
     }
-    const codeEditor = CodeMirror.fromTextArea(codeTextarea, {
-        mode: {
+    
+    // Determine initial mode based on language
+    const languageSelect = document.getElementById('language');
+    const initialLanguage = languageSelect ? languageSelect.value : 'php';
+    const initialMode = initialLanguage === 'js' ? 'javascript' : 'php';
+    
+    window.codeEditor = CodeMirror.fromTextArea(codeTextarea, {
+        mode: initialMode === 'javascript' ? 'javascript' : {
             name: 'php',
             startOpen: true
         },
@@ -501,7 +552,7 @@ include '../includes/header.php';
     });
     
     // Auto-trigger autocomplete
-    codeEditor.on('inputRead', function(cm, change) {
+    window.codeEditor.on('inputRead', function(cm, change) {
         if (change.text[0].length > 0 && change.text[0][0].match(/[a-zA-Z]/)) {
             setTimeout(function() {
                 CodeMirror.commands.autocomplete(cm);
@@ -510,15 +561,142 @@ include '../includes/header.php';
     });
     
     // Sync editor with textarea
-    codeEditor.on('change', function(cm) {
+    window.codeEditor.on('change', function(cm) {
         cm.save();
     });
+    
+    // Function to update editor mode when language changes
+    window.updateCodeEditorMode = function() {
+        if (!window.codeEditor) return;
+        const languageSelect = document.getElementById('language');
+        const selectedLanguage = languageSelect ? languageSelect.value : 'php';
+        const newMode = selectedLanguage === 'js' ? 'javascript' : 'php';
+        
+        // Change mode
+        window.codeEditor.setOption('mode', newMode === 'javascript' ? 'javascript' : {
+            name: 'php',
+            startOpen: true
+        });
+        
+        // Update example code if editor is empty or contains default code
+        const currentValue = window.codeEditor.getValue().trim();
+        if (!currentValue || currentValue.startsWith('// Cloud Function Code') || currentValue === '') {
+            let exampleCode = '';
+            if (selectedLanguage === 'js') {
+                exampleCode = `// Cloud Function Code (JavaScript/Node.js)
+// Available variables:
+// request - Request body data (object)
+// method - HTTP method (string: GET, POST, PUT, DELETE)
+// headers - Request headers (object)
+// response - Response object (must set this)
+// dbQuery(sql, params) - Execute SELECT query (returns array)
+// dbQueryOne(sql, params) - Execute SELECT query (returns single row)
+// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid})
+
+// Example: Simple response
+response.success = true;
+response.data = { message: 'Hello from Node.js!' };
+response.message = 'Function executed successfully';
+
+// Example: Database query (SELECT)
+// try {
+//     const users = await dbQuery('SELECT * FROM users LIMIT ?', [10]);
+//     response.success = true;
+//     response.data = users;
+//     response.message = 'Users retrieved successfully';
+// } catch (error) {
+//     response.success = false;
+//     response.message = 'Database error: ' + error.message;
+//     response.error = error.message;
+// }
+
+// Example: Single row query
+// try {
+//     const user = await dbQueryOne('SELECT * FROM users WHERE id = ?', [request.user_id]);
+//     if (!user) {
+//         response.success = false;
+//         response.message = 'User not found';
+//         return;
+//     }
+//     response.success = true;
+//     response.data = user;
+// } catch (error) {
+//     response.success = false;
+//     response.message = 'Database error: ' + error.message;
+// }
+
+// Example: INSERT query
+// try {
+//     const result = await dbExecute(
+//         'INSERT INTO users (name, email) VALUES (?, ?)',
+//         [request.name, request.email]
+//     );
+//     response.success = true;
+//     response.data = { id: result.lastInsertRowid, changes: result.changes };
+//     response.message = 'User created successfully';
+// } catch (error) {
+//     response.success = false;
+//     response.message = 'Database error: ' + error.message;
+// }
+
+// Example: UPDATE query
+// try {
+//     const result = await dbExecute(
+//         'UPDATE users SET name = ? WHERE id = ?',
+//         [request.name, request.user_id]
+//     );
+//     response.success = true;
+//     response.data = { changes: result.changes };
+//     response.message = 'User updated successfully';
+// } catch (error) {
+//     response.success = false;
+//     response.message = 'Database error: ' + error.message;
+// }`;
+            } else {
+                exampleCode = `// Cloud Function Code
+// Available variables:
+// \$dbContext - Database connection (PDO object)
+// \$request - Request body data (array)
+// \$method - HTTP method (string: GET, POST, PUT, DELETE)
+// \$headers - Request headers (array)
+// \$response - Response array (must set this)
+
+// Example: Get users
+\$stmt = \$dbContext->query("SELECT * FROM users LIMIT 10");
+\$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Set response
+\$response['success'] = true;
+\$response['data'] = \$users;
+\$response['message'] = 'Users retrieved successfully';
+
+// Example: With parameters from request
+// \$limit = isset(\$request['limit']) ? intval(\$request['limit']) : 10;
+// \$stmt = \$dbContext->prepare("SELECT * FROM users LIMIT ?");
+// \$stmt->execute([\$limit]);
+// \$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);
+// \$response['success'] = true;
+// \$response['data'] = \$users;
+
+// Example: Check if record exists
+// \$stmt = \$dbContext->prepare("SELECT * FROM table WHERE id = ?");
+// \$stmt->execute([\$id]);
+// \$record = \$stmt->fetch(PDO::FETCH_ASSOC);
+// if (!\$record) {
+//     \$response['success'] = false;
+//     \$response['message'] = 'Record not found';
+//     return;
+// }`;
+            }
+            window.codeEditor.setValue(exampleCode);
+        }
+    };
     
     let isFullscreen = false;
     
     // Initialize fullscreen functionality
     window.toggleFullscreen = function() {
-        if (!codeEditor) {
+        if (!window.codeEditor) {
             console.error('Code editor not initialized');
             return;
         }
@@ -540,8 +718,8 @@ include '../includes/header.php';
                 Çık
             `;
             isFullscreen = true;
-            codeEditor.refresh();
-            codeEditor.focus();
+            window.codeEditor.refresh();
+            window.codeEditor.focus();
         } else {
             wrapper.classList.remove('fullscreen');
             btn.innerHTML = `
@@ -551,13 +729,13 @@ include '../includes/header.php';
                 Tam Ekran
             `;
             isFullscreen = false;
-            codeEditor.refresh();
+            window.codeEditor.refresh();
         }
     };
     
     // ESC key to exit fullscreen
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && isFullscreen && codeEditor) {
+        if (e.key === 'Escape' && isFullscreen && window.codeEditor) {
             window.toggleFullscreen();
         }
     });
@@ -581,8 +759,8 @@ include '../includes/header.php';
         const form = document.getElementById('function-form');
         if (form) {
             form.addEventListener('submit', function(e) {
-                if (codeEditor) {
-                    codeEditor.save();
+                if (window.codeEditor) {
+                    window.codeEditor.save();
                 }
             });
         }

@@ -15,12 +15,20 @@ try {
         name TEXT NOT NULL UNIQUE,
         description TEXT,
         code TEXT NOT NULL,
+        language TEXT DEFAULT 'php',
         enabled INTEGER DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         created_by INTEGER,
         FOREIGN KEY (created_by) REFERENCES users(id)
     )");
+    
+    // Add language column if it doesn't exist
+    try {
+        $db->exec("ALTER TABLE cloud_middlewares ADD COLUMN language TEXT DEFAULT 'php'");
+    } catch (PDOException $e) {
+        // Column might already exist
+    }
 } catch (PDOException $e) {
     // Table might already exist
 }
@@ -35,7 +43,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $middleware_name = trim($_POST['middleware_name'] ?? '');
             $middleware_description = trim($_POST['middleware_description'] ?? '');
             $middleware_code = $_POST['middleware_code'] ?? '';
+            $language = $_POST['language'] ?? 'php';
             $middleware_enabled = isset($_POST['middleware_enabled']) ? 1 : 0;
+            
+            // Validate language
+            if (!in_array($language, ['php', 'js', 'javascript'])) {
+                $language = 'php';
+            }
+            if ($language === 'javascript') {
+                $language = 'js';
+            }
             
             if (empty($middleware_name) || empty($middleware_code)) {
                 $error_message = "Middleware adı ve kod gereklidir!";
@@ -45,18 +62,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Update existing middleware
                         $stmt = $db->prepare("
                             UPDATE cloud_middlewares 
-                            SET name = ?, description = ?, code = ?, enabled = ?, updated_at = CURRENT_TIMESTAMP
+                            SET name = ?, description = ?, code = ?, language = ?, enabled = ?, updated_at = CURRENT_TIMESTAMP
                             WHERE id = ?
                         ");
-                        $stmt->execute([$middleware_name, $middleware_description, $middleware_code, $middleware_enabled, $middleware_id]);
+                        $stmt->execute([$middleware_name, $middleware_description, $middleware_code, $language, $middleware_enabled, $middleware_id]);
                         $success_message = "Middleware başarıyla güncellendi!";
                     } else {
                         // Create new middleware
                         $stmt = $db->prepare("
-                            INSERT INTO cloud_middlewares (name, description, code, enabled, created_by)
-                            VALUES (?, ?, ?, ?, ?)
+                            INSERT INTO cloud_middlewares (name, description, code, language, enabled, created_by)
+                            VALUES (?, ?, ?, ?, ?, ?)
                         ");
-                        $stmt->execute([$middleware_name, $middleware_description, $middleware_code, $middleware_enabled, $_SESSION['user_id']]);
+                        $stmt->execute([$middleware_name, $middleware_description, $middleware_code, $language, $middleware_enabled, $_SESSION['user_id']]);
                         $success_message = "Middleware başarıyla oluşturuldu!";
                     }
                 } catch (PDOException $e) {
@@ -130,6 +147,7 @@ include '../includes/header.php';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/php/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
@@ -315,6 +333,25 @@ include '../includes/header.php';
                                         </div>
                                         
                                         <div>
+                                            <label class="block text-sm font-medium text-foreground mb-1.5">
+                                                Dil *
+                                            </label>
+                                            <select
+                                                name="language"
+                                                id="language"
+                                                required
+                                                onchange="updateCodeEditorMode()"
+                                                class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                            >
+                                                <option value="php" <?php echo (!isset($edit_middleware['language']) || $edit_middleware['language'] === 'php') ? 'selected' : ''; ?>>PHP</option>
+                                                <option value="js" <?php echo (isset($edit_middleware['language']) && ($edit_middleware['language'] === 'js' || $edit_middleware['language'] === 'javascript')) ? 'selected' : ''; ?>>JavaScript (Node.js)</option>
+                                            </select>
+                                            <p class="mt-1 text-xs text-muted-foreground">
+                                                Middleware kodunun yazılacağı programlama dili
+                                            </p>
+                                        </div>
+                                        
+                                        <div>
                                             <div class="flex items-center justify-between mb-1.5">
                                                 <label class="block text-sm font-medium text-foreground">
                                                     Kod *
@@ -338,7 +375,15 @@ include '../includes/header.php';
                                                 required
                                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                                                 rows="20"
-                                            ><?php echo htmlspecialchars($edit_middleware['code'] ?? "// Middleware Code\n// Available variables:\n// \$dbContext - Database connection (PDO object)\n// \$request - Request body data (array)\n// \$method - HTTP method (string)\n// \$headers - Request headers (array)\n// \$response - Response array (must set this)\n\n// Example: Authentication check\n// if (!isset(\$headers['Authorization'])) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Unauthorized: Missing Authorization header';\n//     return;\n// }\n\n// Example: API Key validation\n// \$api_key = \$headers['X-API-Key'] ?? null;\n// if (!\$api_key) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'API key required';\n//     return;\n// }\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM api_keys WHERE key = ? AND enabled = 1\");\n// \$stmt->execute([\$api_key]);\n// if (!\$stmt->fetch()) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Invalid API key';\n//     return;\n// }\n\n// If middleware passes, don't set response (or set success = true)\n// \$response['success'] = true;\n"); ?></textarea>
+                                            ><?php 
+                                            $defaultCode = "// Middleware Code\n// Available variables:\n// \$dbContext - Database connection (PDO object)\n// \$request - Request body data (array)\n// \$method - HTTP method (string)\n// \$headers - Request headers (array)\n// \$response - Response array (must set this)\n\n// Example: Authentication check\n// if (!isset(\$headers['Authorization'])) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Unauthorized: Missing Authorization header';\n//     return;\n// }\n\n// Example: API Key validation\n// \$api_key = \$headers['X-API-Key'] ?? null;\n// if (!\$api_key) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'API key required';\n//     return;\n// }\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM api_keys WHERE key = ? AND enabled = 1\");\n// \$stmt->execute([\$api_key]);\n// if (!\$stmt->fetch()) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Invalid API key';\n//     return;\n// }\n\n// If middleware passes, don't set response (or set success = true)\n// \$response['success'] = true;\n";
+                                            
+                                            $defaultJsCode = "// Middleware Code (JavaScript/Node.js)\n// Available variables:\n// request - Request body data (object)\n// method - HTTP method (string)\n// headers - Request headers (object)\n// response - Response object (must set this)\n// dbQuery(sql, params) - Execute SELECT query (returns array)\n// dbQueryOne(sql, params) - Execute SELECT query (returns single row)\n// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid})\n\n// Example: Authentication check\n// if (!headers.authorization) {\n//     response.success = false;\n//     response.message = 'Unauthorized: Missing Authorization header';\n//     return;\n// }\n\n// Example: API Key validation with database\n// try {\n//     const apiKey = headers['x-api-key'] || headers['X-API-Key'] || null;\n//     if (!apiKey) {\n//         response.success = false;\n//         response.message = 'API key required';\n//         return;\n//     }\n//     const keyRecord = await dbQueryOne('SELECT * FROM api_keys WHERE key = ? AND enabled = 1', [apiKey]);\n//     if (!keyRecord) {\n//         response.success = false;\n//         response.message = 'Invalid API key';\n//         return;\n//     }\n//     // API key is valid, continue\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n//     return;\n// }\n\n// Example: User authentication\n// try {\n//     const token = headers.authorization || headers['Authorization'] || null;\n//     if (!token) {\n//         response.success = false;\n//         response.message = 'Authorization token required';\n//         return;\n//     }\n//     const user = await dbQueryOne('SELECT * FROM users WHERE api_token = ?', [token]);\n//     if (!user || !user.enabled) {\n//         response.success = false;\n//         response.message = 'Invalid or disabled user';\n//         return;\n//     }\n//     // User is authenticated, continue\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Authentication error: ' + error.message;\n//     return;\n// }\n\n// Example: Method validation\n// if (method !== 'POST') {\n//     response.success = false;\n//     response.message = 'Only POST method allowed';\n//     return;\n// }\n\n// If middleware passes, don't set response (or set success = true)\n// response.success = true;\n";
+                                            
+                                            $selectedLanguage = $edit_middleware['language'] ?? 'php';
+                                            $codeToShow = ($selectedLanguage === 'js' || $selectedLanguage === 'javascript') ? $defaultJsCode : $defaultCode;
+                                            echo htmlspecialchars($edit_middleware['code'] ?? $codeToShow); 
+                                            ?></textarea>
                                             </div>
                                         </div>
                                         
@@ -387,8 +432,18 @@ include '../includes/header.php';
 
 <script>
     // Initialize CodeMirror
-    const middlewareEditor = CodeMirror.fromTextArea(document.getElementById('middleware_code'), {
-        mode: {
+    const middlewareCodeTextarea = document.getElementById('middleware_code');
+    if (!middlewareCodeTextarea) {
+        console.error('Middleware code textarea not found');
+    }
+    
+    // Determine initial mode based on language
+    const middlewareLanguageSelect = document.getElementById('language');
+    const initialMiddlewareLanguage = middlewareLanguageSelect ? middlewareLanguageSelect.value : 'php';
+    const initialMiddlewareMode = initialMiddlewareLanguage === 'js' ? 'javascript' : 'php';
+    
+    const middlewareEditor = CodeMirror.fromTextArea(middlewareCodeTextarea, {
+        mode: initialMiddlewareMode === 'javascript' ? 'javascript' : {
             name: 'php',
             startOpen: true
         },
@@ -447,6 +502,130 @@ include '../includes/header.php';
     middlewareEditor.on('change', function(cm) {
         cm.save();
     });
+    
+    // Function to update editor mode when language changes
+    window.updateCodeEditorMode = function() {
+        if (!middlewareEditor) return;
+        const middlewareLanguageSelect = document.getElementById('language');
+        const selectedLanguage = middlewareLanguageSelect ? middlewareLanguageSelect.value : 'php';
+        const newMode = selectedLanguage === 'js' ? 'javascript' : 'php';
+        
+        // Change mode
+        middlewareEditor.setOption('mode', newMode === 'javascript' ? 'javascript' : {
+            name: 'php',
+            startOpen: true
+        });
+        
+        // Update example code if editor is empty or contains default code
+        const currentValue = middlewareEditor.getValue().trim();
+        if (!currentValue || currentValue.startsWith('// Middleware Code') || currentValue === '') {
+            let exampleCode = '';
+            if (selectedLanguage === 'js') {
+                exampleCode = `// Middleware Code (JavaScript/Node.js)
+// Available variables:
+// request - Request body data (object)
+// method - HTTP method (string)
+// headers - Request headers (object)
+// response - Response object (must set this)
+// dbQuery(sql, params) - Execute SELECT query (returns array)
+// dbQueryOne(sql, params) - Execute SELECT query (returns single row)
+// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid})
+
+// Example: Authentication check
+// if (!headers.authorization) {
+//     response.success = false;
+//     response.message = 'Unauthorized: Missing Authorization header';
+//     return;
+// }
+
+// Example: API Key validation with database
+// try {
+//     const apiKey = headers['x-api-key'] || headers['X-API-Key'] || null;
+//     if (!apiKey) {
+//         response.success = false;
+//         response.message = 'API key required';
+//         return;
+//     }
+//     const keyRecord = await dbQueryOne('SELECT * FROM api_keys WHERE key = ? AND enabled = 1', [apiKey]);
+//     if (!keyRecord) {
+//         response.success = false;
+//         response.message = 'Invalid API key';
+//         return;
+//     }
+//     // API key is valid, continue
+// } catch (error) {
+//     response.success = false;
+//     response.message = 'Database error: ' + error.message;
+//     return;
+// }
+
+// Example: User authentication
+// try {
+//     const token = headers.authorization || headers['Authorization'] || null;
+//     if (!token) {
+//         response.success = false;
+//         response.message = 'Authorization token required';
+//         return;
+//     }
+//     const user = await dbQueryOne('SELECT * FROM users WHERE api_token = ?', [token]);
+//     if (!user || !user.enabled) {
+//         response.success = false;
+//         response.message = 'Invalid or disabled user';
+//         return;
+//     }
+//     // User is authenticated, continue
+// } catch (error) {
+//     response.success = false;
+//     response.message = 'Authentication error: ' + error.message;
+//     return;
+// }
+
+// Example: Method validation
+// if (method !== 'POST') {
+//     response.success = false;
+//     response.message = 'Only POST method allowed';
+//     return;
+// }
+
+// If middleware passes, don't set response (or set success = true)
+// response.success = true;`;
+            } else {
+                exampleCode = `// Middleware Code
+// Available variables:
+// \$dbContext - Database connection (PDO object)
+// \$request - Request body data (array)
+// \$method - HTTP method (string)
+// \$headers - Request headers (array)
+// \$response - Response array (must set this)
+
+// Example: Authentication check
+// if (!isset(\$headers['Authorization'])) {
+//     \$response['success'] = false;
+//     \$response['message'] = 'Unauthorized: Missing Authorization header';
+//     return;
+// }
+
+// Example: API Key validation
+// \$api_key = \$headers['X-API-Key'] ?? null;
+// if (!\$api_key) {
+//     \$response['success'] = false;
+//     \$response['message'] = 'API key required';
+//     return;
+// }
+// \$stmt = \$dbContext->prepare("SELECT * FROM api_keys WHERE key = ? AND enabled = 1");
+// \$stmt->execute([\$api_key]);
+// if (!\$stmt->fetch()) {
+//     \$response['success'] = false;
+//     \$response['message'] = 'Invalid API key';
+//     return;
+// }
+
+// If middleware passes, don't set response (or set success = true)
+// \$response['success'] = true;`;
+            }
+            middlewareEditor.setValue(exampleCode);
+        }
+    };
     
     let isFullscreen = false;
     
