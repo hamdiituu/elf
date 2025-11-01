@@ -5,15 +5,33 @@
 function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_list, $enable_create, $enable_update, $enable_delete, $edit_record, $records, $total_records, $total_pages, $current_page_num, $per_page, $offset, $sort_column, $sort_order, $page_name) {
     // Add/Edit form
     if ($enable_create || $enable_update) {
+        $is_edit_mode = !empty($edit_record);
         ?>
         <!-- Add/Edit Form -->
         <div class="mb-8 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
-            <div class="p-6 pb-0">
-                <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">
+            <button
+                type="button"
+                onclick="toggleCollapse('create-form-collapse')"
+                class="w-full p-6 pb-0 text-left flex items-center justify-between hover:bg-muted/50 transition-colors rounded-t-lg"
+            >
+                <h3 class="text-lg font-semibold leading-none tracking-tight mb-5">
                     <?php echo $edit_record ? 'Kayıt Düzenle' : 'Yeni Kayıt Ekle'; ?>
                 </h3>
-            </div>
-            <div class="p-6 pt-0">
+                <svg
+                    id="create-form-chevron"
+                    class="h-5 w-5 text-muted-foreground transition-transform <?php echo $is_edit_mode ? '' : 'rotate-180'; ?>"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            <div
+                id="create-form-collapse"
+                class="overflow-hidden transition-all duration-300 <?php echo $is_edit_mode ? 'max-h-[9999px]' : 'max-h-0'; ?>"
+            >
+                <div class="p-6 pt-0">
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="<?php echo $edit_record ? 'update' : 'add'; ?>">
                     <?php if ($edit_record): ?>
@@ -121,6 +139,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                         <?php endif; ?>
                     </div>
                 </form>
+                </div>
             </div>
         </div>
         <?php
@@ -128,13 +147,46 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
     
     // List table with filters
     if ($enable_list) {
+        $has_filters = false;
+        foreach ($columns as $col) {
+            $col_name = $col['name'];
+            if (isset($_GET['filter_' . $col_name]) && $_GET['filter_' . $col_name] !== '') {
+                $has_filters = true;
+                break;
+            }
+            if (isset($_GET['filter_' . $col_name . '_min']) && $_GET['filter_' . $col_name . '_min'] !== '') {
+                $has_filters = true;
+                break;
+            }
+            if (isset($_GET['filter_' . $col_name . '_max']) && $_GET['filter_' . $col_name . '_max'] !== '') {
+                $has_filters = true;
+                break;
+            }
+        }
         ?>
         <!-- Filter Form -->
         <div class="mb-8 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
-            <div class="p-6 pb-0">
-                <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Filtreleme</h3>
-            </div>
-            <div class="p-6 pt-0">
+            <button
+                type="button"
+                onclick="toggleCollapse('filter-form-collapse')"
+                class="w-full p-6 pb-0 text-left flex items-center justify-between hover:bg-muted/50 transition-colors rounded-t-lg"
+            >
+                <h3 class="text-lg font-semibold leading-none tracking-tight mb-5">Filtreleme</h3>
+                <svg
+                    id="filter-form-chevron"
+                    class="h-5 w-5 text-muted-foreground transition-transform <?php echo $has_filters ? '' : 'rotate-180'; ?>"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            <div
+                id="filter-form-collapse"
+                class="overflow-hidden transition-all duration-300 <?php echo $has_filters ? 'max-h-[9999px]' : 'max-h-0'; ?>"
+            >
+                <div class="p-6 pt-0">
                 <form method="GET" action="" class="space-y-4">
                     <input type="hidden" name="page" value="<?php echo htmlspecialchars($page_name); ?>">
                     <?php if (isset($_GET['edit'])): ?>
@@ -262,6 +314,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                         </a>
                     </div>
                 </form>
+                </div>
             </div>
         </div>
 
@@ -454,3 +507,26 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
     }
 }
 ?>
+
+<script>
+function toggleCollapse(elementId) {
+    const element = document.getElementById(elementId);
+    const chevron = document.getElementById(elementId.replace('-collapse', '-chevron'));
+    
+    if (element.classList.contains('max-h-0')) {
+        // Expand
+        element.classList.remove('max-h-0');
+        element.classList.add('max-h-[9999px]');
+        if (chevron) {
+            chevron.classList.remove('rotate-180');
+        }
+    } else {
+        // Collapse
+        element.classList.remove('max-h-[9999px]');
+        element.classList.add('max-h-0');
+        if (chevron) {
+            chevron.classList.add('rotate-180');
+        }
+    }
+}
+</script>
