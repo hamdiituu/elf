@@ -80,17 +80,33 @@ try {
     set_time_limit(30); // Max 30 seconds execution time
     $result = $executeFunction($function['code'], $dbContext, $request, $method, $headers, $response);
     
-    // Send response
+    // Always return success response (200), never 500
+    // If function sets success=false, we still return 200 with success=false in response body
     if (isset($result['success']) && $result['success']) {
         sendSuccessResponse($result['data'] ?? null, $result['message'] ?? 'Function executed successfully');
     } else {
-        sendErrorResponse($result['error'] ?? $result['message'] ?? 'Function execution failed', 500);
+        // Return 200 with success=false instead of 500
+        sendJsonResponse([
+            'success' => false,
+            'message' => $result['error'] ?? $result['message'] ?? 'Function execution failed',
+            'data' => $result['data'] ?? null
+        ], 200);
     }
     
 } catch (ParseError $e) {
-    sendErrorResponse("Syntax error in function code: " . $e->getMessage(), 500);
+    // Return 200 with error message instead of 500
+    sendJsonResponse([
+        'success' => false,
+        'message' => 'Syntax error in function code: ' . $e->getMessage(),
+        'error_type' => 'ParseError'
+    ], 200);
 } catch (Throwable $e) {
-    sendErrorResponse("Error executing function: " . $e->getMessage(), 500);
+    // Return 200 with error message instead of 500
+    sendJsonResponse([
+        'success' => false,
+        'message' => 'Error executing function: ' . $e->getMessage(),
+        'error_type' => get_class($e)
+    ], 200);
 }
 ?>
 
