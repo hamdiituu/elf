@@ -328,7 +328,7 @@ if ($daemon_action === 'start') {
     
     // Check if already running
     if (file_exists($lock_file)) {
-        $pid = trim(file_get_contents($lock_file));
+        $pid = trim(@file_get_contents($lock_file));
         if ($pid && function_exists('posix_getpgid') && posix_getpgid($pid)) {
             $error_message = "Daemon zaten çalışıyor (PID: $pid)";
         } else {
@@ -338,14 +338,26 @@ if ($daemon_action === 'start') {
     }
     
     if (!isset($error_message)) {
-        // Start daemon
+        // Start daemon in background (completely non-blocking)
+        $log_file = __DIR__ . '/../cron/cron-daemon.log';
+        $php_path = PHP_BINARY ?: 'php'; // Use PHP binary path or fallback to 'php'
+        
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            // Windows
-            pclose(popen("start /B php " . escapeshellarg($daemon_path) . " > NUL 2>&1", "r"));
+            // Windows - use start command with /B flag for background (non-blocking)
+            $command = "start /B \"\" \"$php_path\" \"" . escapeshellarg($daemon_path) . "\" >> \"" . escapeshellarg($log_file) . "\" 2>&1";
+            // Use popen and immediately close to make it non-blocking
+            $handle = popen($command, 'r');
+            if ($handle) {
+                pclose($handle);
+            }
         } else {
-            // Unix/Linux
-            exec("nohup php " . escapeshellarg($daemon_path) . " > " . escapeshellarg(__DIR__ . '/../cron/cron-daemon.log') . " 2>&1 &");
+            // Unix/Linux - use nohup and redirect output properly, run in background
+            $command = "nohup \"$php_path\" \"" . escapeshellarg($daemon_path) . "\" >> \"" . escapeshellarg($log_file) . "\" 2>&1 & echo \$!";
+            // Use shell_exec to make it truly non-blocking - don't wait for output
+            shell_exec($command);
         }
+        
+        // Immediately redirect - don't wait for daemon to start
         $success_message = "Cron daemon başlatıldı!";
         header('Location: cron-manager.php?success=' . urlencode($success_message));
         exit;
@@ -355,23 +367,32 @@ if ($daemon_action === 'start') {
     $pid_file = __DIR__ . '/../cron/cron-daemon.pid';
     
     if (file_exists($lock_file)) {
-        $pid = trim(file_get_contents($lock_file));
+        $pid = trim(@file_get_contents($lock_file));
         if ($pid) {
             if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                // Windows
-                exec("taskkill /F /PID $pid 2>&1", $output, $return_var);
-            } else {
-                // Unix/Linux
-                posix_kill($pid, SIGTERM);
-                // Wait a bit, then force kill if still running
-                sleep(2);
-                if (function_exists('posix_getpgid') && posix_getpgid($pid)) {
-                    posix_kill($pid, SIGKILL);
+                // Windows - kill process in background (non-blocking)
+                $command = "start /B \"\" taskkill /F /PID $pid > NUL 2>&1";
+                $handle = popen($command, 'r');
+                if ($handle) {
+                    pclose($handle);
                 }
+            } else {
+                // Unix/Linux - send signal in background (non-blocking)
+                if (function_exists('posix_kill')) {
+                    @posix_kill($pid, SIGTERM);
+                } else {
+                    // Fallback to kill command in background
+                    exec("kill -TERM $pid 2>/dev/null > /dev/null 2>&1 &");
+                }
+                
+                // Force kill after a delay (in background) - don't wait
+                exec("(sleep 2 && kill -KILL $pid 2>/dev/null) > /dev/null 2>&1 &");
             }
         }
         @unlink($lock_file);
         @unlink($pid_file);
+        
+        // Immediately redirect - don't wait for process to stop
         $success_message = "Cron daemon durduruldu!";
         header('Location: cron-manager.php?success=' . urlencode($success_message));
         exit;
