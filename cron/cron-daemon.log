@@ -1,0 +1,11 @@
+
+
+Cron Daemon started at 2025-11-01 15:30:12 (PID: 77350)
+[2025-11-01 15:30:12] Running cron job: deneme_cron
+[2025-11-01 15:30:12] Daemon running - Active jobs: 1
+Received SIGTERM, shutting down gracefully...
+
+
+Cron Daemon started at 2025-11-01 15:30:23 (PID: 77396)
+[2025-11-01 15:30:23] Daemon running - Active jobs: 1
+Received SIGTERM, shutting down gracefully...

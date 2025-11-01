@@ -341,10 +341,11 @@ if ($daemon_action === 'start') {
         // Start daemon in background (completely non-blocking)
         $log_file = __DIR__ . '/../cron/cron-daemon.log';
         $php_path = PHP_BINARY ?: 'php'; // Use PHP binary path or fallback to 'php'
+        $cron_dir = dirname($daemon_path);
         
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             // Windows - use start command with /B flag for background (non-blocking)
-            $command = "start /B \"\" \"$php_path\" \"" . escapeshellarg($daemon_path) . "\" >> \"" . escapeshellarg($log_file) . "\" 2>&1";
+            $command = "cd /d " . escapeshellarg($cron_dir) . " && start /B \"\" \"$php_path\" " . basename($daemon_path) . " >> " . basename($log_file) . " 2>&1";
             // Use popen and immediately close to make it non-blocking
             $handle = popen($command, 'r');
             if ($handle) {
@@ -352,12 +353,18 @@ if ($daemon_action === 'start') {
             }
         } else {
             // Unix/Linux - use nohup and redirect output properly, run in background
-            $command = "nohup \"$php_path\" \"" . escapeshellarg($daemon_path) . "\" >> \"" . escapeshellarg($log_file) . "\" 2>&1 & echo \$!";
-            // Use shell_exec to make it truly non-blocking - don't wait for output
-            shell_exec($command);
+            // Change to cron directory first to ensure relative paths work
+            $daemon_name = basename($daemon_path);
+            $log_name = basename($log_file);
+            $command = "cd " . escapeshellarg($cron_dir) . " && nohup \"$php_path\" \"$daemon_name\" >> \"$log_name\" 2>&1 &";
+            // Use exec to make it truly non-blocking - don't wait for output
+            exec($command . ' > /dev/null 2>&1 &');
         }
         
-        // Immediately redirect - don't wait for daemon to start
+        // Give it a moment to create lock file
+        usleep(200000); // 0.2 seconds
+        
+        // Immediately redirect - don't wait for daemon to fully start
         $success_message = "Cron daemon başlatıldı!";
         header('Location: cron-manager.php?success=' . urlencode($success_message));
         exit;
