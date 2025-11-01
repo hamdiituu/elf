@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Node modules (will be installed in container)
+node_modules
+npm-debug.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database (will be mounted as volume)
+database/*.db
+database/*.db-journal
+
+# Uploads (will be mounted as volume)
+uploads/*
+
+# Environment files
+.env
+.env.local
+
+# Docker
+docker-compose.override.yml
+Dockerfile*
+
+# Documentation
+README.md
+docs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+

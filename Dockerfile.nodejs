@@ -1,0 +1,29 @@
+FROM node:20-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    sqlite \
+    python3 \
+    make \
+    g++ \
+    netcat-openbsd
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy package files
+COPY package*.json ./
+
+# Install Node.js dependencies
+RUN npm install --production
+
+# Copy entrypoint script
+COPY docker-entrypoint-nodejs.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint-nodejs.sh
+
+# Expose port 3001
+EXPOSE 3001
+
+ENTRYPOINT ["docker-entrypoint-nodejs.sh"]
+CMD ["node", "api/nodejs-server.js"]
+

@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # PHP Application Service
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile.php
+    container_name: stockcount-php
+    volumes:
+      - .:/var/www/html
+      - ./database:/var/www/html/database
+      - ./uploads:/var/www/html/uploads
+      - ./config:/var/www/html/config
+    environment:
+      - PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d:/usr/local/etc/php/conf.d/custom
+    networks:
+      - stockcount-network
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    working_dir: /var/www/html
+
+  # Nginx Web Server
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: stockcount-nginx
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - .:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+    networks:
+      - stockcount-network
+    restart: unless-stopped
+
+  # Node.js Server (for cloud functions)
+  nodejs:
+    build:
+      context: .
+      dockerfile: Dockerfile.nodejs
+    container_name: stockcount-nodejs
+    volumes:
+      - .:/var/www/html
+      - ./database:/var/www/html/database
+      - ./config:/var/www/html/config
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    networks:
+      - stockcount-network
+    depends_on:
+      - php
+      - mysql
+    restart: unless-stopped
+    working_dir: /var/www/html
+
+  # MySQL Database Service (optional - only used if db_type=mysql)
+  mysql:
+    image: mysql:8.0
+    container_name: stockcount-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-stockcount}
+      MYSQL_USER: ${MYSQL_USER:-stockcount}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-stockcount123}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - stockcount-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql-data:
+    driver: local
+
+networks:
+  stockcount-network:
+    driver: bridge
+
