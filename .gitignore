@@ -16,8 +16,14 @@ database/*.sqlite
 database/*.sqlite-journal
 
 # Uploads (user-uploaded files)
+uploads/
+upload/
+**/uploads/
+**/upload/
 uploads/*
+upload/*
 !uploads/.gitkeep
+!upload/.gitkeep
 
 # Configuration (generated/sensitive)
 config/settings.json
