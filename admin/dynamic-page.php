@@ -28,19 +28,52 @@ $enable_create = $page_config['enable_create'];
 $enable_update = $page_config['enable_update'];
 $enable_delete = $page_config['enable_delete'];
 
-// Get table structure
-$stmt = $db->query("PRAGMA table_info($table_name)");
-$columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$primary_key = null;
-foreach ($columns as $col) {
-    if ($col['pk']) {
-        $primary_key = $col['name'];
-        break;
+// Get table structure with error handling
+$columns = [];
+$primary_key = 'id'; // Default
+try {
+    // Escape table name to prevent SQL injection
+    $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+    $stmt = $db->query("PRAGMA table_info(\"$escaped_table_name\")");
+    $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    if (empty($columns)) {
+        throw new PDOException("Tablo bulunamadı: $table_name");
     }
-}
-if (!$primary_key) {
-    $primary_key = 'id'; // Default
+    
+    foreach ($columns as $col) {
+        if ($col['pk']) {
+            $primary_key = $col['name'];
+            break;
+        }
+    }
+} catch (PDOException $e) {
+    $error_message = "Tablo bulunamadı: <strong>" . htmlspecialchars($table_name) . "</strong><br>" . 
+                     "Lütfen tablo adının doğru olduğundan ve veritabanında mevcut olduğundan emin olun.";
+    include '../includes/header.php';
+    ?>
+    <div class="flex h-screen overflow-hidden">
+        <?php include '../includes/admin-sidebar.php'; ?>
+        <main class="flex-1 overflow-y-auto">
+            <div class="py-6">
+                <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+                    <div class="rounded-md bg-red-50 p-4 border border-red-200">
+                        <div class="text-sm text-red-800">
+                            <?php echo $error_message; ?>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <a href="admin.php" class="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
+                            Ana Sayfaya Dön
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <?php include '../includes/footer.php'; ?>
+    <?php
+    exit;
 }
 
 // Handle operations
@@ -289,49 +322,66 @@ if ($enable_list) {
         $where_sql = 'WHERE ' . implode(' AND ', $where_conditions);
     }
     
-    // Get total count
-    $count_stmt = $db->prepare("SELECT COUNT(*) FROM $table_name $where_sql");
-    if (!empty($where_values)) {
-        $count_stmt->execute($where_values);
-    } else {
-        $count_stmt->execute();
+    // Get total count with error handling
+    try {
+        // Escape table name to prevent SQL injection
+        $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+        $count_stmt = $db->prepare("SELECT COUNT(*) FROM \"$escaped_table_name\" $where_sql");
+        if (!empty($where_values)) {
+            $count_stmt->execute($where_values);
+        } else {
+            $count_stmt->execute();
+        }
+        $total_records = $count_stmt->fetchColumn();
+        $total_pages = ceil($total_records / $per_page);
+        
+        // Sorting
+        $sort_column = $_GET['sort'] ?? $primary_key;
+        $sort_order = strtoupper($_GET['order'] ?? 'DESC');
+        if (!in_array($sort_order, ['ASC', 'DESC'])) {
+            $sort_order = 'DESC';
+        }
+        // Validate sort_column against actual columns
+        $valid_columns = [];
+        foreach ($columns as $col) {
+            $valid_columns[] = $col['name'];
+        }
+        if (!in_array($sort_column, $valid_columns)) {
+            $sort_column = $primary_key;
+        }
+        
+        // Get records with pagination
+        $escaped_sort_column = preg_replace('/[^a-zA-Z0-9_]/', '', $sort_column);
+        $sql = "SELECT * FROM \"$escaped_table_name\" $where_sql ORDER BY \"$escaped_sort_column\" $sort_order LIMIT $per_page OFFSET $offset";
+        $stmt = $db->prepare($sql);
+        if (!empty($where_values)) {
+            $stmt->execute($where_values);
+        } else {
+            $stmt->execute();
+        }
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        $error_message = "Veritabanı hatası: <strong>" . htmlspecialchars($table_name) . "</strong> tablosuna erişilemiyor.<br>" . 
+                         "Hata: " . htmlspecialchars($e->getMessage()) . "<br>" .
+                         "Lütfen tablo adının doğru olduğundan ve veritabanında mevcut olduğundan emin olun.";
     }
-    $total_records = $count_stmt->fetchColumn();
-    $total_pages = ceil($total_records / $per_page);
-    
-    // Sorting
-    $sort_column = $_GET['sort'] ?? $primary_key;
-    $sort_order = strtoupper($_GET['order'] ?? 'DESC');
-    if (!in_array($sort_order, ['ASC', 'DESC'])) {
-        $sort_order = 'DESC';
-    }
-    // Validate sort_column against actual columns
-    $valid_columns = [];
-    foreach ($columns as $col) {
-        $valid_columns[] = $col['name'];
-    }
-    if (!in_array($sort_column, $valid_columns)) {
-        $sort_column = $primary_key;
-    }
-    
-    // Get records with pagination
-    $sql = "SELECT * FROM $table_name $where_sql ORDER BY $sort_column $sort_order LIMIT $per_page OFFSET $offset";
-    $stmt = $db->prepare($sql);
-    if (!empty($where_values)) {
-        $stmt->execute($where_values);
-    } else {
-        $stmt->execute();
-    }
-    $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Get record for editing
+// Get record for editing with error handling
 $edit_record = null;
 $edit_id = $_GET['edit'] ?? null;
 if ($edit_id && $enable_update) {
-    $stmt = $db->prepare("SELECT * FROM $table_name WHERE $primary_key = ?");
-    $stmt->execute([$edit_id]);
-    $edit_record = $stmt->fetch(PDO::FETCH_ASSOC);
+    try {
+        $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+        $escaped_primary_key = preg_replace('/[^a-zA-Z0-9_]/', '', $primary_key);
+        $stmt = $db->prepare("SELECT * FROM \"$escaped_table_name\" WHERE \"$escaped_primary_key\" = ?");
+        $stmt->execute([$edit_id]);
+        $edit_record = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        if (!isset($error_message)) {
+            $error_message = "Kayıt getirilirken hata oluştu: " . htmlspecialchars($e->getMessage());
+        }
+    }
 }
 
 include '../includes/header.php';
@@ -355,7 +405,7 @@ include '../includes/header.php';
                 <?php if (isset($error_message)): ?>
                     <div class="mb-6 rounded-md bg-red-50 p-4 border border-red-200">
                         <div class="text-sm text-red-800">
-                            <?php echo htmlspecialchars($error_message); ?>
+                            <?php echo $error_message; ?>
                         </div>
                     </div>
                 <?php endif; ?>
