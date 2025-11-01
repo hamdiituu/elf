@@ -163,12 +163,42 @@ async function dbExecute(sql, params = []) {
     }
 }
 
-// HTTP Server
+// Generate secret token for authentication
+const crypto = require('crypto');
+const secretFile = path.join(__dirname, 'nodejs-server.secret');
+let serverSecret = '';
+
+// Load or generate secret token
+if (fs.existsSync(secretFile)) {
+    serverSecret = fs.readFileSync(secretFile, 'utf8').trim();
+} else {
+    serverSecret = crypto.randomBytes(32).toString('hex');
+    fs.writeFileSync(secretFile, serverSecret, { mode: 0o600 }); // Read/write only for owner
+    console.log('Generated new secret token');
+}
+
+// HTTP Server - Only listen on localhost for security
 const server = http.createServer(async (req, res) => {
-    // CORS headers
+    // Security: Only allow requests from localhost
+    const clientIP = req.socket.remoteAddress || '';
+    if (clientIP !== '127.0.0.1' && clientIP !== '::1' && !clientIP.startsWith('127.')) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, message: 'Access denied' }));
+        return;
+    }
+    
+    // Security: Check authentication token
+    const authHeader = req.headers['x-server-token'] || '';
+    if (authHeader !== serverSecret) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+        return;
+    }
+    
+    // CORS headers (only for localhost)
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Server-Token');
     
     if (req.method === 'OPTIONS') {
         res.writeHead(200);
@@ -285,12 +315,19 @@ const server = http.createServer(async (req, res) => {
 // Get port from environment or default to 3001
 const PORT = process.env.PORT || 3001;
 
+// Listen only on localhost (127.0.0.1) for security
 server.listen(PORT, '127.0.0.1', () => {
-    console.log(`Node.js Code Execution Server running on port ${PORT}`);
+    console.log(`Node.js Code Execution Server running on 127.0.0.1:${PORT}`);
     
     // Write PID file
     const pidFile = path.join(__dirname, 'nodejs-server.pid');
     fs.writeFileSync(pidFile, process.pid.toString());
+    
+    // Write secret to a location PHP can read (only if it doesn't exist)
+    const secretReadFile = path.join(__dirname, 'nodejs-server.secret.read');
+    if (!fs.existsSync(secretReadFile)) {
+        fs.writeFileSync(secretReadFile, serverSecret, { mode: 0o644 }); // PHP can read this
+    }
 });
 
 // Graceful shutdown
@@ -304,8 +341,12 @@ process.on('SIGTERM', () => {
     }
     server.close(() => {
         const pidFile = path.join(__dirname, 'nodejs-server.pid');
+        const secretReadFile = path.join(__dirname, 'nodejs-server.secret.read');
         if (fs.existsSync(pidFile)) {
             fs.unlinkSync(pidFile);
+        }
+        if (fs.existsSync(secretReadFile)) {
+            fs.unlinkSync(secretReadFile);
         }
         process.exit(0);
     });
@@ -321,8 +362,12 @@ process.on('SIGINT', () => {
     }
     server.close(() => {
         const pidFile = path.join(__dirname, 'nodejs-server.pid');
+        const secretReadFile = path.join(__dirname, 'nodejs-server.secret.read');
         if (fs.existsSync(pidFile)) {
             fs.unlinkSync(pidFile);
+        }
+        if (fs.existsSync(secretReadFile)) {
+            fs.unlinkSync(secretReadFile);
         }
         process.exit(0);
     });

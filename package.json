@@ -1,8 +1,22 @@
 {
-    "name": "stockcount-web",
-    "version": "1.0.0",
-    "description": "StockCount Web Application",
-    "dependencies": {
-        "better-sqlite3": "^11.10.0"
-    }
+  "name": "stockcount-web",
+  "version": "1.0.0",
+  "description": "StockCount Web Application",
+  "scripts": {
+    "start": "npm run start:node && npm run start:php",
+    "start:node": "node api/nodejs-server.js",
+    "start:php": "php -S localhost:8000 -t .",
+    "start:node:bg": "nohup node api/nodejs-server.js > /dev/null 2>&1 &",
+    "start:php:bg": "nohup php -S localhost:8000 -t . > /dev/null 2>&1 &",
+    "start:bg": "npm run start:node:bg && sleep 1 && npm run start:php:bg && sleep 1 && echo 'Servers started in background'",
+    "stop": "npm run stop:node && npm run stop:php",
+    "stop:node": "if [ -f api/nodejs-server.pid ]; then kill $(cat api/nodejs-server.pid) 2>/dev/null || true; rm -f api/nodejs-server.pid; echo 'Node.js server stopped'; else echo 'Node.js server PID file not found'; fi",
+    "stop:php": "lsof -ti:8000 | xargs kill -9 2>/dev/null || true; echo 'PHP server stopped'",
+    "restart": "npm run stop && sleep 1 && npm run start:bg",
+    "status": "echo '=== Server Status ===' && if [ -f api/nodejs-server.pid ] && kill -0 $(cat api/nodejs-server.pid) 2>/dev/null; then echo 'Node.js: Running (PID: $(cat api/nodejs-server.pid))'; else echo 'Node.js: Not running'; fi && if lsof -ti:8000 > /dev/null 2>&1; then echo 'PHP: Running (PID: $(lsof -ti:8000))'; else echo 'PHP: Not running'; fi"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "mysql2": "^3.11.0"
+  }
 }

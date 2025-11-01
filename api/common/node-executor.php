@@ -18,18 +18,18 @@ function ensureNodeJsServer() {
     $pid_file = __DIR__ . '/../nodejs-server.pid';
     $port = 3001;
     
-    // Check if server is already running
+    // Check if server is already running by PID file only (more secure than port check)
     if (file_exists($pid_file)) {
         $pid = trim(file_get_contents($pid_file));
         if ($pid && function_exists('posix_kill') && posix_kill(intval($pid), 0)) {
-            // Check if port is listening
-            $connection = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.5);
-            if ($connection) {
-                fclose($connection);
+            // Process is running - verify it's our Node.js server
+            // Check if secret file exists (indicates server started properly)
+            $secret_file = __DIR__ . '/../nodejs-server.secret.read';
+            if (file_exists($secret_file)) {
                 return true;
             }
         }
-        // PID file exists but process is dead - remove it
+        // PID file exists but process is dead or invalid - remove it
         @unlink($pid_file);
     }
     
@@ -72,6 +72,13 @@ function executeNodeCode($code, $context = []) {
         ];
     }
     
+    // Read secret token for authentication
+    $secretFile = __DIR__ . '/../nodejs-server.secret.read';
+    $serverSecret = '';
+    if (file_exists($secretFile)) {
+        $serverSecret = trim(file_get_contents($secretFile));
+    }
+    
     $port = 3001;
     $url = "http://127.0.0.1:{$port}/";
     
@@ -86,6 +93,14 @@ function executeNodeCode($code, $context = []) {
         ]
     ];
     
+    // Prepare headers with authentication token
+    $headers = [
+        'Content-Type: application/json'
+    ];
+    if (!empty($serverSecret)) {
+        $headers[] = 'X-Server-Token: ' . $serverSecret;
+    }
+    
     // Make HTTP request
     $ch = curl_init($url);
     curl_setopt_array($ch, [
@@ -93,9 +108,7 @@ function executeNodeCode($code, $context = []) {
         CURLOPT_POSTFIELDS => json_encode($requestData),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 30,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json'
-        ]
+        CURLOPT_HTTPHEADER => $headers
     ]);
     
     $response = curl_exec($ch);
