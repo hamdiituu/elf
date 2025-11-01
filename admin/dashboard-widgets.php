@@ -366,62 +366,108 @@ include '../includes/header.php';
                                     </thead>
                                     <tbody>
                                         <?php foreach ($widgets as $widget): ?>
-                                            <tr class="border-b border-border transition-colors hover:bg-muted/50">
-                                                <td class="p-4 align-middle text-sm"><?php echo htmlspecialchars($widget['title']); ?></td>
-                                                <td class="p-4 align-middle text-sm text-muted-foreground">
+                                            <tr class="border-b border-border transition-colors hover:bg-muted/30">
+                                                <td class="p-4 align-middle">
+                                                    <div class="flex items-center gap-2">
+                                                        <div class="rounded-full bg-primary/10 p-2">
+                                                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div>
+                                                            <span class="text-sm font-semibold text-foreground"><?php echo htmlspecialchars($widget['title']); ?></span>
+                                                            <p class="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">
+                                                                <?php echo htmlspecialchars(substr($widget['widget_config'], 0, 50)); ?><?php echo strlen($widget['widget_config']) > 50 ? '...' : ''; ?>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="p-4 align-middle">
                                                     <?php
                                                     $type_labels = [
-                                                        'sql_count' => 'SQL COUNT',
-                                                        'sql_query' => 'SQL Liste',
-                                                        'sql_single' => 'SQL Tek Değer'
+                                                        'sql_count' => ['label' => 'SQL COUNT', 'color' => 'bg-blue-100 text-blue-800'],
+                                                        'sql_query' => ['label' => 'SQL List', 'color' => 'bg-purple-100 text-purple-800'],
+                                                        'sql_single' => ['label' => 'SQL Single', 'color' => 'bg-yellow-100 text-yellow-800']
                                                     ];
-                                                    echo htmlspecialchars($type_labels[$widget['widget_type']] ?? $widget['widget_type']);
+                                                    $type = $type_labels[$widget['widget_type']] ?? ['label' => $widget['widget_type'], 'color' => 'bg-gray-100 text-gray-800'];
                                                     ?>
+                                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold <?php echo $type['color']; ?>">
+                                                        <?php echo htmlspecialchars($type['label']); ?>
+                                                    </span>
                                                 </td>
-                                                <td class="p-4 align-middle text-sm text-muted-foreground">
+                                                <td class="p-4 align-middle">
                                                     <?php
                                                     $width_labels = [
-                                                        'md:col-span-1' => '1 Sütun',
-                                                        'md:col-span-2' => '2 Sütun',
-                                                        'md:col-span-3' => '3 Sütun',
-                                                        'md:col-span-4' => '4 Sütun'
+                                                        'md:col-span-1' => ['label' => '1 Column', 'color' => 'text-gray-600'],
+                                                        'md:col-span-2' => ['label' => '2 Columns', 'color' => 'text-blue-600'],
+                                                        'md:col-span-3' => ['label' => '3 Columns', 'color' => 'text-purple-600'],
+                                                        'md:col-span-4' => ['label' => '4 Columns', 'color' => 'text-yellow-600']
                                                     ];
-                                                    echo htmlspecialchars($width_labels[$widget['width']] ?? $widget['width']);
+                                                    $width = $width_labels[$widget['width']] ?? ['label' => $widget['width'], 'color' => 'text-gray-600'];
                                                     ?>
+                                                    <span class="text-xs font-medium <?php echo $width['color']; ?>">
+                                                        <?php echo htmlspecialchars($width['label']); ?>
+                                                    </span>
                                                 </td>
                                                 <td class="p-4 align-middle">
                                                     <?php if ($widget['enabled']): ?>
-                                                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Aktif</span>
+                                                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                                                            <span class="relative flex h-1.5 w-1.5 mr-1.5">
+                                                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
+                                                            </span>
+                                                            Active
+                                                        </span>
                                                     <?php else: ?>
-                                                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">Pasif</span>
+                                                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-800">
+                                                            Inactive
+                                                        </span>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td class="p-4 align-middle">
                                                     <div class="flex gap-2">
                                                         <a
                                                             href="?edit=<?php echo $widget['id']; ?>"
-                                                            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-100 text-blue-800 hover:bg-blue-200 h-9 px-3"
+                                                            class="inline-flex items-center justify-center rounded-md text-xs font-semibold bg-blue-100 text-blue-800 hover:bg-blue-200 px-3 py-1.5 transition-colors"
+                                                            title="Edit widget"
                                                         >
-                                                            Düzenle
+                                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                            </svg>
+                                                            Edit
                                                         </a>
-                                                        <form method="POST" action="" class="inline" onsubmit="return confirm('Bu widget\'ı silmek istediğinizden emin misiniz?');">
-                                                            <input type="hidden" name="action" value="delete_widget">
-                                                            <input type="hidden" name="widget_id" value="<?php echo $widget['id']; ?>">
-                                                            <button
-                                                                type="submit"
-                                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-red-100 text-red-800 hover:bg-red-200 h-9 px-3"
-                                                            >
-                                                                Sil
-                                                            </button>
-                                                        </form>
                                                         <form method="POST" action="" class="inline">
                                                             <input type="hidden" name="action" value="toggle_widget">
                                                             <input type="hidden" name="widget_id" value="<?php echo $widget['id']; ?>">
                                                             <button
                                                                 type="submit"
-                                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-gray-100 text-gray-800 hover:bg-gray-200 h-9 px-3"
+                                                                class="inline-flex items-center justify-center rounded-md text-xs font-semibold bg-gray-100 text-gray-800 hover:bg-gray-200 px-3 py-1.5 transition-colors"
+                                                                title="<?php echo $widget['enabled'] ? 'Disable widget' : 'Enable widget'; ?>"
                                                             >
-                                                                <?php echo $widget['enabled'] ? 'Pasif Yap' : 'Aktif Yap'; ?>
+                                                                <?php if ($widget['enabled']): ?>
+                                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                                    </svg>
+                                                                    Disable
+                                                                <?php else: ?>
+                                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                    </svg>
+                                                                    Enable
+                                                                <?php endif; ?>
+                                                            </button>
+                                                        </form>
+                                                        <form method="POST" action="" class="inline" onsubmit="return confirm('Are you sure you want to delete this widget? This action cannot be undone.');">
+                                                            <input type="hidden" name="action" value="delete_widget">
+                                                            <input type="hidden" name="widget_id" value="<?php echo $widget['id']; ?>">
+                                                            <button
+                                                                type="submit"
+                                                                class="inline-flex items-center justify-center rounded-md text-xs font-semibold bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1.5 transition-colors"
+                                                                title="Delete widget"
+                                                            >
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                </svg>
                                                             </button>
                                                         </form>
                                                     </div>
@@ -454,7 +500,7 @@ function updateWidgetConfigPlaceholder() {
             config.placeholder = 'SELECT sayim_no FROM sayimlar WHERE aktif = 1 LIMIT 1';
             break;
         default:
-            config.placeholder = 'SQL sorgunuzu buraya yazın...';
+            config.placeholder = 'Enter your SQL query here...';
     }
 }
 </script>
