@@ -27,6 +27,16 @@ try {
     } catch (PDOException $e) {
         // Column might already exist
     }
+    
+    // Add rule columns if they don't exist (migration)
+    $rule_columns = ['create_rule', 'update_rule', 'delete_rule'];
+    foreach ($rule_columns as $col) {
+        try {
+            $db->exec("ALTER TABLE dynamic_pages ADD COLUMN $col TEXT");
+        } catch (PDOException $e) {
+            // Column might already exist
+        }
+    }
 } catch (PDOException $e) {
     // Table might already exist
 }
@@ -47,6 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $enable_create = isset($_POST['enable_create']) ? 1 : 0;
                 $enable_update = isset($_POST['enable_update']) ? 1 : 0;
                 $enable_delete = isset($_POST['enable_delete']) ? 1 : 0;
+                $create_rule = trim($_POST['create_rule'] ?? '');
+                $update_rule = trim($_POST['update_rule'] ?? '');
+                $delete_rule = trim($_POST['delete_rule'] ?? '');
                 
                 if (empty($page_name) || empty($page_title) || empty($table_name)) {
                     $error_message = "Sayfa adı, başlık ve tablo adı gereklidir!";
@@ -68,8 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $error_message = "Bu sayfa adı zaten kullanılıyor!";
                                 } else {
                                     // Insert into dynamic_pages
-                                    $stmt = $db->prepare("INSERT INTO dynamic_pages (page_name, page_title, table_name, group_name, enable_list, enable_create, enable_update, enable_delete) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                                    $stmt->execute([$page_name, $page_title, $table_name, $group_name ?: null, $enable_list, $enable_create, $enable_update, $enable_delete]);
+                                    $stmt = $db->prepare("INSERT INTO dynamic_pages (page_name, page_title, table_name, group_name, enable_list, enable_create, enable_update, enable_delete, create_rule, update_rule, delete_rule) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                    $stmt->execute([$page_name, $page_title, $table_name, $group_name ?: null, $enable_list, $enable_create, $enable_update, $enable_delete, $create_rule ?: null, $update_rule ?: null, $delete_rule ?: null]);
                                     $success_message = "Sayfa başarıyla oluşturuldu: $page_name";
                                 }
                             }
@@ -258,6 +271,66 @@ include '../includes/header.php';
                                         >
                                         <span class="ml-2 text-sm text-foreground">Silme (Delete)</span>
                                     </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-foreground mb-2">
+                                    Kurallar (Rules)
+                                </label>
+                                <p class="mb-3 text-xs text-muted-foreground">
+                                    Her işlem için açıklayıcı kurallar yazabilirsiniz. Bu kurallar ilgili butonların altında gösterilecektir. 
+                                    <strong>PHP kodu</strong> da yazabilirsiniz. Kullanılabilir değişkenler:
+                                    <br>
+                                    • <code>$record</code> - Mevcut kayıt verisi (array)
+                                    <br>
+                                    • <code>$columns</code> - Kolon bilgileri (array)
+                                    <br>
+                                    • <code>$is_edit</code> - Düzenleme modunda mı? (boolean, sadece create/update için)
+                                </p>
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <label for="create_rule" class="block text-sm font-medium text-foreground mb-1.5">
+                                            Oluşturma (Create) Kuralı
+                                        </label>
+                                        <textarea
+                                            id="create_rule"
+                                            name="create_rule"
+                                            rows="4"
+                                            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                            placeholder="<?php echo htmlspecialchars('<?php if ($is_edit): ?><span>Güncelleme modu</span><?php else: ?><span>Yeni kayıt modu</span><?php endif; ?>'); ?>"
+                                        ></textarea>
+                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu veya düz metin yazabilirsiniz</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="update_rule" class="block text-sm font-medium text-foreground mb-1.5">
+                                            Güncelleme (Update) Kuralı
+                                        </label>
+                                        <textarea
+                                            id="update_rule"
+                                            name="update_rule"
+                                            rows="4"
+                                            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                            placeholder="<?php echo htmlspecialchars('<?php if (isset($record[\'status\']) && $record[\'status\'] === \'active\'): ?><span class="text-yellow-600">Aktif kayıt - dikkatli güncelleyin</span><?php endif; ?>'); ?>"
+                                        ></textarea>
+                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu veya düz metin yazabilirsiniz. <code>$record</code> güncellenecek kayıt verisini içerir.</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="delete_rule" class="block text-sm font-medium text-foreground mb-1.5">
+                                            Silme (Delete) Kuralı
+                                        </label>
+                                        <textarea
+                                            id="delete_rule"
+                                            name="delete_rule"
+                                            rows="4"
+                                            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                            placeholder="<?php echo htmlspecialchars('<?php if (isset($record[\'id\'])): ?><span>Kayıt ID: <?php echo $record[\'id\']; ?></span><?php endif; ?>'); ?>"
+                                        ></textarea>
+                                        <p class="mt-1 text-xs text-muted-foreground">PHP kodu veya düz metin yazabilirsiniz. <code>$record</code> silinecek kayıt verisini içerir.</p>
+                                    </div>
                                 </div>
                             </div>
                             

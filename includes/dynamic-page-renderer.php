@@ -123,20 +123,55 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                     ?>
 
                     <div class="flex gap-2">
-                        <button
-                            type="submit"
-                            class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
-                        >
-                            <?php echo $edit_record ? 'Güncelle' : 'Ekle'; ?>
-                        </button>
-                        <?php if ($edit_record): ?>
-                            <a
-                                href="dynamic-page.php?page=<?php echo urlencode($page_name); ?>"
-                                class="rounded-md bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 transition-all"
+                        <div class="flex-1">
+                            <button
+                                type="submit"
+                                class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
                             >
-                                İptal
-                            </a>
-                        <?php endif; ?>
+                                <?php echo $edit_record ? 'Güncelle' : 'Ekle'; ?>
+                            </button>
+                            <?php if ($edit_record): ?>
+                                <a
+                                    href="dynamic-page.php?page=<?php echo urlencode($page_name); ?>"
+                                    class="rounded-md bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 transition-all ml-2"
+                                >
+                                    İptal
+                                </a>
+                            <?php endif; ?>
+                            <?php
+                            // Show rule under button (can contain PHP code)
+                            if ($edit_record) {
+                                $rule = $page_config['update_rule'] ?? '';
+                            } else {
+                                $rule = $page_config['create_rule'] ?? '';
+                            }
+                            if (!empty($rule)):
+                                // Prepare context for PHP execution
+                                $rule_context = [
+                                    'record' => $edit_record ?? [],
+                                    'columns' => $columns,
+                                    'is_edit' => !empty($edit_record)
+                                ];
+                                
+                                // Execute rule as PHP code
+                                ob_start();
+                                try {
+                                    extract($rule_context);
+                                    eval('?>' . $rule);
+                                    $rule_output = ob_get_clean();
+                                } catch (Exception $e) {
+                                    ob_end_clean();
+                                    $rule_output = '<span class="text-red-600">Rule hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                } catch (ParseError $e) {
+                                    ob_end_clean();
+                                    $rule_output = '<span class="text-red-600">Rule syntax hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                }
+                            ?>
+                                <div class="mt-2">
+                                    <div class="text-xs text-muted-foreground italic"><?php echo $rule_output; ?></div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </form>
                 </div>
@@ -407,25 +442,79 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                             <td class="p-4 align-middle">
                                                 <div class="flex gap-2">
                                                     <?php if ($enable_update): ?>
-                                                        <a
-                                                            href="?page=<?php echo urlencode($page_name); ?>&edit=<?php echo $record[$primary_key]; ?>"
-                                                            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-100 text-blue-800 hover:bg-blue-200 h-9 px-3"
-                                                        >
-                                                            Düzenle
-                                                        </a>
+                                                        <div class="inline-block">
+                                                            <a
+                                                                href="?page=<?php echo urlencode($page_name); ?>&edit=<?php echo $record[$primary_key]; ?>"
+                                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-100 text-blue-800 hover:bg-blue-200 h-9 px-3"
+                                                            >
+                                                                Düzenle
+                                                            </a>
+                                                            <?php if (!empty($page_config['update_rule'])): 
+                                                                // Execute rule as PHP code
+                                                                $rule_context = [
+                                                                    'record' => $record,
+                                                                    'columns' => $columns,
+                                                                    'is_edit' => false
+                                                                ];
+                                                                
+                                                                ob_start();
+                                                                try {
+                                                                    extract($rule_context);
+                                                                    eval('?>' . $page_config['update_rule']);
+                                                                    $rule_output = ob_get_clean();
+                                                                } catch (Exception $e) {
+                                                                    ob_end_clean();
+                                                                    $rule_output = '<span class="text-red-600">Rule hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                                                } catch (ParseError $e) {
+                                                                    ob_end_clean();
+                                                                    $rule_output = '<span class="text-red-600">Rule syntax hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                                                }
+                                                            ?>
+                                                                <div class="mt-1">
+                                                                    <div class="text-xs text-muted-foreground italic"><?php echo $rule_output; ?></div>
+                                                                </div>
+                                                            <?php endif; ?>
+                                                        </div>
                                                     <?php endif; ?>
                                                     
                                                     <?php if ($enable_delete): ?>
-                                                        <form method="POST" action="" class="inline" onsubmit="return confirm('Bu kaydı silmek istediğinizden emin misiniz?');">
-                                                            <input type="hidden" name="action" value="delete">
-                                                            <input type="hidden" name="record_id" value="<?php echo $record[$primary_key]; ?>">
-                                                            <button
-                                                                type="submit"
-                                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-red-100 text-red-800 hover:bg-red-200 h-9 px-3"
-                                                            >
-                                                                Sil
-                                                            </button>
-                                                        </form>
+                                                        <div class="inline-block">
+                                                            <form method="POST" action="" class="inline" onsubmit="return confirm('Bu kaydı silmek istediğinizden emin misiniz?');">
+                                                                <input type="hidden" name="action" value="delete">
+                                                                <input type="hidden" name="record_id" value="<?php echo $record[$primary_key]; ?>">
+                                                                <button
+                                                                    type="submit"
+                                                                    class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-red-100 text-red-800 hover:bg-red-200 h-9 px-3"
+                                                                >
+                                                                    Sil
+                                                                </button>
+                                                            </form>
+                                                            <?php if (!empty($page_config['delete_rule'])): 
+                                                                // Execute rule as PHP code
+                                                                $rule_context = [
+                                                                    'record' => $record,
+                                                                    'columns' => $columns,
+                                                                    'is_edit' => false
+                                                                ];
+                                                                
+                                                                ob_start();
+                                                                try {
+                                                                    extract($rule_context);
+                                                                    eval('?>' . $page_config['delete_rule']);
+                                                                    $rule_output = ob_get_clean();
+                                                                } catch (Exception $e) {
+                                                                    ob_end_clean();
+                                                                    $rule_output = '<span class="text-red-600">Rule hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                                                } catch (ParseError $e) {
+                                                                    ob_end_clean();
+                                                                    $rule_output = '<span class="text-red-600">Rule syntax hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                                                }
+                                                            ?>
+                                                                <div class="mt-1">
+                                                                    <div class="text-xs text-muted-foreground italic"><?php echo $rule_output; ?></div>
+                                                                </div>
+                                                            <?php endif; ?>
+                                                        </div>
                                                     <?php endif; ?>
                                                 </div>
                                             </td>

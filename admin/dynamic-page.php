@@ -76,12 +76,79 @@ try {
     exit;
 }
 
+/**
+ * Execute rule as PHP code
+ * @param string $rule PHP code to execute
+ * @param array $context Variables available in rule
+ * @return mixed Rule return value or true if no return
+ * @throws Exception if rule throws exception or returns false
+ */
+function executeRule($rule, $context = []) {
+    if (empty($rule)) {
+        return true;
+    }
+    
+    // Extract context variables
+    extract($context);
+    
+    // Execute rule as PHP code
+    ob_start();
+    try {
+        $result = eval('?>' . $rule);
+        ob_end_clean();
+        
+        // If rule returns false, throw exception to stop execution
+        if ($result === false) {
+            throw new Exception('Rule validation failed');
+        }
+        
+        // Return result or true if no return value
+        return $result !== null ? $result : true;
+    } catch (ParseError $e) {
+        ob_end_clean();
+        throw new Exception('Rule syntax hatası: ' . $e->getMessage());
+    } catch (Exception $e) {
+        ob_end_clean();
+        throw $e;
+    }
+}
+
 // Handle operations
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add':
                 if ($enable_create) {
+                    // Execute create rule before insert
+                    if (!empty($page_config['create_rule'])) {
+                        try {
+                            // Prepare POST data as record for rule context
+                            $rule_record = [];
+                            foreach ($columns as $col) {
+                                $col_name = $col['name'];
+                                if (isset($_POST[$col_name])) {
+                                    if ($col['type'] === 'integer' || $col['type'] === 'real') {
+                                        $rule_record[$col_name] = intval($_POST[$col_name]);
+                                    } else {
+                                        $rule_record[$col_name] = trim($_POST[$col_name]);
+                                    }
+                                }
+                            }
+                            
+                            $rule_context = [
+                                'record' => $rule_record,
+                                'columns' => $columns,
+                                'is_edit' => false,
+                                'db' => $db
+                            ];
+                            
+                            executeRule($page_config['create_rule'], $rule_context);
+                        } catch (Exception $e) {
+                            $error_message = "Kural hatası: " . $e->getMessage();
+                            break; // Stop execution
+                        }
+                    }
+                    
                     try {
                         $insert_columns = [];
                         $insert_placeholders = [];
@@ -175,6 +242,49 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($enable_update) {
                     $record_id = intval($_POST['record_id'] ?? 0);
                     if ($record_id > 0) {
+                        // Execute update rule before update
+                        if (!empty($page_config['update_rule'])) {
+                            try {
+                                // Get current record from database
+                                $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+                                $escaped_primary_key = preg_replace('/[^a-zA-Z0-9_]/', '', $primary_key);
+                                $stmt = $db->prepare("SELECT * FROM \"$escaped_table_name\" WHERE \"$escaped_primary_key\" = ?");
+                                $stmt->execute([$record_id]);
+                                $current_record = $stmt->fetch(PDO::FETCH_ASSOC);
+                                
+                                if (!$current_record) {
+                                    $error_message = "Kayıt bulunamadı!";
+                                    break;
+                                }
+                                
+                                // Prepare updated record data
+                                $rule_record = $current_record;
+                                foreach ($columns as $col) {
+                                    $col_name = $col['name'];
+                                    if (isset($_POST[$col_name])) {
+                                        if ($col['type'] === 'integer' || $col['type'] === 'real') {
+                                            $rule_record[$col_name] = intval($_POST[$col_name]);
+                                        } else {
+                                            $rule_record[$col_name] = trim($_POST[$col_name]);
+                                        }
+                                    }
+                                }
+                                
+                                $rule_context = [
+                                    'record' => $rule_record,
+                                    'columns' => $columns,
+                                    'is_edit' => true,
+                                    'db' => $db,
+                                    'current_record' => $current_record
+                                ];
+                                
+                                executeRule($page_config['update_rule'], $rule_context);
+                            } catch (Exception $e) {
+                                $error_message = "Kural hatası: " . $e->getMessage();
+                                break; // Stop execution
+                            }
+                        }
+                        
                         try {
                             $set_parts = [];
                             $values = [];
@@ -223,7 +333,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             }
                             
                             $values[] = $record_id;
-                            $stmt = $db->prepare("UPDATE $table_name SET " . implode(", ", $set_parts) . " WHERE $primary_key = ?");
+                            $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+                            $escaped_primary_key = preg_replace('/[^a-zA-Z0-9_]/', '', $primary_key);
+                            $stmt = $db->prepare("UPDATE \"$escaped_table_name\" SET " . implode(", ", $set_parts) . " WHERE \"$escaped_primary_key\" = ?");
                             $stmt->execute($values);
                             $success_message = "Kayıt başarıyla güncellendi!";
                         } catch (PDOException $e) {
@@ -237,16 +349,58 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($enable_delete) {
                     $record_id = intval($_POST['record_id'] ?? 0);
                     if ($record_id > 0) {
-                        try {
-                            $stmt = $db->prepare("DELETE FROM $table_name WHERE $primary_key = ?");
-                            $stmt->execute([$record_id]);
-                            $success_message = "Kayıt başarıyla silindi!";
-                        } catch (PDOException $e) {
-                            $error_message = "Kayıt silinirken hata: " . $e->getMessage();
+                        // Execute delete rule before delete
+                        if (!empty($page_config['delete_rule'])) {
+                            try {
+                                // Get record from database before delete
+                                $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+                                $escaped_primary_key = preg_replace('/[^a-zA-Z0-9_]/', '', $primary_key);
+                                $stmt = $db->prepare("SELECT * FROM \"$escaped_table_name\" WHERE \"$escaped_primary_key\" = ?");
+                                $stmt->execute([$record_id]);
+                                $record = $stmt->fetch(PDO::FETCH_ASSOC);
+                                
+                                if (!$record) {
+                                    $error_message = "Kayıt bulunamadı!";
+                                } else {
+                                    $rule_context = [
+                                        'record' => $record,
+                                        'columns' => $columns,
+                                        'is_edit' => false,
+                                        'db' => $db
+                                    ];
+                                    
+                                    executeRule($page_config['delete_rule'], $rule_context);
+                                    
+                                    // If rule passes, proceed with delete
+                                    try {
+                                        $stmt = $db->prepare("DELETE FROM \"$escaped_table_name\" WHERE \"$escaped_primary_key\" = ?");
+                                        $stmt->execute([$record_id]);
+                                        $success_message = "Kayıt başarıyla silindi!";
+                                        header('Location: dynamic-page.php?page=' . urlencode($page_name));
+                                        exit;
+                                    } catch (PDOException $e) {
+                                        $error_message = "Kayıt silinirken hata: " . $e->getMessage();
+                                    }
+                                }
+                            } catch (Exception $e) {
+                                $error_message = "Kural hatası: " . $e->getMessage();
+                                // Don't redirect, show error on page
+                            }
+                        } else {
+                            // No rule, proceed with normal delete
+                            try {
+                                $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+                                $escaped_primary_key = preg_replace('/[^a-zA-Z0-9_]/', '', $primary_key);
+                                $stmt = $db->prepare("DELETE FROM \"$escaped_table_name\" WHERE \"$escaped_primary_key\" = ?");
+                                $stmt->execute([$record_id]);
+                                $success_message = "Kayıt başarıyla silindi!";
+                                header('Location: dynamic-page.php?page=' . urlencode($page_name));
+                                exit;
+                            } catch (PDOException $e) {
+                                $error_message = "Kayıt silinirken hata: " . $e->getMessage();
+                            }
                         }
                     }
-                    header('Location: dynamic-page.php?page=' . urlencode($page_name));
-                    exit;
                 }
                 break;
         }
@@ -419,7 +573,7 @@ include '../includes/header.php';
                 // Include the page template rendering
                 // For now, we'll use a helper function to render the page
                 require_once __DIR__ . '/../includes/dynamic-page-renderer.php';
-                renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_list, $enable_create, $enable_update, $enable_delete, $edit_record, $records ?? [], $total_records ?? 0, $total_pages ?? 0, $current_page_num ?? 1, $per_page ?? 20, $offset ?? 0, $sort_column ?? $primary_key, $sort_order ?? 'DESC', $page_name);
+                renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_list, $enable_create, $enable_update, $enable_delete, $edit_record, $records ?? [], $total_records ?? 0, $total_pages ?? 0, $current_page_num ?? 1, $per_page ?? 20, $offset ?? 0, $sort_column ?? $primary_key, $sort_order ?? 'DESC', $page_name, $page_config);
                 ?>
             </div>
         </div>
