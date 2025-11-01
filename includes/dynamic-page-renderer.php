@@ -163,10 +163,10 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                     $rule_output = ob_get_clean();
                                 } catch (Exception $e) {
                                     ob_end_clean();
-                                    $rule_output = '<span class="text-red-600">Rule hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                    $rule_output = '<span class="text-red-600">' . htmlspecialchars($e->getMessage()) . '</span>';
                                 } catch (ParseError $e) {
                                     ob_end_clean();
-                                    $rule_output = '<span class="text-red-600">Rule syntax hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                    $rule_output = '<span class="text-red-600">' . htmlspecialchars($e->getMessage()) . '</span>';
                                 }
                             ?>
                                 <div class="mt-2">
@@ -468,7 +468,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                                     $rule_output = ob_get_clean();
                                                                 } catch (Exception $e) {
                                                                     ob_end_clean();
-                                                                    $rule_output = '<span class="text-red-600">Rule hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                                                    $rule_output = '<span class="text-red-600"> ' . htmlspecialchars($e->getMessage()) . '</span>';
                                                                 } catch (ParseError $e) {
                                                                     ob_end_clean();
                                                                     $rule_output = '<span class="text-red-600">Rule syntax hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
@@ -510,7 +510,7 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                                     $rule_output = ob_get_clean();
                                                                 } catch (Exception $e) {
                                                                     ob_end_clean();
-                                                                    $rule_output = '<span class="text-red-600">Rule hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';
+                                                                    $rule_output = '<span class="text-red-600"> ' . htmlspecialchars($e->getMessage()) . '</span>';
                                                                 } catch (ParseError $e) {
                                                                     ob_end_clean();
                                                                     $rule_output = '<span class="text-red-600">Rule syntax hatası: ' . htmlspecialchars($e->getMessage()) . '</span>';

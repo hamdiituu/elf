@@ -69,25 +69,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $error_message = "Sayfa adı sadece küçük harf, rakam, alt çizgi ve tire içerebilir!";
                     } else {
                         try {
-                            // Check if table exists
-                            $stmt = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='$table_name'");
-                            if (!$stmt->fetch()) {
-                                $error_message = "Seçilen tablo bulunamadı!";
+                            // Validate and escape table name
+                            $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+                            if ($escaped_table_name !== $table_name) {
+                                $error_message = "Geçersiz tablo adı!";
                             } else {
-                                // Check if page_name already exists
-                                $stmt = $db->prepare("SELECT id FROM dynamic_pages WHERE page_name = ?");
-                                $stmt->execute([$page_name]);
-                                if ($stmt->fetch()) {
-                                    $error_message = "Bu sayfa adı zaten kullanılıyor!";
+                                // Check if table exists
+                                $stmt = $db->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
+                                $stmt->execute([$table_name]);
+                                if (!$stmt->fetch()) {
+                                    $error_message = "Seçilen tablo bulunamadı!";
                                 } else {
-                                    // Insert into dynamic_pages
-                                    $stmt = $db->prepare("INSERT INTO dynamic_pages (page_name, page_title, table_name, group_name, enable_list, enable_create, enable_update, enable_delete, create_rule, update_rule, delete_rule) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                                    $stmt->execute([$page_name, $page_title, $table_name, $group_name ?: null, $enable_list, $enable_create, $enable_update, $enable_delete, $create_rule ?: null, $update_rule ?: null, $delete_rule ?: null]);
-                                    $success_message = "Sayfa başarıyla oluşturuldu: $page_name";
+                                    // Check if page_name already exists
+                                    $stmt = $db->prepare("SELECT id FROM dynamic_pages WHERE page_name = ?");
+                                    $stmt->execute([$page_name]);
+                                    if ($stmt->fetch()) {
+                                        $error_message = "Bu sayfa adı zaten kullanılıyor!";
+                                    } else {
+                                        // Insert into dynamic_pages
+                                        $stmt = $db->prepare("INSERT INTO dynamic_pages (page_name, page_title, table_name, group_name, enable_list, enable_create, enable_update, enable_delete, create_rule, update_rule, delete_rule) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                        $stmt->execute([$page_name, $page_title, $table_name, $group_name ?: null, $enable_list, $enable_create, $enable_update, $enable_delete, $create_rule ?: null, $update_rule ?: null, $delete_rule ?: null]);
+                                        $success_message = "Sayfa başarıyla oluşturuldu: $page_name";
+                                    }
                                 }
                             }
                         } catch (PDOException $e) {
                             $error_message = "Sayfa oluşturulurken hata: " . $e->getMessage();
+                        }
+                    }
+                }
+                break;
+                
+            case 'update_page':
+                $page_id = intval($_POST['page_id'] ?? 0);
+                $page_name = trim($_POST['page_name'] ?? '');
+                $page_title = trim($_POST['page_title'] ?? '');
+                $table_name = trim($_POST['table_name'] ?? '');
+                $group_name = trim($_POST['group_name'] ?? '');
+                $enable_list = isset($_POST['enable_list']) ? 1 : 0;
+                $enable_create = isset($_POST['enable_create']) ? 1 : 0;
+                $enable_update = isset($_POST['enable_update']) ? 1 : 0;
+                $enable_delete = isset($_POST['enable_delete']) ? 1 : 0;
+                $create_rule = trim($_POST['create_rule'] ?? '');
+                $update_rule = trim($_POST['update_rule'] ?? '');
+                $delete_rule = trim($_POST['delete_rule'] ?? '');
+                
+                if ($page_id > 0 && !empty($page_name) && !empty($page_title) && !empty($table_name)) {
+                    // Validate page_name (for filename)
+                    if (!preg_match('/^[a-z0-9_-]+$/', strtolower($page_name))) {
+                        $error_message = "Sayfa adı sadece küçük harf, rakam, alt çizgi ve tire içerebilir!";
+                    } else {
+                        try {
+                            // Check if page_name already exists (excluding current page)
+                            $stmt = $db->prepare("SELECT id FROM dynamic_pages WHERE page_name = ? AND id != ?");
+                            $stmt->execute([$page_name, $page_id]);
+                            if ($stmt->fetch()) {
+                                $error_message = "Bu sayfa adı zaten kullanılıyor!";
+                            } else {
+                                // Validate and escape table name
+                                $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+                                if ($escaped_table_name !== $table_name) {
+                                    $error_message = "Geçersiz tablo adı!";
+                                } else {
+                                    // Check if table exists
+                                    $stmt = $db->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
+                                    $stmt->execute([$table_name]);
+                                    if (!$stmt->fetch()) {
+                                        $error_message = "Seçilen tablo bulunamadı!";
+                                    } else {
+                                        // Update dynamic_pages
+                                        $stmt = $db->prepare("UPDATE dynamic_pages SET page_name = ?, page_title = ?, table_name = ?, group_name = ?, enable_list = ?, enable_create = ?, enable_update = ?, enable_delete = ?, create_rule = ?, update_rule = ?, delete_rule = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+                                        $stmt->execute([$page_name, $page_title, $table_name, $group_name ?: null, $enable_list, $enable_create, $enable_update, $enable_delete, $create_rule ?: null, $update_rule ?: null, $delete_rule ?: null, $page_id]);
+                                        $success_message = "Sayfa başarıyla güncellendi: $page_name";
+                                    }
+                                }
+                            }
+                        } catch (PDOException $e) {
+                            $error_message = "Sayfa güncellenirken hata: " . $e->getMessage();
                         }
                     }
                 }
@@ -122,6 +180,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Get all tables
 $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
+
+// Get page to edit
+$edit_page = null;
+$edit_id = $_GET['edit'] ?? null;
+if ($edit_id) {
+    $stmt = $db->prepare("SELECT * FROM dynamic_pages WHERE id = ?");
+    $stmt->execute([$edit_id]);
+    $edit_page = $stmt->fetch(PDO::FETCH_ASSOC);
+}
 
 // Get all dynamic pages
 $dynamic_pages = $db->query("SELECT * FROM dynamic_pages ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
@@ -183,11 +250,16 @@ include '../includes/header.php';
                 <!-- Create New Page Form -->
                 <div class="mb-8 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                     <div class="p-6 pb-0">
-                        <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Yeni Sayfa Oluştur</h3>
+                        <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">
+                            <?php echo $edit_page ? 'Sayfa Düzenle' : 'Yeni Sayfa Oluştur'; ?>
+                        </h3>
                     </div>
                     <div class="p-6 pt-0">
                         <form method="POST" action="">
-                            <input type="hidden" name="action" value="create_page">
+                            <input type="hidden" name="action" value="<?php echo $edit_page ? 'update_page' : 'create_page'; ?>">
+                            <?php if ($edit_page): ?>
+                                <input type="hidden" name="page_id" value="<?php echo $edit_page['id']; ?>">
+                            <?php endif; ?>
                             
                             <div class="mb-4">
                                 <label for="page_name" class="block text-sm font-medium text-foreground mb-1.5">
@@ -200,7 +272,9 @@ include '../includes/header.php';
                                     required
                                     pattern="[a-z0-9_-]+"
                                     title="Sadece küçük harf, rakam, alt çizgi ve tire kullanılabilir"
-                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                    value="<?php echo htmlspecialchars($edit_page['page_name'] ?? ''); ?>"
+                                    <?php echo $edit_page ? 'readonly' : ''; ?>
+                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent <?php echo $edit_page ? 'bg-muted cursor-not-allowed' : ''; ?>"
                                     placeholder="ornek-sayfa"
                                 >
                                 <p class="mt-1 text-xs text-muted-foreground">Sadece küçük harf, rakam, alt çizgi (_) ve tire (-) kullanılabilir</p>
@@ -215,6 +289,7 @@ include '../includes/header.php';
                                     id="page_title"
                                     name="page_title"
                                     required
+                                    value="<?php echo htmlspecialchars($edit_page['page_title'] ?? ''); ?>"
                                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                                     placeholder="Örnek Sayfa"
                                 >
@@ -228,15 +303,19 @@ include '../includes/header.php';
                                     id="table_name"
                                     name="table_name"
                                     required
-                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent <?php echo $edit_page ? 'bg-muted cursor-not-allowed' : ''; ?>"
+                                    <?php echo $edit_page ? 'disabled' : ''; ?>
                                 >
                                     <option value="">-- Tablo Seçin --</option>
                                     <?php foreach ($tables as $table): ?>
-                                        <option value="<?php echo htmlspecialchars($table); ?>">
+                                        <option value="<?php echo htmlspecialchars($table); ?>" <?php echo ($edit_page && $edit_page['table_name'] === $table) ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($table); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                                <?php if ($edit_page): ?>
+                                    <input type="hidden" name="table_name" value="<?php echo htmlspecialchars($edit_page['table_name']); ?>">
+                                <?php endif; ?>
                             </div>
                             
                             <div class="mb-4">
@@ -247,6 +326,7 @@ include '../includes/header.php';
                                     type="text"
                                     id="group_name"
                                     name="group_name"
+                                    value="<?php echo htmlspecialchars($edit_page['group_name'] ?? ''); ?>"
                                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                                     placeholder="Örn: Sipariş Yönetimi"
                                 >
@@ -263,7 +343,7 @@ include '../includes/header.php';
                                             type="checkbox"
                                             name="enable_list"
                                             value="1"
-                                            checked
+                                            <?php echo ($edit_page && $edit_page['enable_list']) || !$edit_page ? 'checked' : ''; ?>
                                             class="rounded border-input text-primary focus:ring-2 focus:ring-ring"
                                         >
                                         <span class="ml-2 text-sm text-foreground">Listeleme (List)</span>
@@ -273,7 +353,7 @@ include '../includes/header.php';
                                             type="checkbox"
                                             name="enable_create"
                                             value="1"
-                                            checked
+                                            <?php echo ($edit_page && $edit_page['enable_create']) || !$edit_page ? 'checked' : ''; ?>
                                             class="rounded border-input text-primary focus:ring-2 focus:ring-ring"
                                         >
                                         <span class="ml-2 text-sm text-foreground">Oluşturma (Create)</span>
@@ -283,7 +363,7 @@ include '../includes/header.php';
                                             type="checkbox"
                                             name="enable_update"
                                             value="1"
-                                            checked
+                                            <?php echo ($edit_page && $edit_page['enable_update']) || !$edit_page ? 'checked' : ''; ?>
                                             class="rounded border-input text-primary focus:ring-2 focus:ring-ring"
                                         >
                                         <span class="ml-2 text-sm text-foreground">Güncelleme (Update)</span>
@@ -293,7 +373,7 @@ include '../includes/header.php';
                                             type="checkbox"
                                             name="enable_delete"
                                             value="1"
-                                            checked
+                                            <?php echo ($edit_page && $edit_page['enable_delete']) || !$edit_page ? 'checked' : ''; ?>
                                             class="rounded border-input text-primary focus:ring-2 focus:ring-ring"
                                         >
                                         <span class="ml-2 text-sm text-foreground">Silme (Delete)</span>
@@ -404,7 +484,7 @@ if (!empty($errors)) {
                                             name="update_rule"
                                             rows="4"
                                             class="hidden"
-                                        ></textarea>
+                                        ><?php echo htmlspecialchars($edit_page['update_rule'] ?? ''); ?></textarea>
                                         <div class="mb-2">
                                             <details class="text-xs">
                                                 <summary class="cursor-pointer text-muted-foreground hover:text-foreground mb-2">Örnek kodlar göster</summary>
@@ -465,7 +545,7 @@ if ($post && $post[\'created_by\'] != $_SESSION[\'user_id\']) {
                                             name="delete_rule"
                                             rows="4"
                                             class="hidden"
-                                        ></textarea>
+                                        ><?php echo htmlspecialchars($edit_page['delete_rule'] ?? ''); ?></textarea>
                                         <div class="mb-2">
                                             <details class="text-xs">
                                                 <summary class="cursor-pointer text-muted-foreground hover:text-foreground mb-2">Örnek kodlar göster</summary>
@@ -522,8 +602,16 @@ if ($children_count > 0) {
                                 type="submit"
                                 class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
                             >
-                                Sayfa Oluştur
+                                <?php echo $edit_page ? 'Güncelle' : 'Oluştur'; ?>
                             </button>
+                            <?php if ($edit_page): ?>
+                                <a
+                                    href="pages-builder.php"
+                                    class="rounded-md bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 transition-all ml-2"
+                                >
+                                    İptal
+                                </a>
+                            <?php endif; ?>
                         </form>
                     </div>
                 </div>
@@ -591,16 +679,24 @@ if ($children_count > 0) {
                                                     <?php echo date('d.m.Y H:i', strtotime($page['created_at'])); ?>
                                                 </td>
                                                 <td class="p-4 align-middle">
-                                                    <form method="POST" action="" class="inline" onsubmit="return confirm('Bu sayfayı silmek istediğinizden emin misiniz?');">
-                                                        <input type="hidden" name="action" value="delete_page">
-                                                        <input type="hidden" name="page_id" value="<?php echo $page['id']; ?>">
-                                                        <button
-                                                            type="submit"
-                                                            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-red-100 text-red-800 hover:bg-red-200 h-9 px-3"
+                                                    <div class="flex gap-2">
+                                                        <a
+                                                            href="pages-builder.php?edit=<?php echo $page['id']; ?>"
+                                                            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-100 text-blue-800 hover:bg-blue-200 h-9 px-3"
                                                         >
-                                                            Sil
-                                                        </button>
-                                                    </form>
+                                                            Düzenle
+                                                        </a>
+                                                        <form method="POST" action="" class="inline" onsubmit="return confirm('Bu sayfayı silmek istediğinizden emin misiniz?');">
+                                                            <input type="hidden" name="action" value="delete_page">
+                                                            <input type="hidden" name="page_id" value="<?php echo $page['id']; ?>">
+                                                            <button
+                                                                type="submit"
+                                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-red-100 text-red-800 hover:bg-red-200 h-9 px-3"
+                                                            >
+                                                                Sil
+                                                            </button>
+                                                        </form>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -641,18 +737,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // Initialize editors
-    const createRuleEditor = CodeMirror.fromTextArea(document.getElementById('create_rule'), editorConfig);
-    const updateRuleEditor = CodeMirror.fromTextArea(document.getElementById('update_rule'), editorConfig);
-    const deleteRuleEditor = CodeMirror.fromTextArea(document.getElementById('delete_rule'), editorConfig);
+    // Initialize editors (only if textareas exist)
+    const createRuleTextarea = document.getElementById('create_rule');
+    const updateRuleTextarea = document.getElementById('update_rule');
+    const deleteRuleTextarea = document.getElementById('delete_rule');
+    
+    const createRuleEditor = createRuleTextarea ? CodeMirror.fromTextArea(createRuleTextarea, editorConfig) : null;
+    const updateRuleEditor = updateRuleTextarea ? CodeMirror.fromTextArea(updateRuleTextarea, editorConfig) : null;
+    const deleteRuleEditor = deleteRuleTextarea ? CodeMirror.fromTextArea(deleteRuleTextarea, editorConfig) : null;
     
     // Sync editor content with textarea before form submission
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function() {
-            createRuleEditor.save();
-            updateRuleEditor.save();
-            deleteRuleEditor.save();
+            if (createRuleEditor) createRuleEditor.save();
+            if (updateRuleEditor) updateRuleEditor.save();
+            if (deleteRuleEditor) deleteRuleEditor.save();
         });
     }
     
