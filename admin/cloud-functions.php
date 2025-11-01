@@ -145,6 +145,30 @@ include '../includes/header.php';
     .CodeMirror-activeline-background {
         background: hsl(var(--muted) / 0.3);
     }
+    
+    /* Fullscreen styles */
+    #code-editor-wrapper.fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+        background: hsl(var(--background));
+        padding: 20px;
+    }
+    
+    #code-editor-wrapper.fullscreen .CodeMirror {
+        height: calc(100vh - 100px);
+        border-radius: 0.5rem;
+    }
+    
+    #code-editor-wrapper.fullscreen #fullscreen-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+    }
 </style>
 
 <div class="flex h-screen overflow-hidden">
@@ -310,16 +334,31 @@ include '../includes/header.php';
                                         </div>
                                         
                                         <div>
-                                            <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                Kod *
-                                            </label>
-                                            <textarea
-                                                name="code"
-                                                id="code"
-                                                required
-                                                class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                                rows="20"
-                                            ><?php echo htmlspecialchars($edit_function['code'] ?? "// Cloud Function Code\n// Available variables:\n// \$dbContext - Database connection (PDO object)\n// \$request - Request body data (array)\n// \$method - HTTP method (string: GET, POST, PUT, DELETE)\n// \$headers - Request headers (array)\n// \$response - Response array (must set this)\n\n// Example: Get users\n\$stmt = \$dbContext->query(\"SELECT * FROM users LIMIT 10\");\n\$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n\n// Set response\n\$response['success'] = true;\n\$response['data'] = \$users;\n\$response['message'] = 'Users retrieved successfully';\n\n// Example: With parameters from request\n// \$limit = isset(\$request['limit']) ? intval(\$request['limit']) : 10;\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM users LIMIT ?\");\n// \$stmt->execute([\$limit]);\n// \$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n// \$response['success'] = true;\n// \$response['data'] = \$users;\n"); ?></textarea>
+                                            <div class="flex items-center justify-between mb-1.5">
+                                                <label class="block text-sm font-medium text-foreground">
+                                                    Kod *
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onclick="toggleFullscreen()"
+                                                    class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-2 py-1 transition-colors"
+                                                    id="fullscreen-btn"
+                                                >
+                                                    <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                                    </svg>
+                                                    Tam Ekran
+                                                </button>
+                                            </div>
+                                            <div id="code-editor-wrapper" class="relative">
+                                                <textarea
+                                                    name="code"
+                                                    id="code"
+                                                    required
+                                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                                    rows="20"
+                                                ><?php echo htmlspecialchars($edit_function['code'] ?? "// Cloud Function Code\n// Available variables:\n// \$dbContext - Database connection (PDO object)\n// \$request - Request body data (array)\n// \$method - HTTP method (string: GET, POST, PUT, DELETE)\n// \$headers - Request headers (array)\n// \$response - Response array (must set this)\n\n// Example: Get users\n\$stmt = \$dbContext->query(\"SELECT * FROM users LIMIT 10\");\n\$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n\n// Set response\n\$response['success'] = true;\n\$response['data'] = \$users;\n\$response['message'] = 'Users retrieved successfully';\n\n// Example: With parameters from request\n// \$limit = isset(\$request['limit']) ? intval(\$request['limit']) : 10;\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM users LIMIT ?\");\n// \$stmt->execute([\$limit]);\n// \$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n// \$response['success'] = true;\n// \$response['data'] = \$users;\n"); ?></textarea>
+                                            </div>
                                         </div>
                                         
                                         <div class="flex items-center gap-2">
@@ -420,6 +459,43 @@ include '../includes/header.php';
             setTimeout(function() {
                 CodeMirror.commands.autocomplete(cm);
             }, 100);
+        }
+    });
+    
+    let isFullscreen = false;
+    
+    function toggleFullscreen() {
+        const wrapper = document.getElementById('code-editor-wrapper');
+        const btn = document.getElementById('fullscreen-btn');
+        
+        if (!isFullscreen) {
+            wrapper.classList.add('fullscreen');
+            btn.innerHTML = `
+                <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Çık
+            `;
+            isFullscreen = true;
+            codeEditor.refresh();
+            codeEditor.focus();
+        } else {
+            wrapper.classList.remove('fullscreen');
+            btn.innerHTML = `
+                <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+                Tam Ekran
+            `;
+            isFullscreen = false;
+            codeEditor.refresh();
+        }
+    }
+    
+    // ESC key to exit fullscreen
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && isFullscreen) {
+            toggleFullscreen();
         }
     });
     
