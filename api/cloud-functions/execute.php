@@ -37,13 +37,16 @@ if (!$function_name) {
 
 // Get function from database
 $db = getDB();
-$stmt = $db->prepare("SELECT * FROM cloud_functions WHERE name = ? AND enabled = 1 LIMIT 1");
+$stmt = $db->prepare("SELECT cf.*, cm.code as middleware_code, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id WHERE cf.name = ? AND cf.enabled = 1 LIMIT 1");
 $stmt->execute([$function_name]);
 $function = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$function) {
     sendErrorResponse("Function '{$function_name}' not found or disabled.", 404);
 }
+
+// Check if middleware exists and is enabled
+$has_middleware = !empty($function['middleware_id']) && !empty($function['middleware_code']);
 
 // Check HTTP method
 $current_method = getCurrentMethod();
@@ -60,6 +63,54 @@ $request = getRequestBody(); // Request data (empty array for GET)
 $method = $current_method; // HTTP method
 $headers = getAllHeaders(); // Request headers
 $response = ['success' => false, 'data' => null, 'message' => '', 'error' => null];
+
+// Execute middleware first if exists
+if ($has_middleware) {
+    try {
+        // Execute middleware code
+        $executeMiddleware = function($code, $dbContext, $request, $method, $headers, &$response) {
+            $db = $dbContext;
+            eval($code);
+            return $response;
+        };
+        
+        set_time_limit(30);
+        $middleware_response = $response; // Initialize middleware response
+        $middleware_result = $executeMiddleware($function['middleware_code'], $dbContext, $request, $method, $headers, $middleware_response);
+        
+        // If middleware fails, return early without executing function
+        if (isset($middleware_result['success']) && !$middleware_result['success']) {
+            sendJsonResponse([
+                'success' => false,
+                'message' => $middleware_result['message'] ?? $middleware_result['error'] ?? 'Middleware validation failed',
+                'data' => $middleware_result['data'] ?? null,
+                'middleware' => $function['middleware_name'] ?? null
+            ], 200);
+            exit;
+        }
+        
+        // Update response with middleware result if it was successful
+        if (isset($middleware_result['success']) && $middleware_result['success']) {
+            $response = $middleware_result;
+        }
+    } catch (ParseError $e) {
+        sendJsonResponse([
+            'success' => false,
+            'message' => 'Syntax error in middleware code: ' . $e->getMessage(),
+            'error_type' => 'ParseError',
+            'middleware' => $function['middleware_name'] ?? null
+        ], 200);
+        exit;
+    } catch (Throwable $e) {
+        sendJsonResponse([
+            'success' => false,
+            'message' => 'Error executing middleware: ' . $e->getMessage(),
+            'error_type' => get_class($e),
+            'middleware' => $function['middleware_name'] ?? null
+        ], 200);
+        exit;
+    }
+}
 
 // Execute function code in isolated scope
 try {

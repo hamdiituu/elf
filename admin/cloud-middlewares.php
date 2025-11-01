@@ -2,32 +2,11 @@
 require_once '../config/config.php';
 requireDeveloper();
 
-$page_title = 'Cloud Functions - Vira Stok Sistemi';
+$page_title = 'Cloud Middlewares - Vira Stok Sistemi';
 
 $db = getDB();
 $error_message = null;
 $success_message = null;
-
-// Ensure cloud_functions table exists
-try {
-    $db->exec("CREATE TABLE IF NOT EXISTS cloud_functions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        description TEXT,
-        code TEXT NOT NULL,
-        http_method TEXT NOT NULL DEFAULT 'POST',
-        endpoint TEXT NOT NULL UNIQUE,
-        enabled INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        created_by INTEGER,
-        middleware_id INTEGER,
-        FOREIGN KEY (created_by) REFERENCES users(id),
-        FOREIGN KEY (middleware_id) REFERENCES cloud_middlewares(id)
-    )");
-} catch (PDOException $e) {
-    // Table might already exist
-}
 
 // Ensure cloud_middlewares table exists
 try {
@@ -51,44 +30,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
     switch ($action) {
-        case 'save_function':
-            $function_id = intval($_POST['function_id'] ?? 0);
-            $function_name = trim($_POST['function_name'] ?? '');
-            $description = trim($_POST['description'] ?? '');
-            $code = $_POST['code'] ?? '';
-            $http_method = 'POST'; // Always POST
-            $enabled = isset($_POST['enabled']) ? 1 : 0;
-            $middleware_id = !empty($_POST['middleware_id']) ? intval($_POST['middleware_id']) : null;
+        case 'save_middleware':
+            $middleware_id = intval($_POST['middleware_id'] ?? 0);
+            $middleware_name = trim($_POST['middleware_name'] ?? '');
+            $middleware_description = trim($_POST['middleware_description'] ?? '');
+            $middleware_code = $_POST['middleware_code'] ?? '';
+            $middleware_enabled = isset($_POST['middleware_enabled']) ? 1 : 0;
             
-            if (empty($function_name) || empty($code)) {
-                $error_message = "Fonksiyon adı ve kod gereklidir!";
+            if (empty($middleware_name) || empty($middleware_code)) {
+                $error_message = "Middleware adı ve kod gereklidir!";
             } else {
                 try {
-                    // Generate endpoint from name
-                    $endpoint = strtolower(preg_replace('/[^a-z0-9]+/', '-', $function_name));
-                    $endpoint = trim($endpoint, '-');
-                    
-                    if ($function_id > 0) {
-                        // Update existing function
+                    if ($middleware_id > 0) {
+                        // Update existing middleware
                         $stmt = $db->prepare("
-                            UPDATE cloud_functions 
-                            SET name = ?, description = ?, code = ?, http_method = ?, endpoint = ?, enabled = ?, middleware_id = ?, updated_at = CURRENT_TIMESTAMP
+                            UPDATE cloud_middlewares 
+                            SET name = ?, description = ?, code = ?, enabled = ?, updated_at = CURRENT_TIMESTAMP
                             WHERE id = ?
                         ");
-                        $stmt->execute([$function_name, $description, $code, $http_method, $endpoint, $enabled, $middleware_id, $function_id]);
-                        $success_message = "Fonksiyon başarıyla güncellendi!";
+                        $stmt->execute([$middleware_name, $middleware_description, $middleware_code, $middleware_enabled, $middleware_id]);
+                        $success_message = "Middleware başarıyla güncellendi!";
                     } else {
-                        // Create new function
+                        // Create new middleware
                         $stmt = $db->prepare("
-                            INSERT INTO cloud_functions (name, description, code, http_method, endpoint, enabled, middleware_id, created_by)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO cloud_middlewares (name, description, code, enabled, created_by)
+                            VALUES (?, ?, ?, ?, ?)
                         ");
-                        $stmt->execute([$function_name, $description, $code, $http_method, $endpoint, $enabled, $middleware_id, $_SESSION['user_id']]);
-                        $success_message = "Fonksiyon başarıyla oluşturuldu!";
+                        $stmt->execute([$middleware_name, $middleware_description, $middleware_code, $middleware_enabled, $_SESSION['user_id']]);
+                        $success_message = "Middleware başarıyla oluşturuldu!";
                     }
                 } catch (PDOException $e) {
                     if (strpos($e->getMessage(), 'UNIQUE constraint') !== false) {
-                        $error_message = "Bu fonksiyon adı veya endpoint zaten kullanılıyor!";
+                        $error_message = "Bu middleware adı zaten kullanılıyor!";
                     } else {
                         $error_message = "Hata: " . $e->getMessage();
                     }
@@ -96,15 +69,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             break;
             
-        case 'delete_function':
-            $function_id = intval($_POST['function_id'] ?? 0);
-            if ($function_id > 0) {
+        case 'delete_middleware':
+            $middleware_id = intval($_POST['middleware_id'] ?? 0);
+            if ($middleware_id > 0) {
                 try {
-                    $stmt = $db->prepare("DELETE FROM cloud_functions WHERE id = ?");
-                    $stmt->execute([$function_id]);
-                    $success_message = "Fonksiyon başarıyla silindi!";
+                    // Check if middleware is used by any function
+                    $stmt = $db->prepare("SELECT COUNT(*) FROM cloud_functions WHERE middleware_id = ?");
+                    $stmt->execute([$middleware_id]);
+                    $usage_count = $stmt->fetchColumn();
+                    
+                    if ($usage_count > 0) {
+                        $error_message = "Bu middleware {$usage_count} fonksiyon tarafından kullanılıyor. Önce fonksiyonlardan kaldırın!";
+                    } else {
+                        $stmt = $db->prepare("DELETE FROM cloud_middlewares WHERE id = ?");
+                        $stmt->execute([$middleware_id]);
+                        $success_message = "Middleware başarıyla silindi!";
+                    }
                 } catch (PDOException $e) {
-                    $error_message = "Fonksiyon silinirken hata: " . $e->getMessage();
+                    $error_message = "Middleware silinirken hata: " . $e->getMessage();
                 }
             }
             break;
@@ -112,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Redirect to prevent form resubmission
     if ($error_message || $success_message) {
-        header('Location: cloud-functions.php' . ($success_message ? '?success=' . urlencode($success_message) : '') . ($error_message ? '&error=' . urlencode($error_message) : ''));
+        header('Location: cloud-middlewares.php' . ($success_message ? '?success=' . urlencode($success_message) : '') . ($error_message ? '&error=' . urlencode($error_message) : ''));
         exit;
     }
 }
@@ -125,20 +107,21 @@ if (isset($_GET['error'])) {
     $error_message = urldecode($_GET['error']);
 }
 
-// Get function to edit
-$edit_function = null;
+// Get middleware to edit
+$edit_middleware = null;
 $edit_id = $_GET['edit'] ?? null;
 if ($edit_id) {
-    $stmt = $db->prepare("SELECT * FROM cloud_functions WHERE id = ?");
+    $stmt = $db->prepare("SELECT * FROM cloud_middlewares WHERE id = ?");
     $stmt->execute([$edit_id]);
-    $edit_function = $stmt->fetch(PDO::FETCH_ASSOC);
+    $edit_middleware = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-// Get all functions
-$functions = $db->query("SELECT cf.*, u.username as created_by_name, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id ORDER BY cf.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-
-// Get all middlewares for dropdown
-$middlewares = $db->query("SELECT id, name, description FROM cloud_middlewares WHERE enabled = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+// Get all middlewares
+$middlewares = $db->query("SELECT cm.*, u.username as created_by_name, 
+    (SELECT COUNT(*) FROM cloud_functions WHERE middleware_id = cm.id) as usage_count
+    FROM cloud_middlewares cm 
+    LEFT JOIN users u ON cm.created_by = u.id 
+    ORDER BY cm.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 include '../includes/header.php';
 ?>
@@ -201,16 +184,7 @@ include '../includes/header.php';
         <div class="py-6">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
                 <div class="flex items-center justify-between mb-6">
-                    <h1 class="text-3xl font-bold text-foreground">Cloud Functions</h1>
-                    <a
-                        href="cloud-middlewares.php"
-                        class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-4 py-2 transition-colors"
-                    >
-                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
-                        Middleware Yönetimi
-                    </a>
+                    <h1 class="text-3xl font-bold text-foreground">Cloud Middlewares</h1>
                     <button
                         onclick="showCreateForm()"
                         class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 transition-colors"
@@ -218,7 +192,7 @@ include '../includes/header.php';
                         <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
-                        Yeni Fonksiyon
+                        Yeni Middleware
                     </button>
                 </div>
                 
@@ -245,59 +219,50 @@ include '../includes/header.php';
                 <?php endif; ?>
                 
                 <div class="grid gap-6 lg:grid-cols-3">
-                    <!-- Functions List -->
+                    <!-- Middlewares List -->
                     <div class="lg:col-span-1">
                         <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                             <div class="p-6">
-                                <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Fonksiyonlar</h3>
+                                <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Middleware'ler</h3>
                                 <div class="space-y-2 max-h-[600px] overflow-y-auto">
-                                    <?php if (empty($functions)): ?>
+                                    <?php if (empty($middlewares)): ?>
                                         <div class="text-center py-8 text-muted-foreground text-sm">
-                                            Henüz fonksiyon yok.
+                                            Henüz middleware yok.
                                         </div>
                                     <?php else: ?>
-                                        <?php foreach ($functions as $func): ?>
+                                        <?php foreach ($middlewares as $mw): ?>
                                             <div class="rounded-md border border-border p-3 bg-muted/30 hover:bg-muted/50 transition-colors">
                                                 <div class="flex items-center justify-between mb-2">
                                                     <div class="flex-1">
                                                         <h4 class="font-medium text-sm text-foreground">
-                                                            <?php echo htmlspecialchars($func['name']); ?>
-                                                            <?php if (!$func['enabled']): ?>
+                                                            <?php echo htmlspecialchars($mw['name']); ?>
+                                                            <?php if (!$mw['enabled']): ?>
                                                                 <span class="ml-2 text-xs text-muted-foreground">(Pasif)</span>
                                                             <?php endif; ?>
                                                         </h4>
-                                                        <?php if ($func['description']): ?>
-                                                            <p class="text-xs text-muted-foreground mt-1"><?php echo htmlspecialchars($func['description']); ?></p>
+                                                        <?php if ($mw['description']): ?>
+                                                            <p class="text-xs text-muted-foreground mt-1"><?php echo htmlspecialchars($mw['description']); ?></p>
                                                         <?php endif; ?>
-                                                        <p class="text-xs text-muted-foreground mt-1">
-                                                            POST /api/cloud-functions/execute.php?function=<?php echo htmlspecialchars($func['name']); ?>
-                                                        </p>
-                                                        <?php if (!empty($func['middleware_name'])): ?>
+                                                        <?php if ($mw['usage_count'] > 0): ?>
                                                             <p class="text-xs text-purple-600 mt-1 font-medium">
-                                                                🔒 Middleware: <?php echo htmlspecialchars($func['middleware_name']); ?>
+                                                                🔒 <?php echo $mw['usage_count']; ?> fonksiyon tarafından kullanılıyor
                                                             </p>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
                                                 <div class="flex items-center gap-2 mt-3">
                                                     <a
-                                                        href="?edit=<?php echo $func['id']; ?>"
+                                                        href="?edit=<?php echo $mw['id']; ?>"
                                                         class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-2 py-1 transition-colors"
                                                     >
                                                         Düzenle
                                                     </a>
                                                     <button
-                                                        onclick="deleteFunction(<?php echo $func['id']; ?>, '<?php echo htmlspecialchars(addslashes($func['name'])); ?>')"
+                                                        onclick="deleteMiddleware(<?php echo $mw['id']; ?>, '<?php echo htmlspecialchars(addslashes($mw['name'])); ?>')"
                                                         class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 px-2 py-1 transition-colors"
                                                     >
                                                         Sil
                                                     </button>
-                                                    <a
-                                                        href="api-playground.php?api_id=cloud-function-<?php echo $func['id']; ?>"
-                                                        class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-2 py-1 transition-colors"
-                                                    >
-                                                        Test
-                                                    </a>
                                                 </div>
                                             </div>
                                         <?php endforeach; ?>
@@ -307,33 +272,32 @@ include '../includes/header.php';
                         </div>
                     </div>
                     
-                    <!-- Function Editor -->
+                    <!-- Middleware Editor -->
                     <div class="lg:col-span-2">
                         <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
                             <div class="p-6">
                                 <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">
-                                    <?php echo $edit_function ? 'Fonksiyon Düzenle' : 'Yeni Fonksiyon'; ?>
+                                    <?php echo $edit_middleware ? 'Middleware Düzenle' : 'Yeni Middleware'; ?>
                                 </h3>
                                 
-                                <form method="POST" id="function-form">
-                                    <input type="hidden" name="action" value="save_function">
-                                    <input type="hidden" name="function_id" value="<?php echo $edit_function ? $edit_function['id'] : '0'; ?>">
+                                <form method="POST" id="middleware-form">
+                                    <input type="hidden" name="action" value="save_middleware">
+                                    <input type="hidden" name="middleware_id" value="<?php echo $edit_middleware ? $edit_middleware['id'] : '0'; ?>">
                                     
                                     <div class="space-y-4">
                                         <div>
                                             <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                Fonksiyon Adı *
+                                                Middleware Adı *
                                             </label>
                                             <input
                                                 type="text"
-                                                name="function_name"
-                                                id="function_name"
-                                                value="<?php echo htmlspecialchars($edit_function['name'] ?? ''); ?>"
+                                                name="middleware_name"
+                                                id="middleware_name"
+                                                value="<?php echo htmlspecialchars($edit_middleware['name'] ?? ''); ?>"
                                                 required
                                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                                placeholder="my-function"
+                                                placeholder="auth-check"
                                             />
-                                            <input type="hidden" name="http_method" value="POST">
                                         </div>
                                         
                                         <div>
@@ -342,38 +306,12 @@ include '../includes/header.php';
                                             </label>
                                             <input
                                                 type="text"
-                                                name="description"
-                                                id="description"
-                                                value="<?php echo htmlspecialchars($edit_function['description'] ?? ''); ?>"
+                                                name="middleware_description"
+                                                id="middleware_description"
+                                                value="<?php echo htmlspecialchars($edit_middleware['description'] ?? ''); ?>"
                                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                                placeholder="Fonksiyon açıklaması"
+                                                placeholder="Kullanıcı doğrulama kontrolü"
                                             />
-                                        </div>
-                                        
-                                        <div>
-                                            <label class="block text-sm font-medium text-foreground mb-1.5">
-                                                Middleware (Opsiyonel)
-                                            </label>
-                                            <select
-                                                name="middleware_id"
-                                                id="middleware_id"
-                                                class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                            >
-                                                <option value="">Middleware seçin...</option>
-                                                <?php foreach ($middlewares as $mw): ?>
-                                                    <?php if ($mw['enabled']): ?>
-                                                        <option value="<?php echo $mw['id']; ?>" <?php echo (isset($edit_function['middleware_id']) && $edit_function['middleware_id'] == $mw['id']) ? 'selected' : ''; ?>>
-                                                            <?php echo htmlspecialchars($mw['name']); ?>
-                                                            <?php if ($mw['description']): ?>
-                                                                - <?php echo htmlspecialchars($mw['description']); ?>
-                                                            <?php endif; ?>
-                                                        </option>
-                                                    <?php endif; ?>
-                                                <?php endforeach; ?>
-                                            </select>
-                                            <p class="mt-1 text-xs text-muted-foreground">
-                                                Middleware, fonksiyon çalışmadan önce execute edilir. Eğer middleware <code class="text-xs bg-muted px-1 py-0.5 rounded">success = false</code> dönerse, fonksiyon çalışmaz.
-                                            </p>
                                         </div>
                                         
                                         <div>
@@ -395,24 +333,24 @@ include '../includes/header.php';
                                             </div>
                                             <div id="code-editor-wrapper" class="relative">
                                             <textarea
-                                                name="code"
-                                                id="code"
+                                                name="middleware_code"
+                                                id="middleware_code"
                                                 required
                                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                                                 rows="20"
-                                            ><?php echo htmlspecialchars($edit_function['code'] ?? "// Cloud Function Code\n// Available variables:\n// \$dbContext - Database connection (PDO object)\n// \$request - Request body data (array)\n// \$method - HTTP method (string: GET, POST, PUT, DELETE)\n// \$headers - Request headers (array)\n// \$response - Response array (must set this)\n\n// Example: Get users\n\$stmt = \$dbContext->query(\"SELECT * FROM users LIMIT 10\");\n\$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n\n// Set response\n\$response['success'] = true;\n\$response['data'] = \$users;\n\$response['message'] = 'Users retrieved successfully';\n\n// Example: With parameters from request\n// \$limit = isset(\$request['limit']) ? intval(\$request['limit']) : 10;\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM users LIMIT ?\");\n// \$stmt->execute([\$limit]);\n// \$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n// \$response['success'] = true;\n// \$response['data'] = \$users;\n\n// Example: Check if record exists\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM table WHERE id = ?\");\n// \$stmt->execute([\$id]);\n// \$record = \$stmt->fetch(PDO::FETCH_ASSOC);\n// if (!\$record) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Record not found';\n//     return;\n// }\n"); ?></textarea>
+                                            ><?php echo htmlspecialchars($edit_middleware['code'] ?? "// Middleware Code\n// Available variables:\n// \$dbContext - Database connection (PDO object)\n// \$request - Request body data (array)\n// \$method - HTTP method (string)\n// \$headers - Request headers (array)\n// \$response - Response array (must set this)\n\n// Example: Authentication check\n// if (!isset(\$headers['Authorization'])) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Unauthorized: Missing Authorization header';\n//     return;\n// }\n\n// Example: API Key validation\n// \$api_key = \$headers['X-API-Key'] ?? null;\n// if (!\$api_key) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'API key required';\n//     return;\n// }\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM api_keys WHERE key = ? AND enabled = 1\");\n// \$stmt->execute([\$api_key]);\n// if (!\$stmt->fetch()) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Invalid API key';\n//     return;\n// }\n\n// If middleware passes, don't set response (or set success = true)\n// \$response['success'] = true;\n"); ?></textarea>
                                             </div>
                                         </div>
                                         
                                         <div class="flex items-center gap-2">
                                             <input
                                                 type="checkbox"
-                                                name="enabled"
-                                                id="enabled"
-                                                <?php echo (!$edit_function || $edit_function['enabled']) ? 'checked' : ''; ?>
+                                                name="middleware_enabled"
+                                                id="middleware_enabled"
+                                                <?php echo (!$edit_middleware || $edit_middleware['enabled']) ? 'checked' : ''; ?>
                                                 class="rounded border-input"
                                             />
-                                            <label for="enabled" class="text-sm font-medium text-foreground">
+                                            <label for="middleware_enabled" class="text-sm font-medium text-foreground">
                                                 Aktif
                                             </label>
                                         </div>
@@ -425,11 +363,11 @@ include '../includes/header.php';
                                                 <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                                 </svg>
-                                                <?php echo $edit_function ? 'Güncelle' : 'Oluştur'; ?>
+                                                <?php echo $edit_middleware ? 'Güncelle' : 'Oluştur'; ?>
                                             </button>
-                                            <?php if ($edit_function): ?>
+                                            <?php if ($edit_middleware): ?>
                                                 <a
-                                                    href="cloud-functions.php"
+                                                    href="cloud-middlewares.php"
                                                     class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 px-4 py-2 transition-colors"
                                                 >
                                                     İptal
@@ -449,7 +387,7 @@ include '../includes/header.php';
 
 <script>
     // Initialize CodeMirror
-    const codeEditor = CodeMirror.fromTextArea(document.getElementById('code'), {
+    const middlewareEditor = CodeMirror.fromTextArea(document.getElementById('middleware_code'), {
         mode: {
             name: 'php',
             startOpen: true
@@ -474,7 +412,7 @@ include '../includes/header.php';
                 const token = editor.getTokenAt(cursor);
                 const word = token.string;
                 
-                // Custom hints for dbContext and common functions
+                // Custom hints for middleware context
                 const hints = [
                     'dbContext', 'request', 'method', 'headers', 'response',
                     'query', 'prepare', 'execute', 'fetchAll', 'fetch', 'fetchColumn',
@@ -497,12 +435,17 @@ include '../includes/header.php';
     });
     
     // Auto-trigger autocomplete
-    codeEditor.on('inputRead', function(cm, change) {
+    middlewareEditor.on('inputRead', function(cm, change) {
         if (change.text[0].length > 0 && change.text[0][0].match(/[a-zA-Z]/)) {
             setTimeout(function() {
                 CodeMirror.commands.autocomplete(cm);
             }, 100);
         }
+    });
+    
+    // Sync editor with textarea
+    middlewareEditor.on('change', function(cm) {
+        cm.save();
     });
     
     let isFullscreen = false;
@@ -520,8 +463,8 @@ include '../includes/header.php';
                 Çık
             `;
             isFullscreen = true;
-            codeEditor.refresh();
-            codeEditor.focus();
+            middlewareEditor.refresh();
+            middlewareEditor.focus();
         } else {
             wrapper.classList.remove('fullscreen');
             btn.innerHTML = `
@@ -531,7 +474,7 @@ include '../includes/header.php';
                 Tam Ekran
             `;
             isFullscreen = false;
-            codeEditor.refresh();
+            middlewareEditor.refresh();
         }
     }
     
@@ -543,19 +486,18 @@ include '../includes/header.php';
     });
     
     function showCreateForm() {
-        window.location.href = 'cloud-functions.php';
+        window.location.href = 'cloud-middlewares.php';
     }
     
-    function deleteFunction(id, name) {
-        if (confirm('Fonksiyon "' + name + '" silinecek. Emin misiniz?')) {
+    function deleteMiddleware(id, name) {
+        if (confirm('Middleware "' + name + '" silinecek. Emin misiniz?')) {
             const form = document.createElement('form');
             form.method = 'POST';
-            form.innerHTML = '<input type="hidden" name="action" value="delete_function"><input type="hidden" name="function_id" value="' + id + '">';
+            form.innerHTML = '<input type="hidden" name="action" value="delete_middleware"><input type="hidden" name="middleware_id" value="' + id + '">';
             document.body.appendChild(form);
             form.submit();
         }
     }
-    
+</script>
 
 <?php include '../includes/footer.php'; ?>
-
