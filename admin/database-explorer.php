@@ -53,6 +53,66 @@ if ($delete_query_id) {
     }
 }
 
+// Handle create table
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_table') {
+    $table_name = trim($_POST['table_name'] ?? '');
+    $table_sql = trim($_POST['table_sql'] ?? '');
+    
+    if (empty($table_name)) {
+        $error_message = "Tablo adı gereklidir!";
+    } elseif (empty($table_sql)) {
+        $error_message = "SQL sorgusu gereklidir!";
+    } else {
+        try {
+            // Validate table name (SQLite identifier rules)
+            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table_name)) {
+                throw new Exception("Geçersiz tablo adı. Sadece harf, rakam ve alt çizgi kullanılabilir.");
+            }
+            
+            // Check if table already exists
+            $existing_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name = " . $db->quote($table_name))->fetchAll(PDO::FETCH_COLUMN);
+            if (!empty($existing_tables)) {
+                throw new Exception("Tablo '{$table_name}' zaten mevcut!");
+            }
+            
+            // Execute CREATE TABLE statement
+            $db->exec($table_sql);
+            $success_message = "Tablo '{$table_name}' başarıyla oluşturuldu!";
+            
+            // Redirect to avoid form resubmission
+            header('Location: database-explorer.php?table=' . urlencode($table_name) . '&success=' . urlencode($success_message));
+            exit;
+        } catch (Exception $e) {
+            $error_message = "Tablo oluşturulurken hata: " . $e->getMessage();
+        }
+    }
+}
+
+// Handle delete table
+$delete_table = $_GET['delete_table'] ?? null;
+if ($delete_table) {
+    try {
+        // Validate table name
+        $all_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
+        if (in_array($delete_table, $all_tables)) {
+            // Prevent deletion of system tables
+            $system_tables = ['sqlite_sequence', 'sqlite_master'];
+            if (in_array($delete_table, $system_tables)) {
+                $error_message = "Sistem tabloları silinemez!";
+            } else {
+                $db->exec("DROP TABLE IF EXISTS " . $db->quote($delete_table));
+                $success_message = "Tablo '{$delete_table}' başarıyla silindi!";
+                header('Location: database-explorer.php?success=' . urlencode($success_message));
+                exit;
+            }
+        } else {
+            $error_message = "Tablo bulunamadı!";
+        }
+    } catch (PDOException $e) {
+        $error_message = "Tablo silinirken hata: " . $e->getMessage();
+    }
+}
+
 // Handle load query
 if ($load_query_id) {
     try {
@@ -313,19 +373,43 @@ include '../includes/header.php';
                                 </button>
                             </div>
                             <div class="p-4 pt-2" id="tables-content">
+                                <div class="mb-3">
+                                    <button
+                                        onclick="showCreateTableModal()"
+                                        class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 transition-colors mb-2"
+                                    >
+                                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Yeni Tablo
+                                    </button>
+                                </div>
                                 <div class="space-y-2 max-h-[600px] overflow-y-auto">
                                     <?php foreach ($tables as $table): ?>
-                                        <a
-                                            href="?table=<?php echo htmlspecialchars($table); ?>"
-                                            class="block p-2 rounded-md border border-border hover:bg-accent transition-colors <?php echo $selected_table === $table ? 'bg-accent border-primary' : ''; ?>"
-                                        >
-                                            <div class="flex items-center justify-between">
-                                                <span class="font-medium text-xs"><?php echo htmlspecialchars($table); ?></span>
-                                                <svg class="h-3 w-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                                </svg>
-                                            </div>
-                                        </a>
+                                        <div class="group relative flex items-center">
+                                            <a
+                                                href="?table=<?php echo htmlspecialchars($table); ?>"
+                                                class="flex-1 block p-2 rounded-md border border-border hover:bg-accent transition-colors <?php echo $selected_table === $table ? 'bg-accent border-primary' : ''; ?>"
+                                            >
+                                                <div class="flex items-center justify-between">
+                                                    <span class="font-medium text-xs"><?php echo htmlspecialchars($table); ?></span>
+                                                    <svg class="h-3 w-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </div>
+                                            </a>
+                                            <?php if (!in_array($table, ['sqlite_sequence', 'sqlite_master'])): ?>
+                                                <button
+                                                    onclick="deleteTable('<?php echo htmlspecialchars(addslashes($table)); ?>')"
+                                                    class="ml-1 p-1 opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:bg-red-50 rounded"
+                                                    title="Tablo Sil"
+                                                >
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
@@ -451,6 +535,41 @@ include '../includes/header.php';
                             </div>
                         </div>
 
+                        <!-- Table Structure -->
+                        <?php if ($selected_table && !empty($table_info)): ?>
+                            <div class="mb-4 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
+                                <div class="p-4 pb-0">
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">Tablo Yapısı: <?php echo htmlspecialchars($selected_table); ?></h3>
+                                </div>
+                                <div class="p-4 pt-0">
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-border">
+                                            <thead class="bg-muted/50">
+                                                <tr>
+                                                    <th class="px-3 py-2 text-left text-xs font-medium text-foreground">Kolon Adı</th>
+                                                    <th class="px-3 py-2 text-left text-xs font-medium text-foreground">Tip</th>
+                                                    <th class="px-3 py-2 text-left text-xs font-medium text-foreground">NULL</th>
+                                                    <th class="px-3 py-2 text-left text-xs font-medium text-foreground">Default</th>
+                                                    <th class="px-3 py-2 text-left text-xs font-medium text-foreground">PK</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-border bg-background">
+                                                <?php foreach ($table_info as $col): ?>
+                                                    <tr class="hover:bg-muted/30">
+                                                        <td class="px-3 py-2 text-xs font-mono text-foreground"><?php echo htmlspecialchars($col['name']); ?></td>
+                                                        <td class="px-3 py-2 text-xs text-foreground"><?php echo htmlspecialchars($col['type']); ?></td>
+                                                        <td class="px-3 py-2 text-xs text-foreground"><?php echo $col['notnull'] ? 'NO' : 'YES'; ?></td>
+                                                        <td class="px-3 py-2 text-xs text-muted-foreground font-mono"><?php echo $col['dflt_value'] !== null ? htmlspecialchars($col['dflt_value']) : '-'; ?></td>
+                                                        <td class="px-3 py-2 text-xs text-foreground"><?php echo $col['pk'] ? '✓' : '-'; ?></td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
                         <!-- Table Content -->
                         <?php 
                         // Prepare display data before rendering
@@ -563,6 +682,7 @@ include '../includes/header.php';
 <?php include '../includes/footer.php'; ?>
 
 <!-- Save Query Dialog -->
+<!-- Save Query Modal -->
 <div id="save-dialog" class="fixed inset-0 hidden items-center justify-center z-50" onclick="if(event.target === this) hideSaveDialog()" style="background-color: rgba(0, 0, 0, 0.3) !important;">
     <div class="border border-border rounded-lg shadow-lg p-6 max-w-md w-full mx-4" onclick="event.stopPropagation()" style="background-color: hsl(var(--background)) !important; z-index: 51;">
         <h3 class="text-lg font-semibold mb-4">Query Kaydet</h3>
@@ -594,6 +714,74 @@ include '../includes/header.php';
                         class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
                     >
                         Kaydet
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Create Table Modal -->
+<div id="create-table-dialog" class="fixed inset-0 hidden items-center justify-center z-50" onclick="if(event.target === this) hideCreateTableModal()" style="background-color: rgba(0, 0, 0, 0.3) !important;">
+    <div class="border border-border rounded-lg shadow-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()" style="background-color: hsl(var(--background)) !important; z-index: 51;">
+        <h3 class="text-lg font-semibold mb-4">Yeni Tablo Oluştur</h3>
+        <form method="POST" action="">
+            <input type="hidden" name="action" value="create_table">
+            <div class="space-y-4">
+                <div>
+                    <label for="table_name" class="block text-sm font-medium mb-2">Tablo Adı:</label>
+                    <input
+                        type="text"
+                        name="table_name"
+                        id="table_name"
+                        required
+                        pattern="[a-zA-Z_][a-zA-Z0-9_]*"
+                        class="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                        placeholder="ornek_tablo"
+                        title="Sadece harf, rakam ve alt çizgi kullanılabilir. İlk karakter harf veya alt çizgi olmalıdır."
+                    >
+                    <p class="text-xs text-muted-foreground mt-1">Sadece harf, rakam ve alt çizgi kullanılabilir</p>
+                </div>
+                <div>
+                    <label for="table_sql" class="block text-sm font-medium mb-2">CREATE TABLE SQL:</label>
+                    <textarea
+                        name="table_sql"
+                        id="table_sql"
+                        required
+                        rows="10"
+                        class="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring font-mono text-sm"
+                        placeholder="CREATE TABLE ornek_tablo (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);"
+                    ></textarea>
+                    <p class="text-xs text-muted-foreground mt-1">CREATE TABLE SQL sorgusunu buraya yazın</p>
+                </div>
+                <div class="rounded-md bg-blue-50 border border-blue-200 p-3">
+                    <p class="text-xs text-blue-800">
+                        <strong>Örnek:</strong><br>
+                        <code class="block mt-1">CREATE TABLE users (<br>
+&nbsp;&nbsp;id INTEGER PRIMARY KEY AUTOINCREMENT,<br>
+&nbsp;&nbsp;username TEXT NOT NULL UNIQUE,<br>
+&nbsp;&nbsp;email TEXT,<br>
+&nbsp;&nbsp;created_at DATETIME DEFAULT CURRENT_TIMESTAMP<br>
+);</code>
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 justify-end">
+                    <button
+                        type="button"
+                        onclick="hideCreateTableModal()"
+                        class="px-4 py-2 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 rounded-md transition-colors"
+                    >
+                        İptal
+                    </button>
+                    <button
+                        type="submit"
+                        class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
+                    >
+                        Oluştur
                     </button>
                 </div>
             </div>
@@ -667,10 +855,39 @@ function hideSaveDialog() {
     document.getElementById('saved_query_name').value = '';
 }
 
-// Close dialog on Escape key
+// Create Table Modal functions
+function showCreateTableModal() {
+    document.getElementById('create-table-dialog').classList.remove('hidden');
+    document.getElementById('create-table-dialog').classList.add('flex');
+    document.getElementById('table_name').focus();
+}
+
+function hideCreateTableModal() {
+    document.getElementById('create-table-dialog').classList.add('hidden');
+    document.getElementById('create-table-dialog').classList.remove('flex');
+    // Reset form
+    document.getElementById('table_name').value = '';
+    document.getElementById('table_sql').value = '';
+}
+
+// Delete Table function
+function deleteTable(tableName) {
+    if (confirm('Tablo "' + tableName + '" silinecek. Bu işlem geri alınamaz. Emin misiniz?')) {
+        window.location.href = '?delete_table=' + encodeURIComponent(tableName);
+    }
+}
+
+// Close dialogs on Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        hideSaveDialog();
+        const createDialog = document.getElementById('create-table-dialog');
+        const saveDialog = document.getElementById('save-dialog');
+        
+        if (!createDialog.classList.contains('hidden')) {
+            hideCreateTableModal();
+        } else if (!saveDialog.classList.contains('hidden')) {
+            hideSaveDialog();
+        }
     }
 });
 </script>
