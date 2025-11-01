@@ -1,5 +1,7 @@
 {
     "app_name": "Vira CMS",
+    "logo": "uploads\/logo_1762000180.png",
+    "favicon": "uploads\/favicon_1762000180.png",
     "db_type": "sqlite",
     "db_config": {
         "sqlite": {
