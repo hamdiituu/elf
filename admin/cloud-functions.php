@@ -1284,10 +1284,10 @@ include '../includes/header.php';
                 
                 joins.push(`LEFT JOIN \`${escapedTarget}\` AS \`${alias}\` ON \`${escapedTable}\`.\`${escapedColumn}\` = \`${alias}\`.\`id\``);
                 
-                // Add related table fields (id, name/title)
+                // Add related table fields (id, name)
+                // Note: Only adding name field, title field may not exist in all tables
                 selectFields += `, \`${alias}\`.\`id\` AS \`${column}_id\``;
                 selectFields += `, \`${alias}\`.\`name\` AS \`${column}_name\``;
-                selectFields += `, \`${alias}\`.\`title\` AS \`${column}_title\``;
             }
             
             if (joins.length > 0) {
