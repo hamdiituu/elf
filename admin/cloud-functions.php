@@ -86,6 +86,9 @@ try {
             if (!in_array('middleware_id', $column_names)) {
                 $db->exec("ALTER TABLE cloud_functions ADD COLUMN middleware_id INTEGER");
             }
+            if (!in_array('function_group', $column_names)) {
+                $db->exec("ALTER TABLE cloud_functions ADD COLUMN function_group TEXT");
+            }
         } else {
             // MySQL - check columns differently
             try {
@@ -95,6 +98,11 @@ try {
             }
             try {
                 $db->exec("ALTER TABLE cloud_functions ADD COLUMN middleware_id INT");
+            } catch (PDOException $e) {
+                // Column might already exist
+            }
+            try {
+                $db->exec("ALTER TABLE cloud_functions ADD COLUMN function_group VARCHAR(255)");
             } catch (PDOException $e) {
                 // Column might already exist
             }
@@ -120,6 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $http_method = 'POST'; // Always POST
             $enabled = isset($_POST['enabled']) ? 1 : 0;
             $middleware_id = !empty($_POST['middleware_id']) ? intval($_POST['middleware_id']) : null;
+            $function_group = trim($_POST['function_group'] ?? '');
             
             // Validate language
             if (!in_array($language, ['php', 'js', 'javascript'])) {
@@ -177,18 +186,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Update existing function
                         $stmt = $db->prepare("
                             UPDATE cloud_functions 
-                            SET name = ?, description = ?, code = ?, language = ?, http_method = ?, endpoint = ?, enabled = ?, middleware_id = ?, updated_at = CURRENT_TIMESTAMP
+                            SET name = ?, description = ?, code = ?, language = ?, http_method = ?, endpoint = ?, enabled = ?, middleware_id = ?, function_group = ?, updated_at = CURRENT_TIMESTAMP
                             WHERE id = ?
                         ");
-                        $stmt->execute([$function_name, $description, $code, $language, $http_method, $endpoint, $enabled, $middleware_id, $function_id]);
+                        $stmt->execute([$function_name, $description, $code, $language, $http_method, $endpoint, $enabled, $middleware_id, $function_group ?: null, $function_id]);
                         $success_message = "Function updated successfully!";
                     } else {
                         // Create new function
                         $stmt = $db->prepare("
-                            INSERT INTO cloud_functions (name, description, code, language, http_method, endpoint, enabled, middleware_id, created_by)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO cloud_functions (name, description, code, language, http_method, endpoint, enabled, middleware_id, function_group, created_by)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ");
-                        $stmt->execute([$function_name, $description, $code, $language, $http_method, $endpoint, $enabled, $middleware_id, $_SESSION['user_id']]);
+                        $stmt->execute([$function_name, $description, $code, $language, $http_method, $endpoint, $enabled, $middleware_id, $function_group ?: null, $_SESSION['user_id']]);
                         $success_message = "Function created successfully!";
                     }
                 } catch (PDOException $e) {
@@ -243,19 +252,68 @@ if ($edit_id) {
 $show_my_functions = isset($_GET['filter']) && $_GET['filter'] === 'my';
 $user_id_filter = $_SESSION['user_id'] ?? null;
 
+// Get all tables for function builder
+$all_tables = [];
+try {
+    $settings = getSettings();
+    $dbType = $settings['db_type'] ?? 'sqlite';
+    
+    if ($dbType === 'mysql') {
+        $all_tables = $db->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME")->fetchAll(PDO::FETCH_COLUMN);
+    } else {
+        $all_tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
+    }
+    // Filter out system tables
+    $all_tables = array_filter($all_tables, function($table) {
+        return !in_array($table, ['sqlite_sequence', 'sqlite_master', 'relation_metadata']);
+    });
+} catch (PDOException $e) {
+    $all_tables = [];
+}
+
+// Get all function groups
+$function_groups = [];
+try {
+    $group_stmt = $db->query("SELECT DISTINCT function_group FROM cloud_functions WHERE function_group IS NOT NULL AND function_group != '' ORDER BY function_group");
+    $function_groups = $group_stmt->fetchAll(PDO::FETCH_COLUMN);
+} catch (PDOException $e) {
+    $function_groups = [];
+}
+
+// Get filter for groups
+$selected_group = isset($_GET['group']) ? $_GET['group'] : null;
+
 // Get all functions (handle middleware_id column safely)
 $functions = [];
 try {
+    // Build WHERE clause for filters
+    $where_clauses = [];
+    $params = [];
+    
+    if ($show_my_functions && $user_id_filter) {
+        $where_clauses[] = "cf.created_by = ?";
+        $params[] = $user_id_filter;
+    }
+    
+    if ($selected_group !== null && $selected_group !== '') {
+        $where_clauses[] = "cf.function_group = ?";
+        $params[] = $selected_group;
+    }
+    
+    $where_sql = !empty($where_clauses) ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
+    
     if ($show_my_functions && $user_id_filter) {
         // Show only user's functions
         try {
-            $stmt = $db->prepare("SELECT cf.*, u.username as created_by_name, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id WHERE cf.created_by = ? ORDER BY cf.created_at DESC");
-            $stmt->execute([$user_id_filter]);
+            $sql = "SELECT cf.*, u.username as created_by_name, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id $where_sql ORDER BY cf.function_group ASC, cf.created_at DESC";
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
             $functions = $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             // If join fails, try simpler query
-            $stmt = $db->prepare("SELECT cf.*, u.username as created_by_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id WHERE cf.created_by = ? ORDER BY cf.created_at DESC");
-            $stmt->execute([$user_id_filter]);
+            $sql = "SELECT cf.*, u.username as created_by_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id $where_sql ORDER BY cf.function_group ASC, cf.created_at DESC";
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
             $functions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             foreach ($functions as &$func) {
                 $func['middleware_name'] = null;
@@ -265,11 +323,25 @@ try {
     } else {
         // Show all functions
         try {
-            $functions = $db->query("SELECT cf.*, u.username as created_by_name, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id ORDER BY cf.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+            $sql = "SELECT cf.*, u.username as created_by_name, cm.name as middleware_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id LEFT JOIN cloud_middlewares cm ON cf.middleware_id = cm.id $where_sql ORDER BY cf.function_group ASC, cf.created_at DESC";
+            if (!empty($params)) {
+                $stmt = $db->prepare($sql);
+                $stmt->execute($params);
+                $functions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                $functions = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+            }
         } catch (PDOException $e) {
             // If join fails, try simpler query
             try {
-                $functions = $db->query("SELECT cf.*, u.username as created_by_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id ORDER BY cf.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+                $sql = "SELECT cf.*, u.username as created_by_name FROM cloud_functions cf LEFT JOIN users u ON cf.created_by = u.id $where_sql ORDER BY cf.function_group ASC, cf.created_at DESC";
+                if (!empty($params)) {
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute($params);
+                    $functions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                } else {
+                    $functions = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+                }
                 foreach ($functions as &$func) {
                     $func['middleware_name'] = null;
                     $func['middleware_id'] = null;
@@ -277,7 +349,14 @@ try {
             } catch (PDOException $e2) {
                 // If even simpler query fails, try basic query
                 try {
-                    $functions = $db->query("SELECT * FROM cloud_functions ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+                    $sql = "SELECT * FROM cloud_functions $where_sql ORDER BY function_group ASC, created_at DESC";
+                    if (!empty($params)) {
+                        $stmt = $db->prepare($sql);
+                        $stmt->execute($params);
+                        $functions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    } else {
+                        $functions = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+                    }
                     foreach ($functions as &$func) {
                         $func['created_by_name'] = null;
                         $func['middleware_name'] = null;
@@ -480,21 +559,35 @@ include '../includes/header.php';
                                         <?php echo count($functions); ?>
                                     </span>
                                 </div>
-                                <div class="flex items-center gap-2 mb-2">
+                                <div class="flex items-center gap-2 mb-2 flex-wrap">
                                     <a
-                                        href="?filter=my"
+                                        href="?filter=my<?php echo $selected_group ? '&group=' . urlencode($selected_group) : ''; ?>"
                                         class="px-2 py-1 text-xs font-medium rounded-md border transition-colors <?php echo $show_my_functions ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-input hover:bg-accent'; ?>"
                                         title="Show my functions"
                                     >
                                         My Functions
                                     </a>
                                     <a
-                                        href="cloud-functions.php"
+                                        href="cloud-functions.php<?php echo $selected_group ? '?group=' . urlencode($selected_group) : ''; ?>"
                                         class="px-2 py-1 text-xs font-medium rounded-md border transition-colors <?php echo !$show_my_functions ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-input hover:bg-accent'; ?>"
                                         title="Show all functions"
                                     >
                                         All
                                     </a>
+                                    <?php if (!empty($function_groups)): ?>
+                                        <select
+                                            onchange="if(this.value) window.location.href='?group=' + encodeURIComponent(this.value) + '<?php echo $show_my_functions ? '&filter=my' : ''; ?>'; else window.location.href='cloud-functions.php<?php echo $show_my_functions ? '?filter=my' : ''; ?>';"
+                                            class="px-2 py-1 text-xs font-medium rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                                            value="<?php echo htmlspecialchars($selected_group ?? ''); ?>"
+                                        >
+                                            <option value="">All Groups</option>
+                                            <?php foreach ($function_groups as $group): ?>
+                                                <option value="<?php echo htmlspecialchars($group); ?>" <?php echo $selected_group === $group ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($group); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    <?php endif; ?>
                                 </div>
                                 <input 
                                     type="text" 
@@ -657,6 +750,29 @@ include '../includes/header.php';
                                         
                                         <div>
                                             <label class="block text-sm font-medium text-foreground mb-1.5">
+                                                Group (Optional)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="function_group"
+                                                id="function_group"
+                                                value="<?php echo htmlspecialchars($edit_function['function_group'] ?? ''); ?>"
+                                                list="function-groups-list"
+                                                class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                                placeholder="e.g. Users, Orders, API"
+                                            />
+                                            <datalist id="function-groups-list">
+                                                <?php foreach ($function_groups as $group): ?>
+                                                    <option value="<?php echo htmlspecialchars($group); ?>">
+                                                <?php endforeach; ?>
+                                            </datalist>
+                                            <p class="mt-1 text-xs text-muted-foreground">
+                                                Group functions together for better organization
+                                            </p>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-1.5">
                                                 Middleware (Optional)
                                             </label>
                                             <select
@@ -759,6 +875,143 @@ include '../includes/header.php';
             </div>
         </div>
     </main>
+</div>
+
+<!-- Function Builder Modal -->
+<div id="function-builder-modal" class="fixed inset-0 hidden items-center justify-center z-50" onclick="if(event.target === this && typeof window.hideFunctionBuilder === 'function') window.hideFunctionBuilder()" style="background-color: rgba(0, 0, 0, 0.3) !important;">
+    <div class="border border-border rounded-lg shadow-lg p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()" style="background-color: hsl(var(--background)) !important; z-index: 51;">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-semibold">Function Builder</h3>
+            <button
+                type="button"
+                onclick="if(typeof window.hideFunctionBuilder === 'function') window.hideFunctionBuilder()"
+                class="text-muted-foreground hover:text-foreground transition-colors"
+            >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <form id="builder-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-foreground mb-1.5">
+                    Function Name *
+                </label>
+                <input
+                    type="text"
+                    id="builder_function_name"
+                    required
+                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="e.g. get-users"
+                />
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-foreground mb-1.5">
+                    Table *
+                </label>
+                <select
+                    id="builder_table_name"
+                    required
+                    onchange="updateBuilderPreview()"
+                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                    <option value="">-- Select Table --</option>
+                    <?php foreach ($all_tables as $table): ?>
+                        <option value="<?php echo htmlspecialchars($table); ?>"><?php echo htmlspecialchars($table); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-foreground mb-1.5">
+                    Operation Type *
+                </label>
+                <select
+                    id="builder_operation"
+                    required
+                    onchange="updateBuilderPreview()"
+                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                    <option value="list">List (SELECT * FROM table)</option>
+                    <option value="get">Get Single (SELECT * WHERE id)</option>
+                    <option value="create">Create (INSERT)</option>
+                    <option value="update">Update (UPDATE WHERE id)</option>
+                    <option value="delete">Delete (DELETE WHERE id)</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-foreground mb-1.5">
+                    Language *
+                </label>
+                <select
+                    id="builder_language"
+                    required
+                    onchange="updateBuilderPreview()"
+                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                    <option value="php">PHP</option>
+                    <option value="js">JavaScript (Node.js)</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-foreground mb-1.5">
+                    Description
+                </label>
+                <input
+                    type="text"
+                    id="builder_description"
+                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="Function description"
+                />
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-foreground mb-1.5">
+                    Group (Optional)
+                </label>
+                <input
+                    type="text"
+                    id="builder_group"
+                    list="builder-groups-list"
+                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="e.g. Users, Orders, API"
+                />
+                <datalist id="builder-groups-list">
+                    <?php foreach ($function_groups as $group): ?>
+                        <option value="<?php echo htmlspecialchars($group); ?>">
+                    <?php endforeach; ?>
+                </datalist>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-foreground mb-1.5">
+                    Generated Code Preview
+                </label>
+                <pre id="builder_preview" class="bg-muted p-4 rounded-md text-xs font-mono text-foreground overflow-x-auto max-h-60 overflow-y-auto"></pre>
+            </div>
+            
+            <div class="flex items-center gap-2 justify-end pt-4 border-t border-border">
+                <button
+                    type="button"
+                    onclick="if(typeof window.hideFunctionBuilder === 'function') window.hideFunctionBuilder()"
+                    class="px-4 py-2 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 rounded-md transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    onclick="generateAndCreateFunction()"
+                    class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
+                >
+                    Generate & Create
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
@@ -1026,6 +1279,329 @@ response.message = 'Function executed successfully';
     function showCreateForm() {
         window.location.href = 'cloud-functions.php';
     }
+    
+    // Function Builder functions
+    window.showFunctionBuilder = function() {
+        const modal = document.getElementById('function-builder-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            updateBuilderPreview();
+        }
+    };
+    
+    window.hideFunctionBuilder = function() {
+        const modal = document.getElementById('function-builder-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    };
+    
+    function getTableColumns(tableName) {
+        // This would need to be implemented via AJAX to fetch table columns
+        // For now, return empty array - will be populated via AJAX
+        return [];
+    }
+    
+    function generateFunctionCode() {
+        const functionName = document.getElementById('builder_function_name')?.value || '';
+        const tableName = document.getElementById('builder_table_name')?.value || '';
+        const operation = document.getElementById('builder_operation')?.value || 'list';
+        const language = document.getElementById('builder_language')?.value || 'php';
+        
+        if (!functionName || !tableName || !operation) {
+            return '';
+        }
+        
+        if (language === 'js') {
+            return generateJavaScriptCode(functionName, tableName, operation);
+        } else {
+            return generatePHPCode(functionName, tableName, operation);
+        }
+    }
+    
+    function generatePHPCode(functionName, tableName, operation) {
+        const escapedTable = tableName.replace(/[^a-zA-Z0-9_]/g, '');
+        let code = '';
+        
+        switch(operation) {
+            case 'list':
+                code = `// List all records from ${tableName}
+\$stmt = \$dbContext->query("SELECT * FROM ${escapedTable} ORDER BY id DESC");
+\$records = \$stmt->fetchAll(PDO::FETCH_ASSOC);
+
+\$response['success'] = true;
+\$response['data'] = \$records;
+\$response['message'] = 'Records retrieved successfully';
+\$response['count'] = count(\$records);`;
+                break;
+            case 'get':
+                code = `// Get single record by ID
+\$id = isset(\$request['id']) ? intval(\$request['id']) : 0;
+if (\$id <= 0) {
+    \$response['success'] = false;
+    \$response['message'] = 'Invalid ID';
+    return;
+}
+
+\$stmt = \$dbContext->prepare("SELECT * FROM ${escapedTable} WHERE id = ?");
+\$stmt->execute([\$id]);
+\$record = \$stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!\$record) {
+    \$response['success'] = false;
+    \$response['message'] = 'Record not found';
+    return;
+}
+
+\$response['success'] = true;
+\$response['data'] = \$record;
+\$response['message'] = 'Record retrieved successfully';`;
+                break;
+            case 'create':
+                code = `// Create new record
+// Expected fields in request
+\$stmt = \$dbContext->prepare("INSERT INTO ${escapedTable} (/* columns */) VALUES (/* values */)");
+// \$stmt->execute([/* values */]);
+
+\$response['success'] = true;
+\$response['message'] = 'Record created successfully';
+// \$response['data'] = ['id' => \$dbContext->lastInsertId()];`;
+                break;
+            case 'update':
+                code = `// Update record by ID
+\$id = isset(\$request['id']) ? intval(\$request['id']) : 0;
+if (\$id <= 0) {
+    \$response['success'] = false;
+    \$response['message'] = 'Invalid ID';
+    return;
+}
+
+// Check if record exists
+\$stmt = \$dbContext->prepare("SELECT * FROM ${escapedTable} WHERE id = ?");
+\$stmt->execute([\$id]);
+\$record = \$stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!\$record) {
+    \$response['success'] = false;
+    \$response['message'] = 'Record not found';
+    return;
+}
+
+// Update record
+// \$stmt = \$dbContext->prepare("UPDATE ${escapedTable} SET /* columns */ WHERE id = ?");
+// \$stmt->execute([/* values, id */]);
+
+\$response['success'] = true;
+\$response['message'] = 'Record updated successfully';`;
+                break;
+            case 'delete':
+                code = `// Delete record by ID
+\$id = isset(\$request['id']) ? intval(\$request['id']) : 0;
+if (\$id <= 0) {
+    \$response['success'] = false;
+    \$response['message'] = 'Invalid ID';
+    return;
+}
+
+// Check if record exists
+\$stmt = \$dbContext->prepare("SELECT * FROM ${escapedTable} WHERE id = ?");
+\$stmt->execute([\$id]);
+\$record = \$stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!\$record) {
+    \$response['success'] = false;
+    \$response['message'] = 'Record not found';
+    return;
+}
+
+// Delete record
+\$stmt = \$dbContext->prepare("DELETE FROM ${escapedTable} WHERE id = ?");
+\$stmt->execute([\$id]);
+
+\$response['success'] = true;
+\$response['message'] = 'Record deleted successfully';`;
+                break;
+        }
+        
+        return code;
+    }
+    
+    function generateJavaScriptCode(functionName, tableName, operation) {
+        const escapedTable = tableName.replace(/[^a-zA-Z0-9_]/g, '');
+        let code = '';
+        
+        switch(operation) {
+            case 'list':
+                code = `// List all records from ${tableName}
+try {
+    const records = await dbQuery('SELECT * FROM ${escapedTable} ORDER BY id DESC');
+    response.success = true;
+    response.data = records;
+    response.message = 'Records retrieved successfully';
+    response.count = records.length;
+} catch (error) {
+    response.success = false;
+    response.message = 'Database error: ' + error.message;
+    response.error = error.message;
+}`;
+                break;
+            case 'get':
+                code = `// Get single record by ID
+const id = request.id ? parseInt(request.id) : 0;
+if (id <= 0) {
+    response.success = false;
+    response.message = 'Invalid ID';
+    return;
+}
+
+try {
+    const record = await dbQueryOne('SELECT * FROM ${escapedTable} WHERE id = ?', [id]);
+    if (!record) {
+        response.success = false;
+        response.message = 'Record not found';
+        return;
+    }
+    response.success = true;
+    response.data = record;
+    response.message = 'Record retrieved successfully';
+} catch (error) {
+    response.success = false;
+    response.message = 'Database error: ' + error.message;
+    response.error = error.message;
+}`;
+                break;
+            case 'create':
+                code = `// Create new record
+// Expected fields in request
+try {
+    // const result = await dbExecute(
+    //     'INSERT INTO ${escapedTable} (/* columns */) VALUES (/* values */)',
+    //     [/* values */]
+    // );
+    response.success = true;
+    response.message = 'Record created successfully';
+    // response.data = { id: result.lastInsertRowid };
+} catch (error) {
+    response.success = false;
+    response.message = 'Database error: ' + error.message;
+    response.error = error.message;
+}`;
+                break;
+            case 'update':
+                code = `// Update record by ID
+const id = request.id ? parseInt(request.id) : 0;
+if (id <= 0) {
+    response.success = false;
+    response.message = 'Invalid ID';
+    return;
+}
+
+try {
+    // Check if record exists
+    const record = await dbQueryOne('SELECT * FROM ${escapedTable} WHERE id = ?', [id]);
+    if (!record) {
+        response.success = false;
+        response.message = 'Record not found';
+        return;
+    }
+    
+    // Update record
+    // const result = await dbExecute(
+    //     'UPDATE ${escapedTable} SET /* columns */ WHERE id = ?',
+    //     [/* values, id */]
+    // );
+    
+    response.success = true;
+    response.message = 'Record updated successfully';
+} catch (error) {
+    response.success = false;
+    response.message = 'Database error: ' + error.message;
+    response.error = error.message;
+}`;
+                break;
+            case 'delete':
+                code = `// Delete record by ID
+const id = request.id ? parseInt(request.id) : 0;
+if (id <= 0) {
+    response.success = false;
+    response.message = 'Invalid ID';
+    return;
+}
+
+try {
+    // Check if record exists
+    const record = await dbQueryOne('SELECT * FROM ${escapedTable} WHERE id = ?', [id]);
+    if (!record) {
+        response.success = false;
+        response.message = 'Record not found';
+        return;
+    }
+    
+    // Delete record
+    await dbExecute('DELETE FROM ${escapedTable} WHERE id = ?', [id]);
+    
+    response.success = true;
+    response.message = 'Record deleted successfully';
+} catch (error) {
+    response.success = false;
+    response.message = 'Database error: ' + error.message;
+    response.error = error.message;
+}`;
+                break;
+        }
+        
+        return code;
+    }
+    
+    window.updateBuilderPreview = function() {
+        const preview = document.getElementById('builder_preview');
+        if (preview) {
+            const code = generateFunctionCode();
+            preview.textContent = code || 'Select table and operation to preview code...';
+        }
+    };
+    
+    window.generateAndCreateFunction = function() {
+        const form = document.getElementById('builder-form');
+        if (!form || !form.checkValidity()) {
+            form?.reportValidity();
+            return;
+        }
+        
+        const functionName = document.getElementById('builder_function_name')?.value || '';
+        const tableName = document.getElementById('builder_table_name')?.value || '';
+        const operation = document.getElementById('builder_operation')?.value || '';
+        const language = document.getElementById('builder_language')?.value || 'php';
+        const description = document.getElementById('builder_description')?.value || '';
+        const group = document.getElementById('builder_group')?.value || '';
+        const code = generateFunctionCode();
+        
+        // Populate the main form
+        document.getElementById('function_name').value = functionName;
+        document.getElementById('description').value = description;
+        document.getElementById('function_group').value = group;
+        document.getElementById('language').value = language;
+        
+        // Update code editor
+        if (window.codeEditor) {
+            window.codeEditor.setValue(code);
+        } else {
+            document.getElementById('code').value = code;
+        }
+        
+        // Update language mode
+        if (window.updateCodeEditorMode) {
+            window.updateCodeEditorMode();
+        }
+        
+        // Hide builder modal
+        window.hideFunctionBuilder();
+        
+        // Scroll to form
+        document.getElementById('function-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
     
     function filterFunctions(searchTerm) {
         const term = searchTerm.toLowerCase().trim();
