@@ -67,6 +67,25 @@ foreach ($cloud_functions as $cf) {
     $group = $cf['function_group'] ?? '';
     $group = trim($group);
     
+    // Detect image columns from function code
+    $image_columns = [];
+    if (!empty($cf['code'])) {
+        // Look for $_FILES['xxx'] patterns in the code
+        if (preg_match_all("/\\\$_FILES\[['\"]([^'\"]+)['\"]\]/", $cf['code'], $matches)) {
+            $image_columns = array_unique($matches[1]);
+        }
+        // Also check for common image column names in INSERT/UPDATE statements
+        if (preg_match_all("/(?:INSERT INTO|UPDATE)\s+[`\"]?(\w+)[`\"]?\s*(?:\(|SET)\s*[`\"]?([`\"]?\w+[`\"]?)/i", $cf['code'], $matches2)) {
+            foreach ($matches2[2] as $col_name) {
+                $col_name_clean = trim($col_name, "`\"'");
+                if (preg_match('/\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i', $col_name_clean)) {
+                    $image_columns[] = $col_name_clean;
+                }
+            }
+        }
+        $image_columns = array_unique($image_columns);
+    }
+    
     $api_item = [
         'id' => 'cloud-function-' . $cf['id'],
         'name' => $cf['name'],
@@ -81,7 +100,8 @@ foreach ($cloud_functions as $cf) {
         'is_cloud_function' => true,
         'cloud_function_id' => $cf['id'],
         'cloud_function_name' => $cf['name'],
-        'function_group' => $group
+        'function_group' => $group,
+        'image_columns' => array_values($image_columns) // Normalize array keys
     ];
     
     if (!empty($group)) {
@@ -453,6 +473,37 @@ function generateRequestPanel(api) {
         `).join('');
     }
     
+    // Add image upload fields if this is a cloud function with image columns
+    let imageUploadHtml = '';
+    if (api.is_cloud_function && api.image_columns && api.image_columns.length > 0) {
+        imageUploadHtml = `
+            <div class="mb-4 rounded-lg bg-blue-50 border border-blue-200 p-4">
+                <label class="block text-xs font-medium text-blue-900 mb-3 uppercase tracking-wider">Image Upload</label>
+                ${api.image_columns.map(colName => `
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-foreground mb-2">
+                            ${colName}
+                            <span class="text-xs text-muted-foreground ml-2 font-normal">(Image File)</span>
+                        </label>
+                        <input 
+                            type="file" 
+                            data-image-param="${colName}"
+                            accept="image/*"
+                            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                        >
+                        <p class="mt-1 text-xs text-muted-foreground">Upload image file (JPG, PNG, GIF, WEBP, SVG)</p>
+                    </div>
+                `).join('')}
+                <p class="mt-2 text-xs text-blue-700">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    File uploads will use multipart/form-data format
+                </p>
+            </div>
+        `;
+    }
+    
     const isCloudFunction = api.is_cloud_function || false;
     
     panel.innerHTML = `
@@ -495,6 +546,8 @@ function generateRequestPanel(api) {
                     ${methodsHtml}
                 </select>
             </div>
+            
+            ${imageUploadHtml}
             
             ${api.parameters && api.parameters.length > 0 ? `
                 <div>
@@ -609,48 +662,89 @@ async function makeRequest(apiId) {
             url += (url.includes('?') ? '&' : '?') + queryString;
         }
         
-        // Prepare headers
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        
-        // Parse custom headers
-        const customHeadersText = document.getElementById('custom-headers')?.value || '';
-        if (customHeadersText.trim()) {
-            customHeadersText.split('\n').forEach(line => {
-                const trimmed = line.trim();
-                if (trimmed) {
-                    const [key, ...valueParts] = trimmed.split(':');
-                    if (key && valueParts.length > 0) {
-                        headers[key.trim()] = valueParts.join(':').trim();
-                    }
-                }
-            });
-        }
+        // Check if there are image uploads
+        const imageInputs = document.querySelectorAll('[data-image-param]');
+        const hasImageUploads = Array.from(imageInputs).some(input => input.files && input.files.length > 0);
         
         // Prepare request options
-        const options = {
-            method: method,
-            headers: headers
+        let options = {
+            method: method
         };
         
-        // Add body for POST/PUT/DELETE/PATCH requests
-        if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+        // If there are image uploads, use FormData
+        if (hasImageUploads) {
+            const formData = new FormData();
+            
+            // Add image files
+            imageInputs.forEach(input => {
+                if (input.files && input.files.length > 0) {
+                    formData.append(input.dataset.imageParam, input.files[0]);
+                }
+            });
+            
+            // Add query parameters as form data
+            Object.keys(queryParams).forEach(key => {
+                formData.append(key, queryParams[key]);
+            });
+            
+            // Add JSON body data if exists (merge with FormData)
             const bodyText = document.getElementById('request-body')?.value || '';
             if (bodyText.trim()) {
                 try {
                     const bodyObj = JSON.parse(bodyText);
-                    Object.assign(bodyObj, queryParams);
-                    options.body = JSON.stringify(bodyObj);
+                    Object.keys(bodyObj).forEach(key => {
+                        // Don't override image files, but add other fields
+                        if (!Array.from(imageInputs).some(input => input.dataset.imageParam === key && input.files && input.files.length > 0)) {
+                            formData.append(key, typeof bodyObj[key] === 'object' ? JSON.stringify(bodyObj[key]) : bodyObj[key]);
+                        }
+                    });
                 } catch (e) {
-                    if (Object.keys(queryParams).length > 0) {
-                        options.body = JSON.stringify(queryParams);
-                    } else {
-                        options.body = bodyText;
-                    }
+                    // Ignore JSON parse errors for FormData
                 }
-            } else if (Object.keys(queryParams).length > 0) {
-                options.body = JSON.stringify(queryParams);
+            }
+            
+            options.body = formData;
+            // Don't set Content-Type header, let browser set it with boundary for multipart/form-data
+        } else {
+            // No image uploads, use JSON
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Parse custom headers
+            const customHeadersText = document.getElementById('custom-headers')?.value || '';
+            if (customHeadersText.trim()) {
+                customHeadersText.split('\n').forEach(line => {
+                    const trimmed = line.trim();
+                    if (trimmed) {
+                        const [key, ...valueParts] = trimmed.split(':');
+                        if (key && valueParts.length > 0) {
+                            headers[key.trim()] = valueParts.join(':').trim();
+                        }
+                    }
+                });
+            }
+            
+            options.headers = headers;
+            
+            // Add body for POST/PUT/DELETE/PATCH requests
+            if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+                const bodyText = document.getElementById('request-body')?.value || '';
+                if (bodyText.trim()) {
+                    try {
+                        const bodyObj = JSON.parse(bodyText);
+                        Object.assign(bodyObj, queryParams);
+                        options.body = JSON.stringify(bodyObj);
+                    } catch (e) {
+                        if (Object.keys(queryParams).length > 0) {
+                            options.body = JSON.stringify(queryParams);
+                        } else {
+                            options.body = bodyText;
+                        }
+                    }
+                } else if (Object.keys(queryParams).length > 0) {
+                    options.body = JSON.stringify(queryParams);
+                }
             }
         }
         
