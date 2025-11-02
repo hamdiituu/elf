@@ -680,7 +680,7 @@ include '../includes/header.php';
                                                         Test
                                                     </a>
                                                     <button
-                                                        onclick="event.stopPropagation(); if(typeof window.deleteFunction === 'function') { window.deleteFunction(<?php echo $func['id']; ?>, '<?php echo htmlspecialchars(addslashes($func['name'])); ?>'); } else { alert('Delete function not loaded yet. Please refresh the page.'); }"
+                                                        onclick="event.stopPropagation(); window.deleteFunction(<?php echo $func['id']; ?>, '<?php echo htmlspecialchars(addslashes($func['name'])); ?>')"
                                                         class="flex-1 inline-flex items-center justify-center rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 transition-colors"
                                                         title="Delete function"
                                                     >
@@ -875,7 +875,7 @@ include '../includes/header.php';
                                                 </a>
                                                 <button
                                                     type="button"
-                                                    onclick="if(typeof window.deleteFunction === 'function') { window.deleteFunction(<?php echo $edit_function['id']; ?>, '<?php echo htmlspecialchars(addslashes($edit_function['name'])); ?>'); } else { alert('Delete function not loaded yet. Please refresh the page.'); }"
+                                                    onclick="window.deleteFunction(<?php echo $edit_function['id']; ?>, '<?php echo htmlspecialchars(addslashes($edit_function['name'])); ?>')"
                                                     class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 px-4 py-2 transition-colors"
                                                 >
                                                     <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
