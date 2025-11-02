@@ -211,39 +211,7 @@ if ($run_web_cron) {
         if ($cron_job) {
             $language = $cron_job['language'] ?? 'php';
             
-            if ($language === 'js' || $language === 'javascript') {
-                // JavaScript/Node.js execution
-                require_once __DIR__ . '/../api/common/node-executor.php';
-                
-                // Note: PDO objects cannot be serialized for Node.js
-                // The node-executor will get database config from settings
-                $context = [
-                    'request' => [],
-                    'method' => 'GET',
-                    'headers' => [],
-                    'response' => ['success' => false, 'data' => null, 'message' => '', 'error' => null]
-                ];
-                
-                $start_time = microtime(true);
-                cronLog($cron_job['name'], 'started', "Manually triggered");
-                
-                $result = executeNodeCode($cron_job['code'], $context);
-                
-                $execution_time = (microtime(true) - $start_time) * 1000;
-                
-                if ($result['success']) {
-                    cronLog($cron_job['name'], "success", "Cron job completed successfully", $execution_time);
-                    $success_message = "Cron job executed successfully!";
-                } else {
-                    cronLog($cron_job['name'], "failed", "Cron job failed: " . ($result['message'] ?? 'Unknown error'), $execution_time, $result['error'] ?? null);
-                    $error_message = "Cron job error: " . ($result['message'] ?? 'Unknown error');
-                }
-                
-                // Update last run time
-                $stmt = $db->prepare("UPDATE cron_jobs SET last_run_at = CURRENT_TIMESTAMP WHERE id = ?");
-                $stmt->execute([$run_web_cron]);
-            } else {
-                // PHP execution
+            // PHP execution only
                 // Create temporary file and execute
                 $temp_file = tempnam(sys_get_temp_dir(), 'cron_' . $cron_job['name'] . '_');
                 file_put_contents($temp_file, $cron_job['code']);

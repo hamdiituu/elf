@@ -5,7 +5,6 @@
  */
 
 require_once __DIR__ . '/../common/api-helper.php';
-require_once __DIR__ . '/../common/node-executor.php';
 require_once __DIR__ . '/../../config/config.php';
 
 ensureCors();
@@ -73,28 +72,13 @@ if ($has_middleware) {
         set_time_limit(30);
         $middleware_response = $response; // Initialize middleware response
         
-        // Execute middleware based on language
-        if ($middleware_language === 'js' || $middleware_language === 'javascript') {
-            // Execute JavaScript middleware
-            $middleware_result = executeNodeCode(
-                $function['middleware_code'],
-                [
-                    'dbContext' => $dbContext,
-                    'request' => $request,
-                    'method' => $method,
-                    'headers' => $headers,
-                    'response' => $middleware_response
-                ]
-            );
-        } else {
-            // Execute PHP middleware
-            $executeMiddleware = function($code, $dbContext, $request, $method, $headers, &$response) {
-                $db = $dbContext;
-                eval($code);
-                return $response;
-            };
-            $middleware_result = $executeMiddleware($function['middleware_code'], $dbContext, $request, $method, $headers, $middleware_response);
-        }
+        // Execute PHP middleware only
+        $executeMiddleware = function($code, $dbContext, $request, $method, $headers, &$response) {
+            $db = $dbContext;
+            eval($code);
+            return $response;
+        };
+        $middleware_result = $executeMiddleware($function['middleware_code'], $dbContext, $request, $method, $headers, $middleware_response);
         
         // If middleware fails, return early without executing function
         if (isset($middleware_result['success']) && !$middleware_result['success']) {
@@ -137,34 +121,19 @@ try {
     // Execute with timeout
     set_time_limit(30); // Max 30 seconds execution time
     
-    // Execute function based on language
-    if ($function_language === 'js' || $function_language === 'javascript') {
-        // Execute JavaScript function
-        $result = executeNodeCode(
-            $function['code'],
-            [
-                'dbContext' => $dbContext,
-                'request' => $request,
-                'method' => $method,
-                'headers' => $headers,
-                'response' => $response
-            ]
-        );
-    } else {
-        // Execute PHP function
-        $executeFunction = function($code, $dbContext, $request, $method, $headers, &$response) {
-            // These variables will be available in the function code
-            // $dbContext is the database connection (PDO)
-            // $db is also available as alias for $dbContext
-            $db = $dbContext;
-            
-            // Execute the code
-            eval($code);
-            
-            return $response;
-        };
-        $result = $executeFunction($function['code'], $dbContext, $request, $method, $headers, $response);
-    }
+    // Execute PHP function only
+    $executeFunction = function($code, $dbContext, $request, $method, $headers, &$response) {
+        // These variables will be available in the function code
+        // $dbContext is the database connection (PDO)
+        // $db is also available as alias for $dbContext
+        $db = $dbContext;
+        
+        // Execute the code
+        eval($code);
+        
+        return $response;
+    };
+    $result = $executeFunction($function['code'], $dbContext, $request, $method, $headers, $response);
     
     // Always return success response (200), never 500
     // If function sets success=false, we still return 200 with success=false in response body

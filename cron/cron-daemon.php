@@ -192,43 +192,16 @@ function executeCronJob($job, $db) {
         // Create temporary file with wrapped code
         $temp_file = tempnam(sys_get_temp_dir(), 'cron_daemon_' . $cron_name . '_');
         
-        if ($language === 'js' || $language === 'javascript') {
-            // JavaScript/Node.js execution
-            require_once __DIR__ . '/../api/common/node-executor.php';
-            
-            // Note: PDO objects cannot be serialized for Node.js
-            // The node-executor will get database config from settings
-            $context = [
-                'request' => [],
-                'method' => 'GET',
-                'headers' => [],
-                'response' => ['success' => false, 'data' => null, 'message' => '', 'error' => null]
-            ];
-            
-            $result = executeNodeCode($job['code'], $context);
-            
-            $execution_time = (microtime(true) - $start_time) * 1000;
-            
-            if ($result['success']) {
-                cronLog($cron_name, "success", "Cron job completed successfully", $execution_time);
-            } else {
-                cronLog($cron_name, "failed", "Cron job failed: " . ($result['message'] ?? 'Unknown error'), $execution_time, $result['error'] ?? null);
-            }
-            
-            // Update last run time
-            $stmt = $db->prepare("UPDATE cron_jobs SET last_run_at = CURRENT_TIMESTAMP WHERE id = ?");
-            $stmt->execute([$job['id']]);
-        } else {
-            // PHP execution
-            // Clean user code
-            $user_code = trim($job['code']);
-            if (!empty($user_code) && substr($user_code, -1) !== ';' && substr($user_code, -1) !== '}') {
-                $user_code .= ';';
-            }
-            $user_code .= PHP_EOL;
-            
-            // Wrap code
-            $wrapped_code = '<?php
+        // PHP execution only
+        // Clean user code
+        $user_code = trim($job['code']);
+        if (!empty($user_code) && substr($user_code, -1) !== ';' && substr($user_code, -1) !== '}') {
+            $user_code .= ';';
+        }
+        $user_code .= PHP_EOL;
+        
+        // Wrap code
+        $wrapped_code = '<?php
 require_once "' . __DIR__ . '/../config/config.php";
 require_once "' . __DIR__ . '/common/cron-helper.php";
 
@@ -264,26 +237,25 @@ try {
     exit(1);
 }
 ?>';
-            
-            file_put_contents($temp_file, $wrapped_code);
-            
-            // Execute in background (non-blocking)
-            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                // Windows
-                pclose(popen("start /B php " . escapeshellarg($temp_file) . " > NUL 2>&1", "r"));
-            } else {
-                // Unix/Linux - non-blocking
-                exec("php " . escapeshellarg($temp_file) . " > /dev/null 2>&1 &", $output, $return_var);
-            }
-            
-            // Clean up temp file after a delay
-            // Use a background process to delete after execution
-            if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-                exec("(sleep 30 && rm -f " . escapeshellarg($temp_file) . ") > /dev/null 2>&1 &");
-            } else {
-                // Windows - delete after 30 seconds
-                @unlink($temp_file);
-            }
+        
+        file_put_contents($temp_file, $wrapped_code);
+        
+        // Execute in background (non-blocking)
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows
+            pclose(popen("start /B php " . escapeshellarg($temp_file) . " > NUL 2>&1", "r"));
+        } else {
+            // Unix/Linux - non-blocking
+            exec("php " . escapeshellarg($temp_file) . " > /dev/null 2>&1 &", $output, $return_var);
+        }
+        
+        // Clean up temp file after a delay
+        // Use a background process to delete after execution
+        if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+            exec("(sleep 30 && rm -f " . escapeshellarg($temp_file) . ") > /dev/null 2>&1 &");
+        } else {
+            // Windows - delete after 30 seconds
+            @unlink($temp_file);
         }
         
     } catch (Exception $e) {

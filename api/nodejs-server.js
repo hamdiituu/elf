@@ -258,31 +258,47 @@ const server = http.createServer(async (req, res) => {
                 // This allows user code to use await directly
                 // Use closure to pass response, request, method, headers directly
                 const executeUserCode = async () => {
-                    // Capture response, request, method, headers in closure
-                    // This ensures they are accessible in user code
-                    const responseObj = response;
-                    const requestObj = request;
-                    const methodObj = method;
-                    const headersObj = headers;
-                    
                     // User code starts here
                     // Use Function constructor to properly handle await
                     // Pass response, request, method, headers as parameters through closure
+                    // IMPORTANT: Use the actual response object reference so changes persist
+                    // Ensure response object exists and is valid
+                    if (!response || typeof response !== 'object') {
+                        response = {
+                            success: false,
+                            data: null,
+                            message: '',
+                            error: null
+                        };
+                    }
+                    
                     const userCodeFunction = new Function(`
                         return (async function() {
                             const dbQuery = arguments[0];
                             const dbQueryOne = arguments[1];
                             const dbExecute = arguments[2];
-                            const response = arguments[3];
-                            const request = arguments[4];
-                            const method = arguments[5];
-                            const headers = arguments[6];
+                            
+                            // Get response object - ensure it exists
+                            let response = arguments[3];
+                            if (!response || typeof response !== 'object') {
+                                response = {
+                                    success: false,
+                                    data: null,
+                                    message: '',
+                                    error: null
+                                };
+                            }
+                            
+                            const request = arguments[4] || {};
+                            const method = arguments[5] || 'POST';
+                            const headers = arguments[6] || {};
                             
                             ${code}
                         })();
                     `);
                     
-                    return await userCodeFunction(dbQuery, dbQueryOne, dbExecute, responseObj, requestObj, methodObj, headersObj);
+                    // Pass the actual response object reference so modifications persist
+                    return await userCodeFunction(dbQuery, dbQueryOne, dbExecute, response, request, method, headers);
                 };
                 
                 // Execute user code

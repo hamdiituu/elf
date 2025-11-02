@@ -226,8 +226,7 @@ include '../includes/header.php';
                                 onchange="updateCodeEditorMode()"
                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                             >
-                                <option value="php" <?php echo (!$edit_cron || ($edit_cron['language'] ?? 'php') === 'php') ? 'selected' : ''; ?>>PHP</option>
-                                <option value="js" <?php echo ($edit_cron['language'] ?? '') === 'js' ? 'selected' : ''; ?>>JavaScript (Node.js)</option>
+                                <option value="php" selected>PHP</option>
                             </select>
                         </div>
                         
@@ -264,10 +263,8 @@ include '../includes/header.php';
                             ><?php 
                             $defaultPhpCode = "// Cron Job Code (PHP)\n// Available variables:\n// \$db - Database connection (PDO object)\n\n// Example: Simple database query\n// \$stmt = \$db->query(\"SELECT COUNT(*) as total FROM users\");\n// \$result = \$stmt->fetch(PDO::FETCH_ASSOC);\n// echo \"Total users: \" . \$result['total'] . \"\\n\";\n\n// Example: Send email\n// mail('admin@example.com', 'Cron Job', 'Cron job executed successfully');\n\n// Example: Clean up old records\n// \$db->exec(\"DELETE FROM logs WHERE created_at < datetime('now', '-30 days')\");\n\n// Your code here\necho \"Cron job executed at \" . date('Y-m-d H:i:s') . \"\\n\";\n";
                             
-                            $defaultJsCode = "// Cron Job Code (JavaScript/Node.js)\n// Available variables:\n// dbQuery(sql, params) - Execute SELECT query (returns array) - Works with SQLite & MySQL\n// dbQueryOne(sql, params) - Execute SELECT query (returns single row) - Works with SQLite & MySQL\n// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid}) - Works with SQLite & MySQL\n\n// Example: Simple database query\n// try {\n//     const users = await dbQuery('SELECT COUNT(*) as total FROM users');\n//     console.log('Total users:', users[0].total);\n// } catch (error) {\n//     console.error('Database error:', error.message);\n// }\n\n// Example: Clean up old records\n// try {\n//     const result = await dbExecute(\n//         \"DELETE FROM logs WHERE created_at < datetime('now', '-30 days')\"\n//     );\n//     console.log('Deleted records:', result.changes);\n// } catch (error) {\n//     console.error('Delete error:', error.message);\n// }\n\n// Your code here\nconsole.log('Cron job executed at', new Date().toISOString());\n";
-                            
                             $selectedLanguage = $edit_cron['language'] ?? 'php';
-                            $codeToShow = ($selectedLanguage === 'js' || $selectedLanguage === 'javascript') ? $defaultJsCode : $defaultPhpCode;
+                            $codeToShow = $defaultPhpCode;
                             echo htmlspecialchars($edit_cron['code'] ?? $codeToShow); 
                             ?></textarea>
                         </div>
@@ -313,14 +310,12 @@ include '../includes/header.php';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/selection/active-line.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/javascript-hint.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.css">
 
 <script>
@@ -333,10 +328,9 @@ include '../includes/header.php';
     // Determine initial mode based on language
     const languageSelect = document.getElementById('language');
     const initialLanguage = languageSelect ? languageSelect.value : 'php';
-    const initialMode = initialLanguage === 'js' ? 'javascript' : 'clike';
     
     const codeEditor = CodeMirror.fromTextArea(codeTextarea, {
-        mode: initialMode === 'javascript' ? 'javascript' : 'clike',
+        mode: 'clike',
         theme: 'monokai',
         lineNumbers: true,
         autoCloseBrackets: true,
@@ -359,9 +353,14 @@ include '../includes/header.php';
                 
                 // Custom hints for cron job context
                 const hints = [
-                    'dbQuery', 'dbQueryOne', 'dbExecute', 'console', 'log',
-                    'error', 'warn', 'info', 'Date', 'setTimeout', 'setInterval',
-                    'require', 'module', 'exports', 'async', 'await'
+                    'getDB', 'db', '$db',
+                    'query', 'prepare', 'execute', 'fetchAll', 'fetch', 'fetchColumn',
+                    'PDO::FETCH_ASSOC', 'PDO::FETCH_OBJ', 'PDO::FETCH_NUM',
+                    'array', 'count', 'isset', 'empty', 'trim', 'htmlspecialchars',
+                    'json_encode', 'json_decode', 'date', 'time', 'strtotime',
+                    'echo', 'print', 'var_dump', 'error_log',
+                    'foreach', 'for', 'while', 'if', 'else', 'switch', 'case',
+                    'try', 'catch', 'Exception', 'PDOException'
                 ];
                 
                 const filtered = hints.filter(h => h.toLowerCase().startsWith(word.toLowerCase()));
@@ -377,42 +376,12 @@ include '../includes/header.php';
     // Update editor mode when language changes
     function updateCodeEditorMode() {
         const selectedLanguage = document.getElementById('language').value;
-        const newMode = selectedLanguage === 'js' ? 'javascript' : 'clike';
-        codeEditor.setOption('mode', newMode);
+        codeEditor.setOption('mode', 'clike');
         
         // Update example code if editor is empty or contains default code
         const currentValue = codeEditor.getValue().trim();
         if (!currentValue || currentValue.startsWith('// Cron Job Code') || currentValue === '') {
-            let exampleCode = '';
-            if (selectedLanguage === 'js') {
-                exampleCode = `// Cron Job Code (JavaScript/Node.js)
-// Available variables:
-// dbQuery(sql, params) - Execute SELECT query (returns array) - Works with SQLite & MySQL
-// dbQueryOne(sql, params) - Execute SELECT query (returns single row) - Works with SQLite & MySQL
-// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid}) - Works with SQLite & MySQL
-
-// Example: Simple database query
-// try {
-//     const users = await dbQuery('SELECT COUNT(*) as total FROM users');
-//     console.log('Total users:', users[0].total);
-// } catch (error) {
-//     console.error('Database error:', error.message);
-// }
-
-// Example: Clean up old records
-// try {
-//     const result = await dbExecute(
-//         "DELETE FROM logs WHERE created_at < datetime('now', '-30 days')"
-//     );
-//     console.log('Deleted records:', result.changes);
-// } catch (error) {
-//     console.error('Delete error:', error.message);
-// }
-
-// Your code here
-console.log('Cron job executed at', new Date().toISOString());`;
-            } else {
-                exampleCode = `// Cron Job Code (PHP)
+            const exampleCode = `// Cron Job Code (PHP)
 // Available variables:
 // \$db - Database connection (PDO object)
 
@@ -429,7 +398,6 @@ console.log('Cron job executed at', new Date().toISOString());`;
 
 // Your code here
 echo "Cron job executed at " . date('Y-m-d H:i:s') . "\\n";`;
-            }
             codeEditor.setValue(exampleCode);
         }
     }

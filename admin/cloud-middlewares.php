@@ -84,12 +84,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $language = $_POST['language'] ?? 'php';
             $middleware_enabled = isset($_POST['middleware_enabled']) ? 1 : 0;
             
-            // Validate language
-            if (!in_array($language, ['php', 'js', 'javascript'])) {
+            // Validate language - only PHP is supported
+            if ($language !== 'php') {
                 $language = 'php';
-            }
-            if ($language === 'javascript') {
-                $language = 'js';
             }
             
             if (empty($middleware_name) || empty($middleware_code)) {
@@ -246,7 +243,6 @@ include '../includes/header.php';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/php/php.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
@@ -324,7 +320,6 @@ include '../includes/header.php';
                         $total_mw = count($middlewares);
                         $active_mw = count(array_filter($middlewares, fn($m) => $m['enabled']));
                         $php_mw = count(array_filter($middlewares, fn($m) => ($m['language'] ?? 'php') === 'php'));
-                        $js_mw = count(array_filter($middlewares, fn($m) => ($m['language'] ?? 'php') === 'js'));
                         $used_mw = count(array_filter($middlewares, fn($m) => ($m['usage_count'] ?? 0) > 0));
                         ?>
                         <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
@@ -362,19 +357,6 @@ include '../includes/header.php';
                                 <div class="rounded-full bg-purple-100 p-3">
                                     <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">JS/Total</p>
-                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $js_mw; ?>/<?php echo $total_mw; ?></p>
-                                </div>
-                                <div class="rounded-full bg-yellow-100 p-3">
-                                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                                     </svg>
                                 </div>
                             </div>
@@ -441,8 +423,8 @@ include '../includes/header.php';
                                         </div>
                                     <?php else: ?>
                                         <?php foreach ($middlewares as $mw): 
-                                            $lang = ($mw['language'] ?? 'php') === 'js' ? 'js' : 'php';
-                                            $langColor = $lang === 'js' ? 'text-yellow-600 bg-yellow-100' : 'text-purple-600 bg-purple-100';
+                                            $lang = 'php';
+                                            $langColor = 'text-purple-600 bg-purple-100';
                                         ?>
                                             <div class="rounded-lg border border-border p-4 bg-gradient-to-br from-background to-muted/30 hover:border-primary/50 hover:shadow-md transition-all middleware-item group <?php echo (isset($edit_id) && $edit_id == $mw['id']) ? 'border-primary bg-primary/5 shadow-md' : ''; ?>" 
                                                  data-middleware-id="<?php echo $mw['id']; ?>"
@@ -456,7 +438,7 @@ include '../includes/header.php';
                                                                 <?php echo htmlspecialchars($mw['name']); ?>
                                                             </h4>
                                                             <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-semibold <?php echo $langColor; ?>">
-                                                                <?php echo strtoupper($lang); ?>
+                                                                PHP
                                                             </span>
                                                             <?php if (!$mw['enabled']): ?>
                                                                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
@@ -555,8 +537,7 @@ include '../includes/header.php';
                                                 onchange="updateCodeEditorMode()"
                                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                                             >
-                                                <option value="php" <?php echo (!isset($edit_middleware['language']) || $edit_middleware['language'] === 'php') ? 'selected' : ''; ?>>PHP</option>
-                                                <option value="js" <?php echo (isset($edit_middleware['language']) && ($edit_middleware['language'] === 'js' || $edit_middleware['language'] === 'javascript')) ? 'selected' : ''; ?>>JavaScript (Node.js)</option>
+                                                <option value="php" selected>PHP</option>
                                             </select>
                                             <p class="mt-1 text-xs text-muted-foreground">
                                                 Programming language for middleware code
@@ -590,10 +571,8 @@ include '../includes/header.php';
                                             ><?php 
                                             $defaultCode = "// Middleware Code\n// Available variables:\n// \$dbContext - Database connection (PDO object)\n// \$request - Request body data (array)\n// \$method - HTTP method (string)\n// \$headers - Request headers (array)\n// \$response - Response array (must set this)\n\n// Example: Authentication check\n// if (!isset(\$headers['Authorization'])) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Unauthorized: Missing Authorization header';\n//     return;\n// }\n\n// Example: API Key validation\n// \$api_key = \$headers['X-API-Key'] ?? null;\n// if (!\$api_key) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'API key required';\n//     return;\n// }\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM api_keys WHERE key = ? AND enabled = 1\");\n// \$stmt->execute([\$api_key]);\n// if (!\$stmt->fetch()) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Invalid API key';\n//     return;\n// }\n\n// If middleware passes, don't set response (or set success = true)\n// \$response['success'] = true;\n";
                                             
-                                            $defaultJsCode = "// Middleware Code (JavaScript/Node.js)\n// Available variables:\n// request - Request body data (object)\n// method - HTTP method (string)\n// headers - Request headers (object)\n// response - Response object (must set this)\n// dbQuery(sql, params) - Execute SELECT query (returns array) - Works with SQLite & MySQL\n// dbQueryOne(sql, params) - Execute SELECT query (returns single row) - Works with SQLite & MySQL\n// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid}) - Works with SQLite & MySQL\n\n// Example: Authentication check\n// if (!headers.authorization) {\n//     response.success = false;\n//     response.message = 'Unauthorized: Missing Authorization header';\n//     return;\n// }\n\n// Example: API Key validation with database\n// try {\n//     const apiKey = headers['x-api-key'] || headers['X-API-Key'] || null;\n//     if (!apiKey) {\n//         response.success = false;\n//         response.message = 'API key required';\n//         return;\n//     }\n//     const keyRecord = await dbQueryOne('SELECT * FROM api_keys WHERE key = ? AND enabled = 1', [apiKey]);\n//     if (!keyRecord) {\n//         response.success = false;\n//         response.message = 'Invalid API key';\n//         return;\n//     }\n//     // API key is valid, continue\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n//     return;\n// }\n\n// Example: User authentication\n// try {\n//     const token = headers.authorization || headers['Authorization'] || null;\n//     if (!token) {\n//         response.success = false;\n//         response.message = 'Authorization token required';\n//         return;\n//     }\n//     const user = await dbQueryOne('SELECT * FROM users WHERE api_token = ?', [token]);\n//     if (!user || !user.enabled) {\n//         response.success = false;\n//         response.message = 'Invalid or disabled user';\n//         return;\n//     }\n//     // User is authenticated, continue\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Authentication error: ' + error.message;\n//     return;\n// }\n\n// Example: Method validation\n// if (method !== 'POST') {\n//     response.success = false;\n//     response.message = 'Only POST method allowed';\n//     return;\n// }\n\n// If middleware passes, don't set response (or set success = true)\n// response.success = true;\n";
-                                            
                                             $selectedLanguage = $edit_middleware['language'] ?? 'php';
-                                            $codeToShow = ($selectedLanguage === 'js' || $selectedLanguage === 'javascript') ? $defaultJsCode : $defaultCode;
+                                            $codeToShow = $defaultCode;
                                             echo htmlspecialchars($edit_middleware['code'] ?? $codeToShow); 
                                             ?></textarea>
                                             </div>
@@ -652,10 +631,9 @@ include '../includes/header.php';
     // Determine initial mode based on language
     const middlewareLanguageSelect = document.getElementById('language');
     const initialMiddlewareLanguage = middlewareLanguageSelect ? middlewareLanguageSelect.value : 'php';
-    const initialMiddlewareMode = initialMiddlewareLanguage === 'js' ? 'javascript' : 'php';
     
     const middlewareEditor = CodeMirror.fromTextArea(middlewareCodeTextarea, {
-        mode: initialMiddlewareMode === 'javascript' ? 'javascript' : {
+        mode: {
             name: 'php',
             startOpen: true
         },
@@ -720,10 +698,9 @@ include '../includes/header.php';
         if (!middlewareEditor) return;
         const middlewareLanguageSelect = document.getElementById('language');
         const selectedLanguage = middlewareLanguageSelect ? middlewareLanguageSelect.value : 'php';
-        const newMode = selectedLanguage === 'js' ? 'javascript' : 'php';
         
         // Change mode
-        middlewareEditor.setOption('mode', newMode === 'javascript' ? 'javascript' : {
+        middlewareEditor.setOption('mode', {
             name: 'php',
             startOpen: true
         });
@@ -731,78 +708,7 @@ include '../includes/header.php';
         // Update example code if editor is empty or contains default code
         const currentValue = middlewareEditor.getValue().trim();
         if (!currentValue || currentValue.startsWith('// Middleware Code') || currentValue === '') {
-            let exampleCode = '';
-            if (selectedLanguage === 'js') {
-                exampleCode = `// Middleware Code (JavaScript/Node.js)
-// Available variables:
-// request - Request body data (object)
-// method - HTTP method (string)
-// headers - Request headers (object)
-// response - Response object (must set this)
-// dbQuery(sql, params) - Execute SELECT query (returns array) - Works with SQLite & MySQL
-// dbQueryOne(sql, params) - Execute SELECT query (returns single row) - Works with SQLite & MySQL
-// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid}) - Works with SQLite & MySQL
-
-// Example: Authentication check
-// if (!headers.authorization) {
-//     response.success = false;
-//     response.message = 'Unauthorized: Missing Authorization header';
-//     return;
-// }
-
-// Example: API Key validation with database
-// try {
-//     const apiKey = headers['x-api-key'] || headers['X-API-Key'] || null;
-//     if (!apiKey) {
-//         response.success = false;
-//         response.message = 'API key required';
-//         return;
-//     }
-//     const keyRecord = await dbQueryOne('SELECT * FROM api_keys WHERE key = ? AND enabled = 1', [apiKey]);
-//     if (!keyRecord) {
-//         response.success = false;
-//         response.message = 'Invalid API key';
-//         return;
-//     }
-//     // API key is valid, continue
-// } catch (error) {
-//     response.success = false;
-//     response.message = 'Database error: ' + error.message;
-//     return;
-// }
-
-// Example: User authentication
-// try {
-//     const token = headers.authorization || headers['Authorization'] || null;
-//     if (!token) {
-//         response.success = false;
-//         response.message = 'Authorization token required';
-//         return;
-//     }
-//     const user = await dbQueryOne('SELECT * FROM users WHERE api_token = ?', [token]);
-//     if (!user || !user.enabled) {
-//         response.success = false;
-//         response.message = 'Invalid or disabled user';
-//         return;
-//     }
-//     // User is authenticated, continue
-// } catch (error) {
-//     response.success = false;
-//     response.message = 'Authentication error: ' + error.message;
-//     return;
-// }
-
-// Example: Method validation
-// if (method !== 'POST') {
-//     response.success = false;
-//     response.message = 'Only POST method allowed';
-//     return;
-// }
-
-// If middleware passes, don't set response (or set success = true)
-// response.success = true;`;
-            } else {
-                exampleCode = `// Middleware Code
+            const exampleCode = `// Middleware Code
 // Available variables:
 // \$dbContext - Database connection (PDO object)
 // \$request - Request body data (array)
@@ -834,7 +740,6 @@ include '../includes/header.php';
 
 // If middleware passes, don't set response (or set success = true)
 // \$response['success'] = true;`;
-            }
             middlewareEditor.setValue(exampleCode);
         }
     };

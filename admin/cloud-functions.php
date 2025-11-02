@@ -130,12 +130,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $middleware_id = !empty($_POST['middleware_id']) ? intval($_POST['middleware_id']) : null;
             $function_group = trim($_POST['function_group'] ?? '');
             
-            // Validate language
-            if (!in_array($language, ['php', 'js', 'javascript'])) {
+            // Validate language - only PHP is supported
+            if ($language !== 'php') {
                 $language = 'php';
-            }
-            if ($language === 'javascript') {
-                $language = 'js';
             }
             
             if (empty($function_name) || empty($code)) {
@@ -406,7 +403,6 @@ include '../includes/header.php';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/php/php.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
@@ -497,7 +493,6 @@ include '../includes/header.php';
                         $total_funcs = count($functions);
                         $active_funcs = count(array_filter($functions, fn($f) => $f['enabled']));
                         $php_funcs = count(array_filter($functions, fn($f) => ($f['language'] ?? 'php') === 'php'));
-                        $js_funcs = count(array_filter($functions, fn($f) => ($f['language'] ?? 'php') === 'js'));
                         ?>
                         <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
                             <div class="flex items-center justify-between">
@@ -534,19 +529,6 @@ include '../includes/header.php';
                                 <div class="rounded-full bg-purple-100 p-3">
                                     <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="rounded-lg border border-border bg-card p-4 shadow-sm">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">JavaScript</p>
-                                    <p class="text-2xl font-bold text-foreground mt-1"><?php echo $js_funcs; ?></p>
-                                </div>
-                                <div class="rounded-full bg-yellow-100 p-3">
-                                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                                     </svg>
                                 </div>
                             </div>
@@ -643,8 +625,8 @@ include '../includes/header.php';
                                         </div>
                                     <?php else: ?>
                                         <?php foreach ($functions as $func): 
-                                            $lang = ($func['language'] ?? 'php') === 'js' ? 'js' : 'php';
-                                            $langColor = $lang === 'js' ? 'text-yellow-600 bg-yellow-100' : 'text-purple-600 bg-purple-100';
+                                            $lang = 'php';
+                                            $langColor = 'text-purple-600 bg-purple-100';
                                         ?>
                                             <div class="rounded-lg border border-border p-4 bg-gradient-to-br from-background to-muted/30 hover:border-primary/50 hover:shadow-md transition-all function-item group <?php echo (isset($edit_id) && $edit_id == $func['id']) ? 'border-primary bg-primary/5 shadow-md' : ''; ?>" 
                                                  data-function-id="<?php echo $func['id']; ?>"
@@ -658,7 +640,7 @@ include '../includes/header.php';
                                                                 <?php echo htmlspecialchars($func['name']); ?>
                                                             </h4>
                                                             <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-semibold <?php echo $langColor; ?>">
-                                                                <?php echo strtoupper($lang); ?>
+                                                                PHP
                                                             </span>
                                                             <?php if (!$func['enabled']): ?>
                                                                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
@@ -768,8 +750,7 @@ include '../includes/header.php';
                                                 onchange="updateCodeEditorMode()"
                                                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                                             >
-                                                <option value="php" <?php echo (!isset($edit_function['language']) || $edit_function['language'] === 'php') ? 'selected' : ''; ?>>PHP</option>
-                                                <option value="js" <?php echo (isset($edit_function['language']) && ($edit_function['language'] === 'js' || $edit_function['language'] === 'javascript')) ? 'selected' : ''; ?>>JavaScript (Node.js)</option>
+                                                <option value="php" selected>PHP</option>
                                             </select>
                                             <p class="mt-1 text-xs text-muted-foreground">
                                                 Programming language for function code
@@ -853,10 +834,8 @@ include '../includes/header.php';
                                             ><?php 
                                             $defaultCode = "// Cloud Function Code\n// Available variables:\n// \$dbContext - Database connection (PDO object)\n// \$request - Request body data (array)\n// \$method - HTTP method (string: GET, POST, PUT, DELETE)\n// \$headers - Request headers (array)\n// \$response - Response array (must set this)\n\n// Example: Get users\n\$stmt = \$dbContext->query(\"SELECT * FROM users LIMIT 10\");\n\$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n\n// Set response\n\$response['success'] = true;\n\$response['data'] = \$users;\n\$response['message'] = 'Users retrieved successfully';\n\n// Example: With parameters from request\n// \$limit = isset(\$request['limit']) ? intval(\$request['limit']) : 10;\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM users LIMIT ?\");\n// \$stmt->execute([\$limit]);\n// \$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);\n// \$response['success'] = true;\n// \$response['data'] = \$users;\n\n// Example: Check if record exists\n// \$stmt = \$dbContext->prepare(\"SELECT * FROM table WHERE id = ?\");\n// \$stmt->execute([\$id]);\n// \$record = \$stmt->fetch(PDO::FETCH_ASSOC);\n// if (!\$record) {\n//     \$response['success'] = false;\n//     \$response['message'] = 'Record not found';\n//     return;\n// }\n";
                                             
-                                            $defaultJsCode = "// Cloud Function Code (JavaScript/Node.js)\n// Available variables:\n// request - Request body data (object)\n// method - HTTP method (string: GET, POST, PUT, DELETE)\n// headers - Request headers (object)\n// response - Response object (must set this)\n// dbQuery(sql, params) - Execute SELECT query (returns array) - Works with SQLite & MySQL\n// dbQueryOne(sql, params) - Execute SELECT query (returns single row) - Works with SQLite & MySQL\n// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid}) - Works with SQLite & MySQL\n\n// Example: Simple response\nresponse.success = true;\nresponse.data = { message: 'Hello from Node.js!' };\nresponse.message = 'Function executed successfully';\n\n// Example: Database query (SELECT) - Works with both SQLite and MySQL\n// try {\n//     const users = await dbQuery('SELECT * FROM users LIMIT ?', [10]);\n//     response.success = true;\n//     response.data = users;\n//     response.message = 'Users retrieved successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n//     response.error = error.message;\n// }\n\n// Example: Single row query - Works with both SQLite and MySQL\n// try {\n//     const user = await dbQueryOne('SELECT * FROM users WHERE id = ?', [request.user_id]);\n//     if (!user) {\n//         response.success = false;\n//         response.message = 'User not found';\n//         return;\n//     }\n//     response.success = true;\n//     response.data = user;\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: INSERT query - Works with both SQLite and MySQL\n// try {\n//     const result = await dbExecute(\n//         'INSERT INTO users (name, email) VALUES (?, ?)',\n//         [request.name, request.email]\n//     );\n//     response.success = true;\n//     response.data = { id: result.lastInsertRowid, changes: result.changes };\n//     response.message = 'User created successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: UPDATE query - Works with both SQLite and MySQL\n// try {\n//     const result = await dbExecute(\n//         'UPDATE users SET name = ? WHERE id = ?',\n//         [request.name, request.user_id]\n//     );\n//     response.success = true;\n//     response.data = { changes: result.changes };\n//     response.message = 'User updated successfully';\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: MySQL JOIN query\n// try {\n//     const data = await dbQuery(\n//         'SELECT u.*, p.name as profile_name FROM users u LEFT JOIN profiles p ON u.id = p.user_id WHERE u.id = ?',\n//         [request.user_id]\n//     );\n//     response.success = true;\n//     response.data = data;\n// } catch (error) {\n//     response.success = false;\n//     response.message = 'Database error: ' + error.message;\n// }\n\n// Example: Using request data\n// const limit = request.limit || 10;\n// try {\n//     const users = await dbQuery('SELECT * FROM users LIMIT ?', [limit]);\n//     response.success = true;\n//     response.data = users;\n// } catch (error) {\n//     response.success = false;\n//     response.message = error.message;\n// }\n";
-                                            
                                             $selectedLanguage = $edit_function['language'] ?? 'php';
-                                            $codeToShow = ($selectedLanguage === 'js' || $selectedLanguage === 'javascript') ? $defaultJsCode : $defaultCode;
+                                            $codeToShow = $defaultCode;
                                             echo htmlspecialchars($edit_function['code'] ?? $codeToShow); 
                                             ?></textarea>
                                             </div>
@@ -981,7 +960,6 @@ include '../includes/header.php';
                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                     <option value="php">PHP</option>
-                    <option value="js">JavaScript (Node.js)</option>
                 </select>
             </div>
             
@@ -1055,10 +1033,9 @@ include '../includes/header.php';
     // Determine initial mode based on language
     const languageSelect = document.getElementById('language');
     const initialLanguage = languageSelect ? languageSelect.value : 'php';
-    const initialMode = initialLanguage === 'js' ? 'javascript' : 'php';
     
     window.codeEditor = CodeMirror.fromTextArea(codeTextarea, {
-        mode: initialMode === 'javascript' ? 'javascript' : {
+        mode: {
             name: 'php',
             startOpen: true
         },
@@ -1123,10 +1100,10 @@ include '../includes/header.php';
         if (!window.codeEditor) return;
         const languageSelect = document.getElementById('language');
         const selectedLanguage = languageSelect ? languageSelect.value : 'php';
-        const newMode = selectedLanguage === 'js' ? 'javascript' : 'php';
+        const newMode = 'php';
         
         // Change mode
-        window.codeEditor.setOption('mode', newMode === 'javascript' ? 'javascript' : {
+        window.codeEditor.setOption('mode', {
             name: 'php',
             startOpen: true
         });
@@ -1134,93 +1111,7 @@ include '../includes/header.php';
         // Update example code if editor is empty or contains default code
         const currentValue = window.codeEditor.getValue().trim();
         if (!currentValue || currentValue.startsWith('// Cloud Function Code') || currentValue === '') {
-            let exampleCode = '';
-            if (selectedLanguage === 'js') {
-                exampleCode = `// Cloud Function Code (JavaScript/Node.js)
-// Available variables:
-// request - Request body data (object)
-// method - HTTP method (string: GET, POST, PUT, DELETE)
-// headers - Request headers (object)
-// response - Response object (must set this)
-// dbQuery(sql, params) - Execute SELECT query (returns array) - Works with SQLite & MySQL
-// dbQueryOne(sql, params) - Execute SELECT query (returns single row) - Works with SQLite & MySQL
-// dbExecute(sql, params) - Execute INSERT/UPDATE/DELETE (returns {changes, lastInsertRowid}) - Works with SQLite & MySQL
-
-// Example: Simple response
-response.success = true;
-response.data = { message: 'Hello from Node.js!' };
-response.message = 'Function executed successfully';
-// NOTE: Do NOT use 'return' in JavaScript code - just set response object
-
-// Example: Database query (SELECT) - Works with both SQLite and MySQL
-// try {
-//     const users = await dbQuery('SELECT * FROM users LIMIT ?', [10]);
-//     response.success = true;
-//     response.data = users;
-//     response.message = 'Users retrieved successfully';
-// } catch (error) {
-//     response.success = false;
-//     response.message = 'Database error: ' + error.message;
-//     response.error = error.message;
-// }
-
-// Example: Single row query - Works with both SQLite and MySQL
-// try {
-//     const user = await dbQueryOne('SELECT * FROM users WHERE id = ?', [request.user_id]);
-//     if (!user) {
-//         response.success = false;
-//         response.message = 'User not found';
-//         return;
-//     }
-//     response.success = true;
-//     response.data = user;
-// } catch (error) {
-//     response.success = false;
-//     response.message = 'Database error: ' + error.message;
-// }
-
-// Example: INSERT query - Works with both SQLite and MySQL
-// try {
-//     const result = await dbExecute(
-//         'INSERT INTO users (name, email) VALUES (?, ?)',
-//         [request.name, request.email]
-//     );
-//     response.success = true;
-//     response.data = { id: result.lastInsertRowid, changes: result.changes };
-//     response.message = 'User created successfully';
-// } catch (error) {
-//     response.success = false;
-//     response.message = 'Database error: ' + error.message;
-// }
-
-// Example: UPDATE query - Works with both SQLite and MySQL
-// try {
-//     const result = await dbExecute(
-//         'UPDATE users SET name = ? WHERE id = ?',
-//         [request.name, request.user_id]
-//     );
-//     response.success = true;
-//     response.data = { changes: result.changes };
-//     response.message = 'User updated successfully';
-// } catch (error) {
-//     response.success = false;
-//     response.message = 'Database error: ' + error.message;
-// }
-
-// Example: MySQL JOIN query
-// try {
-//     const data = await dbQuery(
-//         'SELECT u.*, p.name as profile_name FROM users u LEFT JOIN profiles p ON u.id = p.user_id WHERE u.id = ?',
-//         [request.user_id]
-//     );
-//     response.success = true;
-//     response.data = data;
-// } catch (error) {
-//     response.success = false;
-//     response.message = 'Database error: ' + error.message;
-// }`;
-            } else {
-                exampleCode = `// Cloud Function Code
+            const exampleCode = `// Cloud Function Code
 // Available variables:
 // \$dbContext - Database connection (PDO object)
 // \$request - Request body data (array)
@@ -1339,17 +1230,12 @@ response.message = 'Function executed successfully';
         const functionName = document.getElementById('builder_function_name')?.value || '';
         const tableName = document.getElementById('builder_table_name')?.value || '';
         const operation = document.getElementById('builder_operation')?.value || 'list';
-        const language = document.getElementById('builder_language')?.value || 'php';
         
         if (!functionName || !tableName || !operation) {
             return '';
         }
         
-        if (language === 'js') {
-            return generateJavaScriptCode(functionName, tableName, operation);
-        } else {
-            return generatePHPCode(functionName, tableName, operation);
-        }
+        return generatePHPCode(functionName, tableName, operation);
     }
     
     function generatePHPCode(functionName, tableName, operation) {
@@ -1521,207 +1407,6 @@ if (!\$record) {
 
 \$response['success'] = true;
 \$response['message'] = 'Record deleted successfully';`;
-                break;
-        }
-        
-        return code;
-    }
-    
-    function generateJavaScriptCode(functionName, tableName, operation) {
-        const escapedTable = tableName.replace(/[^a-zA-Z0-9_]/g, '');
-        
-        // Get relations for this table
-        const relations = tableRelations[tableName] || {};
-        const hasRelations = Object.keys(relations).length > 0;
-        
-        // Build JOIN clauses if relations exist
-        let joinClauses = '';
-        let selectFields = `${escapedTable}.*`;
-        
-        if (hasRelations && (operation === 'list' || operation === 'get')) {
-            const joins = [];
-            const aliases = {};
-            let aliasIndex = 1;
-            
-            for (const [column, targetTable] of Object.entries(relations)) {
-                const escapedColumn = column.replace(/[^a-zA-Z0-9_]/g, '');
-                const escapedTarget = targetTable.replace(/[^a-zA-Z0-9_]/g, '');
-                const alias = `r${aliasIndex++}`;
-                aliases[targetTable] = alias;
-                
-                joins.push(`LEFT JOIN \`${escapedTarget}\` AS \`${alias}\` ON \`${escapedTable}\`.\`${escapedColumn}\` = \`${alias}\`.\`id\``);
-                
-                // Add related table fields (id, name/title)
-                selectFields += `, \`${alias}\`.\`id\` AS \`${column}_id\``;
-                selectFields += `, \`${alias}\`.\`name\` AS \`${column}_name\``;
-                selectFields += `, \`${alias}\`.\`title\` AS \`${column}_title\``;
-            }
-            
-            if (joins.length > 0) {
-                joinClauses = ' ' + joins.join(' ');
-            }
-        }
-        
-        let code = '';
-        
-        switch(operation) {
-            case 'list':
-                if (hasRelations && joinClauses) {
-                    code = `// List all records from ${tableName} with relations
-try {
-    const records = await dbQuery(\`SELECT ${selectFields} FROM \\\`${escapedTable}\\\`${joinClauses} ORDER BY \\\`${escapedTable}\\\`.\\\`id\\\` DESC\`);
-    response.success = true;
-    response.data = records;
-    response.message = 'Records retrieved successfully';
-    response.count = records.length;
-} catch (error) {
-    response.success = false;
-    response.message = 'Database error: ' + (error.message || error);
-    response.error = error.message || error;
-}`;
-                } else {
-                    code = `// List all records from ${tableName}
-try {
-    const records = await dbQuery(\`SELECT * FROM \\\`${escapedTable}\\\` ORDER BY id DESC\`);
-    response.success = true;
-    response.data = records;
-    response.message = 'Records retrieved successfully';
-    response.count = records.length;
-} catch (error) {
-    response.success = false;
-    response.message = 'Database error: ' + (error.message || error);
-    response.error = error.message || error;
-}`;
-                }
-                break;
-            case 'get':
-                if (hasRelations && joinClauses) {
-                    code = `// Get single record by ID with relations
-const id = request.id ? parseInt(request.id) : 0;
-if (id <= 0) {
-    response.success = false;
-    response.message = 'Invalid ID';
-    return;
-}
-
-try {
-    const record = await dbQueryOne(\`SELECT ${selectFields} FROM \\\`${escapedTable}\\\`${joinClauses} WHERE \\\`${escapedTable}\\\`.\\\`id\\\` = ?\`, [id]);
-    if (!record) {
-        response.success = false;
-        response.message = 'Record not found';
-        return;
-    }
-    response.success = true;
-    response.data = record;
-    response.message = 'Record retrieved successfully';
-} catch (error) {
-    response.success = false;
-    response.message = 'Database error: ' + (error.message || error);
-    response.error = error.message || error;
-}`;
-                } else {
-                    code = `// Get single record by ID
-const id = request.id ? parseInt(request.id) : 0;
-if (id <= 0) {
-    response.success = false;
-    response.message = 'Invalid ID';
-    return;
-}
-
-try {
-    const record = await dbQueryOne(\`SELECT * FROM \\\`${escapedTable}\\\` WHERE id = ?\`, [id]);
-    if (!record) {
-        response.success = false;
-        response.message = 'Record not found';
-        return;
-    }
-    response.success = true;
-    response.data = record;
-    response.message = 'Record retrieved successfully';
-} catch (error) {
-    response.success = false;
-    response.message = 'Database error: ' + (error.message || error);
-    response.error = error.message || error;
-}`;
-                }
-                break;
-            case 'create':
-                code = `// Create new record
-// Expected fields in request
-try {
-    // const result = await dbExecute(
-    //     'INSERT INTO ${escapedTable} (/* columns */) VALUES (/* values */)',
-    //     [/* values */]
-    // );
-    response.success = true;
-    response.message = 'Record created successfully';
-    // response.data = { id: result.lastInsertRowid };
-} catch (error) {
-    response.success = false;
-    response.message = 'Database error: ' + error.message;
-    response.error = error.message;
-}`;
-                break;
-            case 'update':
-                code = `// Update record by ID
-const id = request.id ? parseInt(request.id) : 0;
-if (id <= 0) {
-    response.success = false;
-    response.message = 'Invalid ID';
-    return;
-}
-
-try {
-    // Check if record exists
-    const record = await dbQueryOne('SELECT * FROM ${escapedTable} WHERE id = ?', [id]);
-    if (!record) {
-        response.success = false;
-        response.message = 'Record not found';
-        return;
-    }
-    
-    // Update record
-    // const result = await dbExecute(
-    //     'UPDATE ${escapedTable} SET /* columns */ WHERE id = ?',
-    //     [/* values, id */]
-    // );
-    
-    response.success = true;
-    response.message = 'Record updated successfully';
-} catch (error) {
-    response.success = false;
-    response.message = 'Database error: ' + error.message;
-    response.error = error.message;
-}`;
-                break;
-            case 'delete':
-                code = `// Delete record by ID
-const id = request.id ? parseInt(request.id) : 0;
-if (id <= 0) {
-    response.success = false;
-    response.message = 'Invalid ID';
-    return;
-}
-
-try {
-    // Check if record exists
-    const record = await dbQueryOne('SELECT * FROM ${escapedTable} WHERE id = ?', [id]);
-    if (!record) {
-        response.success = false;
-        response.message = 'Record not found';
-        return;
-    }
-    
-    // Delete record
-    await dbExecute('DELETE FROM ${escapedTable} WHERE id = ?', [id]);
-    
-    response.success = true;
-    response.message = 'Record deleted successfully';
-} catch (error) {
-    response.success = false;
-    response.message = 'Database error: ' + error.message;
-    response.error = error.message;
-}`;
                 break;
         }
         

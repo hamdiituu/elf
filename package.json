@@ -3,20 +3,15 @@
   "version": "1.0.0",
   "description": "ELF (Enterprise Content Management Framework) - A powerful CMS for building custom web apps with dynamic pages, cloud functions, database explorer, and developer tools. Supports SQLite/MySQL with Docker deployment.",
   "scripts": {
-    "start": "npm run start:node && npm run start:php",
-    "start:node": "node api/nodejs-server.js",
+    "start": "npm run start:php",
     "start:php": "php -S localhost:8000 -t .",
-    "start:node:bg": "nohup node api/nodejs-server.js > /dev/null 2>&1 &",
     "start:php:bg": "nohup php -S localhost:8000 -t . > /dev/null 2>&1 &",
-    "start:bg": "npm run start:node:bg && sleep 1 && npm run start:php:bg && sleep 1 && echo 'Servers started in background'",
-    "stop": "npm run stop:node; npm run stop:php",
-    "stop:node": "PID_FILE='api/nodejs-server.pid'; if [ -f \"$PID_FILE\" ]; then PID=$(cat \"$PID_FILE\" 2>/dev/null || echo ''); if [ ! -z \"$PID\" ]; then kill \"$PID\" 2>/dev/null && echo \"Node.js server stopped (PID: $PID)\" || echo \"Failed to kill Node.js server (PID: $PID)\"; fi; rm -f \"$PID_FILE\"; fi; pkill -f 'node.*nodejs-server.js' 2>/dev/null && echo 'Node.js server processes killed via pkill' || echo 'No Node.js server processes found'",
+    "start:bg": "npm run start:php:bg && sleep 1 && echo 'Server started in background'",
+    "stop": "npm run stop:php",
     "stop:php": "PIDS=$(lsof -ti:8000 2>/dev/null || echo ''); if [ ! -z \"$PIDS\" ]; then echo \"$PIDS\" | xargs kill -9 2>/dev/null && echo 'PHP server stopped' || echo 'Failed to stop PHP server'; else echo 'No PHP server running on port 8000'; fi",
     "restart": "npm run stop && sleep 1 && npm run start:bg",
-    "status": "echo '=== Server Status ===' && if [ -f api/nodejs-server.pid ] && kill -0 $(cat api/nodejs-server.pid) 2>/dev/null; then echo \"Node.js: Running (PID: $(cat api/nodejs-server.pid))\"; else echo 'Node.js: Not running'; fi && if [ ! -z \"$(lsof -ti:8000 2>/dev/null)\" ]; then echo \"PHP: Running (PID: $(lsof -ti:8000 | head -1))\"; else echo 'PHP: Not running'; fi"
+    "status": "echo '=== Server Status ===' && if [ ! -z \"$(lsof -ti:8000 2>/dev/null)\" ]; then echo \"PHP: Running (PID: $(lsof -ti:8000 | head -1))\"; else echo 'PHP: Not running'; fi"
   },
   "dependencies": {
-    "better-sqlite3": "^11.0.0",
-    "mysql2": "^3.11.0"
   }
 }
