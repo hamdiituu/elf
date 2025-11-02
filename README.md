@@ -1,6 +1,6 @@
 # ELF - Enterprise Content Management Framework
 
-**ELF** is a powerful, extensible, and developer-friendly Content Management System (CMS) designed for building custom web applications and content-driven platforms. Built with modern web technologies including PHP and Node.js, ELF offers flexible database support (SQLite and MySQL), cloud-based functions, dynamic page builder, and a fully containerized architecture for seamless deployment and scalability.
+**ELF** is a powerful, extensible, and developer-friendly Content Management System (CMS) designed for building custom web applications and content-driven platforms. Built with modern PHP technology, ELF offers flexible database support (SQLite and MySQL), cloud-based functions, dynamic page builder, and a fully containerized architecture for seamless deployment and scalability.
 
 ELF empowers developers and content managers to create custom applications, build dynamic pages and forms, manage content efficiently, automate workflows through cloud functions, and customize the system to fit any business requirement. With its comprehensive developer tools and robust architecture, ELF adapts to projects of all sizes—from simple content sites to complex enterprise applications.
 
@@ -24,7 +24,7 @@ ELF empowers developers and content managers to create custom applications, buil
 - **Dual Database Support**: SQLite (default, for development) and MySQL (for production)
 - **User Management**: Role-based authentication system (user and developer roles) with secure password hashing
 - **Dynamic Page Builder**: Create custom pages and forms with database-backed content management
-- **Cloud Functions**: Execute custom JavaScript code server-side for automation and custom logic
+- **Cloud Functions**: Execute custom PHP code server-side for automation and custom logic
 - **Cloud Middlewares**: Intercept and modify requests/responses with custom middleware functions
 - **Database Explorer**: Visual database browser with query builder and table management
 - **API Playground**: Test and debug API endpoints interactively
@@ -33,7 +33,6 @@ ELF empowers developers and content managers to create custom applications, buil
 - **Content Management**: Flexible content structure with custom tables and dynamic forms
 - **Developer Tools**: Comprehensive set of tools for developers to extend and customize
 - **Docker Support**: Fully containerized with Docker Compose for easy deployment
-- **Node.js Integration**: Backend services for cloud functions execution
 
 ## Requirements
 
@@ -47,7 +46,6 @@ ELF empowers developers and content managers to create custom applications, buil
 ### For Manual Installation
 
 - PHP 8.0+ with extensions: pdo_mysql, pdo_sqlite, mysqli, mbstring, gd
-- Node.js 18+
 - MySQL 8.0+ (optional, if using MySQL)
 - SQLite 3 (included with PHP)
 - Web server (Apache/Nginx) or PHP built-in server
@@ -116,10 +114,6 @@ MYSQL_DATABASE=elf
 MYSQL_USER=elf
 MYSQL_PASSWORD=elf123
 MYSQL_ROOT_PASSWORD=rootpassword
-
-# Node.js Configuration
-NODE_ENV=production
-NODE_PORT=3001
 ```
 
 ### Step 2: Start Docker Services
@@ -131,7 +125,6 @@ docker-compose up -d
 This will start:
 - **PHP-FPM**: PHP application server
 - **Nginx**: Web server (port 8080)
-- **Node.js**: Cloud functions server (port 3001)
 - **MySQL**: Database server (port 3306, only if using MySQL)
 
 ### Step 3: Database Initialization
@@ -254,7 +247,7 @@ The application creates the following tables:
 - `table_name`: Associated database table
 - `group_name`: Grouping category
 - `enable_list`, `enable_create`, `enable_update`, `enable_delete`: CRUD permissions
-- `create_rule`, `update_rule`, `delete_rule`: Custom JavaScript validation rules
+- `create_rule`, `update_rule`, `delete_rule`: Custom PHP validation rules
 - `created_at`: Creation timestamp
 - `updated_at`: Last update timestamp
 
@@ -283,7 +276,7 @@ docker-compose exec php php scripts/migrate_all.php
 
 ### Docker Compose Services
 
-The `docker-compose.yml` defines 4 services:
+The `docker-compose.yml` defines 3 services:
 
 #### 1. PHP Service (`php`)
 - **Image**: Custom PHP-FPM 8.2
@@ -297,13 +290,7 @@ The `docker-compose.yml` defines 4 services:
 - **Volume**: Application code
 - **Depends on**: PHP
 
-#### 3. Node.js Service (`nodejs`)
-- **Image**: Node.js 20 Alpine
-- **Port**: 3001 (internal)
-- **Purpose**: Cloud functions execution
-- **Depends on**: PHP, MySQL
-
-#### 4. MySQL Service (`mysql`)
+#### 3. MySQL Service (`mysql`)
 - **Image**: MySQL 8.0
 - **Port**: 3306 (configurable via `MYSQL_PORT`)
 - **Volume**: Persistent data storage
@@ -329,7 +316,6 @@ docker-compose logs -f
 # Specific service
 docker-compose logs -f php
 docker-compose logs -f nginx
-docker-compose logs -f nodejs
 docker-compose logs -f mysql
 ```
 
@@ -352,7 +338,6 @@ docker-compose exec php php scripts/migrate_all.php
 
 # Shell access
 docker-compose exec php bash
-docker-compose exec nodejs sh
 ```
 
 **Stop and remove volumes (⚠️ destroys data):**
@@ -400,9 +385,6 @@ All services are on `elf-network` bridge network, allowing them to communicate u
    ```bash
    # PHP dependencies (if using Composer)
    composer install
-
-   # Node.js dependencies
-   npm install
    ```
 
 2. **Configure database:**
@@ -418,18 +400,13 @@ All services are on `elf-network` bridge network, allowing them to communicate u
    php -S localhost:8000
    ```
 
-5. **Start Node.js server:**
-   ```bash
-   node api/nodejs-server.js
-   ```
-
 ### Development Tools
 
 The application includes several developer tools (requires `developer` user type):
 
 - **Database Explorer**: Browse tables, execute queries, create/edit tables, and manage database schema
 - **API Playground**: Test API endpoints with interactive interface
-- **Cloud Functions**: Create and manage JavaScript cloud functions for server-side logic
+- **Cloud Functions**: Create and manage PHP cloud functions for server-side logic
 - **Cloud Middlewares**: Create request/response middlewares to intercept and modify API calls
 - **Cron Manager**: Schedule and manage background tasks with built-in cron daemon
 - **Dynamic Pages Builder**: Create custom pages and forms with database-backed content
@@ -447,7 +424,6 @@ ELF/
 │   └── ...
 ├── api/                    # API endpoints
 │   ├── hello.php          # Test endpoint
-│   ├── nodejs-server.js   # Node.js cloud functions server
 │   └── cloud-functions/   # Cloud function handlers
 ├── config/                # Configuration files
 │   ├── config.php         # Core configuration
@@ -472,7 +448,6 @@ ELF/
 ├── docker-compose.yml     # Docker Compose configuration
 ├── Dockerfile.php         # PHP container image
 ├── Dockerfile.nginx       # Nginx container image
-├── Dockerfile.nodejs      # Node.js container image
 ├── .env.example           # Environment variables template
 ├── .dockerignore          # Docker ignore patterns
 └── README.md              # This file
@@ -534,17 +509,19 @@ ELF/
 
 ### Cloud Functions
 
-Cloud functions allow you to execute custom JavaScript code:
+Cloud functions allow you to execute custom PHP code:
 
 1. **Go to Cloud Functions** (`/admin/cloud-functions.php`)
 2. **Create new function:**
    - Enter function name
-   - Write JavaScript code
+   - Write PHP code
    - Save
 
 3. **Call function via API:**
-   ```javascript
+   ```bash
    POST /api/cloud-functions/execute.php
+   Content-Type: application/json
+   
    {
      "function_name": "my_function",
      "data": {...}
@@ -594,13 +571,13 @@ Content-Type: application/json
 }
 ```
 
-### Node.js Server API
+### Cloud Functions API
 
-The Node.js server (port 3001) handles cloud function execution:
+Cloud functions are executed directly in PHP:
 
-- **Security**: Only accepts requests from localhost
-- **Authentication**: Requires secret token
-- **Database**: Automatically connects to configured database
+- **Execution**: PHP code is executed server-side
+- **Database Access**: Direct access to configured database via PDO
+- **Security**: Code runs in server context with appropriate permissions
 
 ## Troubleshooting
 
@@ -636,19 +613,13 @@ chmod -R 755 uploads/
 chmod -R 755 config/
 ```
 
-#### 4. Node.js Server Not Starting
-
-- Check Node.js logs: `docker-compose logs nodejs`
-- Verify Node.js dependencies: `docker-compose exec nodejs npm list`
-- Reinstall dependencies: `docker-compose exec nodejs npm install`
-
-#### 5. Docker Build Fails
+#### 4. Docker Build Fails
 
 - Clear Docker cache: `docker-compose build --no-cache`
 - Check Dockerfile syntax
 - Verify base images are available
 
-#### 6. PHP Extensions Missing
+#### 5. PHP Extensions Missing
 
 Verify extensions in PHP container:
 ```bash
@@ -673,7 +644,6 @@ Enable PHP error reporting:
 - **Docker logs**: `docker-compose logs`
 - **PHP errors**: Check container logs
 - **Nginx access**: `/var/log/nginx/access.log` (in container)
-- **Node.js logs**: Console output in container
 
 ### Database Backup
 
@@ -726,6 +696,12 @@ For issues and questions:
 
 ## Changelog
 
+### Version 1.1.0
+- Removed Node.js/JavaScript support
+- Cloud functions now support PHP only
+- Simplified architecture with PHP-only execution
+- Updated Docker Compose configuration
+
 ### Version 1.0.0
 - Initial release
 - Docker Compose support
@@ -733,3 +709,141 @@ For issues and questions:
 - Cloud functions system
 - Dynamic pages builder
 - Developer tools
+
+---
+
+# ELF - Kurumsal İçerik Yönetim Framework'ü (Türkçe)
+
+**ELF**, özel web uygulamaları ve içerik odaklı platformlar oluşturmak için tasarlanmış güçlü, genişletilebilir ve geliştirici dostu bir İçerik Yönetim Sistemi (CMS)'dir. Modern PHP teknolojisi ile geliştirilmiş ELF, esnek veritabanı desteği (SQLite ve MySQL), bulut tabanlı fonksiyonlar, dinamik sayfa oluşturucu ve sorunsuz dağıtım ve ölçeklenebilirlik için tam konteynerleştirilmiş bir mimari sunar.
+
+ELF, geliştiricilerin ve içerik yöneticilerinin özel uygulamalar oluşturmasına, dinamik sayfalar ve formlar oluşturmasına, içeriği verimli bir şekilde yönetmesine, bulut fonksiyonları aracılığıyla iş akışlarını otomatikleştirmesine ve sistemi herhangi bir iş gereksinimine uyacak şekilde özelleştirmesine olanak tanır.
+
+## Özellikler
+
+- **Çift Veritabanı Desteği**: SQLite (varsayılan, geliştirme için) ve MySQL (üretim için)
+- **Kullanıcı Yönetimi**: Güvenli parola hashleme ile rol tabanlı kimlik doğrulama sistemi (kullanıcı ve geliştirici rolleri)
+- **Dinamik Sayfa Oluşturucu**: Veritabanı destekli içerik yönetimi ile özel sayfalar ve formlar oluşturun
+- **Bulut Fonksiyonları**: Otomasyon ve özel mantık için sunucu tarafında özel PHP kodu çalıştırın
+- **Bulut Middleware'leri**: Özel middleware fonksiyonları ile istekleri/yanıtları yakalayın ve değiştirin
+- **Veritabanı Gezgini**: Sorgu oluşturucu ve tablo yönetimi ile görsel veritabanı tarayıcısı
+- **API Playground**: API endpoint'lerini etkileşimli olarak test edin ve hata ayıklayın
+- **Cron Yöneticisi**: Yerleşik cron sistemi ile arka plan görevlerini zamanlayın ve yönetin
+- **Dashboard Widget'ları**: Veri görselleştirme için SQL sorguları ile özel dashboard widget'ları oluşturun
+- **İçerik Yönetimi**: Özel tablolar ve dinamik formlarla esnek içerik yapısı
+- **Geliştirici Araçları**: Geliştiricilerin genişletmesi ve özelleştirmesi için kapsamlı araç seti
+- **Docker Desteği**: Kolay dağıtım için Docker Compose ile tam konteynerleştirilmiş
+
+## Gereksinimler
+
+### Docker Dağıtımı İçin (Önerilen)
+
+- Docker 20.10+
+- Docker Compose 2.0+
+- 2GB+ RAM
+- 5GB+ disk alanı
+
+### Manuel Kurulum İçin
+
+- PHP 8.0+ uzantıları ile: pdo_mysql, pdo_sqlite, mysqli, mbstring, gd
+- MySQL 8.0+ (opsiyonel, MySQL kullanıyorsanız)
+- SQLite 3 (PHP ile birlikte gelir)
+- Web sunucusu (Apache/Nginx) veya PHP yerleşik sunucusu
+- Composer (opsiyonel, bağımlılık yönetimi için)
+
+## Hızlı Başlangıç
+
+### Docker Compose Kullanarak (Önerilen)
+
+1. **Repository'yi klonlayın**
+   ```bash
+   git clone <repository-url>
+   cd StockCountWeb
+   ```
+
+2. **Ortam dosyasını kopyalayın**
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **Ortam değişkenlerini düzenleyin** (opsiyonel, varsayılanlar geliştirme için çalışır)
+   ```bash
+   nano .env
+   ```
+
+4. **Uygulamayı başlatın**
+   ```bash
+   docker-compose up -d
+   ```
+
+5. **Veritabanını başlatın**
+   ```bash
+   docker-compose exec php php scripts/init_db.php
+   ```
+
+6. **Uygulamaya erişin**
+   - Web Arayüzü: http://localhost:8080
+   - Varsayılan kimlik bilgileri:
+     - Kullanıcı adı: `admin`
+     - Parola: `admin123`
+
+## Önemli Notlar
+
+### JavaScript/Node.js Desteği Kaldırıldı
+
+**Version 1.1.0** itibariyle, ELF artık yalnızca PHP kullanmaktadır:
+
+- ❌ **Node.js desteği kaldırıldı**: Artık Node.js servisine veya JavaScript kod çalıştırmaya gerek yoktur
+- ✅ **PHP Only**: Tüm bulut fonksiyonları ve middleware'ler artık yalnızca PHP ile yazılır ve çalıştırılır
+- ✅ **Basitleştirilmiş Mimari**: PHP-only yürütme ile daha basit ve bakımı kolay bir mimari
+- ✅ **Daha Az Bağımlılık**: Node.js ve npm bağımlılıkları kaldırıldı
+
+### Bulut Fonksiyonları
+
+Bulut fonksiyonları artık yalnızca PHP ile yazılabilir:
+
+1. **Cloud Functions** sayfasına gidin (`/admin/cloud-functions.php`)
+2. **Yeni fonksiyon oluşturun:**
+   - Fonksiyon adını girin
+   - PHP kodu yazın
+   - Kaydedin
+
+3. **API üzerinden fonksiyonu çağırın:**
+   ```bash
+   POST /api/cloud-functions/execute.php
+   Content-Type: application/json
+   
+   {
+     "function_name": "my_function",
+     "data": {...}
+   }
+   ```
+
+### Cron İşleri
+
+Cron işleri artık yalnızca PHP ile yazılabilir. Cron daemon PHP içinde çalışır ve PHP kodunu doğrudan çalıştırır.
+
+### Docker Servisleri
+
+Docker Compose artık 3 servis içerir (4 yerine):
+
+1. **PHP Service** (`php`)
+2. **Nginx Service** (`nginx`)
+3. **MySQL Service** (`mysql`) - Opsiyonel, SQLite kullanıyorsanız gerekli değil
+
+Node.js servisi artık mevcut değildir.
+
+## Değişiklik Geçmişi
+
+### Versiyon 1.1.0
+- Node.js/JavaScript desteği kaldırıldı
+- Bulut fonksiyonları artık yalnızca PHP destekliyor
+- PHP-only yürütme ile basitleştirilmiş mimari
+- Docker Compose yapılandırması güncellendi
+
+### Versiyon 1.0.0
+- İlk sürüm
+- Docker Compose desteği
+- SQLite ve MySQL veritabanı desteği
+- Bulut fonksiyonları sistemi
+- Dinamik sayfa oluşturucu
+- Geliştirici araçları
