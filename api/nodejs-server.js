@@ -248,27 +248,41 @@ const server = http.createServer(async (req, res) => {
                 global.dbQueryOne = dbQueryOne;
                 global.dbExecute = dbExecute;
                 
+                // Make response, request, method, headers available globally for user code
+                global.response = response;
+                global.request = request;
+                global.method = method;
+                global.headers = headers;
+                
                 // Create async function wrapper for user code
                 // This allows user code to use await directly
+                // Use closure to pass response, request, method, headers directly
                 const executeUserCode = async () => {
-                    // Make database functions available in user code scope
-                    const dbQuery = global.dbQuery;
-                    const dbQueryOne = global.dbQueryOne;
-                    const dbExecute = global.dbExecute;
+                    // Capture response, request, method, headers in closure
+                    // This ensures they are accessible in user code
+                    const responseObj = response;
+                    const requestObj = request;
+                    const methodObj = method;
+                    const headersObj = headers;
                     
                     // User code starts here
                     // Use Function constructor to properly handle await
+                    // Pass response, request, method, headers as parameters through closure
                     const userCodeFunction = new Function(`
                         return (async function() {
                             const dbQuery = arguments[0];
                             const dbQueryOne = arguments[1];
                             const dbExecute = arguments[2];
+                            const response = arguments[3];
+                            const request = arguments[4];
+                            const method = arguments[5];
+                            const headers = arguments[6];
                             
                             ${code}
                         })();
                     `);
                     
-                    return await userCodeFunction(dbQuery, dbQueryOne, dbExecute);
+                    return await userCodeFunction(dbQuery, dbQueryOne, dbExecute, responseObj, requestObj, methodObj, headersObj);
                 };
                 
                 // Execute user code
