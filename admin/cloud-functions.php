@@ -396,6 +396,54 @@ try {
     $middlewares = [];
 }
 
+// Handle AJAX request for table columns (before including header)
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_table_columns' && isset($_GET['table'])) {
+    header('Content-Type: application/json');
+    $table_name = $_GET['table'] ?? '';
+    
+    if (empty($table_name)) {
+        echo json_encode(['success' => false, 'message' => 'Table name is required']);
+        exit;
+    }
+    
+    try {
+        $escaped_table_name = preg_replace('/[^a-zA-Z0-9_]/', '', $table_name);
+        $settings = getSettings();
+        $dbType = $settings['db_type'] ?? 'sqlite';
+        
+        if ($dbType === 'mysql') {
+            $table_info = $db->query("
+                SELECT 
+                    COLUMN_NAME as name,
+                    DATA_TYPE as type,
+                    IS_NULLABLE as nullable,
+                    COLUMN_DEFAULT as dflt_value,
+                    COLUMN_KEY as pk_indicator,
+                    ORDINAL_POSITION as cid
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$escaped_table_name'
+                ORDER BY ORDINAL_POSITION
+            ")->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Normalize MySQL result to match SQLite PRAGMA format
+            foreach ($table_info as &$col) {
+                $col['type'] = strtoupper($col['type']);
+                $col['notnull'] = (strtoupper(trim($col['nullable'] ?? 'YES')) === 'NO') ? 1 : 0;
+                $col['dflt_value'] = $col['dflt_value'];
+                $col['pk'] = (strtoupper(trim($col['pk_indicator'] ?? '')) === 'PRI') ? 1 : 0;
+            }
+            unset($col);
+        } else {
+            $table_info = $db->query("PRAGMA table_info(\"$escaped_table_name\")")->fetchAll(PDO::FETCH_ASSOC);
+        }
+        
+        echo json_encode(['success' => true, 'columns' => $table_info]);
+    } catch (PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Error fetching table columns: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
 include '../includes/header.php';
 ?>
 
@@ -1284,13 +1332,31 @@ include '../includes/header.php';
         }
     };
     
+    // Cache for table columns
+    const tableColumnsCache = {};
+    
     function getTableColumns(tableName) {
-        // This would need to be implemented via AJAX to fetch table columns
-        // For now, return empty array - will be populated via AJAX
-        return [];
+        return new Promise((resolve, reject) => {
+            if (tableColumnsCache[tableName]) {
+                resolve(tableColumnsCache[tableName]);
+                return;
+            }
+            
+            fetch(`?ajax=get_table_columns&table=${encodeURIComponent(tableName)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.columns) {
+                        tableColumnsCache[tableName] = data.columns;
+                        resolve(data.columns);
+                    } else {
+                        reject(new Error(data.message || 'Failed to fetch columns'));
+                    }
+                })
+                .catch(error => reject(error));
+        });
     }
     
-    function generateFunctionCode() {
+    async function generateFunctionCode() {
         const functionName = document.getElementById('builder_function_name')?.value || '';
         const tableName = document.getElementById('builder_table_name')?.value || '';
         const operation = document.getElementById('builder_operation')?.value || 'list';
@@ -1299,10 +1365,17 @@ include '../includes/header.php';
             return '';
         }
         
-        return generatePHPCode(functionName, tableName, operation);
+        try {
+            const columns = await getTableColumns(tableName);
+            return generatePHPCode(functionName, tableName, operation, columns);
+        } catch (error) {
+            console.error('Error fetching table columns:', error);
+            // Fallback to basic code without columns
+            return generatePHPCode(functionName, tableName, operation, null);
+        }
     }
     
-    function generatePHPCode(functionName, tableName, operation) {
+    function generatePHPCode(functionName, tableName, operation, columns = null) {
         const escapedTable = tableName.replace(/[^a-zA-Z0-9_]/g, '');
         
         // Get relations for this table
@@ -1409,7 +1482,71 @@ if (!\$record) {
                 }
                 break;
             case 'create':
-                code = `// Create new record
+                if (columns && columns.length > 0) {
+                    // Filter columns: skip primary key (auto-increment) and timestamps
+                    const insertColumns = columns.filter(col => {
+                        return col.pk !== 1 && 
+                               col.name.toLowerCase() !== 'created_at' && 
+                               col.name.toLowerCase() !== 'updated_at';
+                    });
+                    
+                    if (insertColumns.length > 0) {
+                        const columnNames = insertColumns.map(col => `\`${col.name}\``).join(', ');
+                        const placeholders = insertColumns.map(() => '?').join(', ');
+                        const paramNames = insertColumns.map(col => col.name).join(', ');
+                        const valueAssignments = insertColumns.map(col => {
+                            const colName = col.name;
+                            const isBool = col.type === 'INTEGER' && (
+                                col.dflt_value === '0' || col.dflt_value === '1' ||
+                                /^(is_|has_|can_|should_|must_|.*_(mi|mu|mi_durum|durum)$)/i.test(colName)
+                            );
+                            
+                            if (isBool) {
+                                return `isset(\$request['${colName}']) ? 1 : 0`;
+                            } else if (col.type === 'INTEGER' || col.type === 'REAL' || col.type === 'NUMERIC') {
+                                return `isset(\$request['${colName}']) ? intval(\$request['${colName}']) : null`;
+                            } else {
+                                return `isset(\$request['${colName}']) ? trim(\$request['${colName}']) : null`;
+                            }
+                        }).join(',\n    ');
+                        
+                        // Check for timestamp columns
+                        const hasCreatedAt = columns.some(col => col.name.toLowerCase() === 'created_at');
+                        const hasUpdatedAt = columns.some(col => col.name.toLowerCase() === 'updated_at');
+                        
+                        let timestampCols = '';
+                        let timestampVals = '';
+                        if (hasCreatedAt) {
+                            timestampCols += ', `created_at`';
+                            timestampVals += ', CURRENT_TIMESTAMP';
+                        }
+                        if (hasUpdatedAt) {
+                            timestampCols += ', `updated_at`';
+                            timestampVals += ', CURRENT_TIMESTAMP';
+                        }
+                        
+                        code = `// Create new record
+\$columns = [${paramNames}];
+\$values = [
+    ${valueAssignments}
+];
+
+// Prepare SQL with columns
+\$stmt = \$dbContext->prepare("INSERT INTO \`${escapedTable}\` (${columnNames}${timestampCols}) VALUES (${placeholders}${timestampVals})");
+\$stmt->execute(\$values);
+
+\$response['success'] = true;
+\$response['message'] = 'Record created successfully';
+\$response['data'] = ['id' => \$dbContext->lastInsertId()];`;
+                    } else {
+                        code = `// Create new record
+// No insertable columns found (only primary key and timestamps)
+
+\$response['success'] = false;
+\$response['message'] = 'No columns available for insert';`;
+                    }
+                } else {
+                    code = `// Create new record
 // Expected fields in request
 \$stmt = \$dbContext->prepare("INSERT INTO ${escapedTable} (/* columns */) VALUES (/* values */)");
 // \$stmt->execute([/* values */]);
@@ -1417,9 +1554,98 @@ if (!\$record) {
 \$response['success'] = true;
 \$response['message'] = 'Record created successfully';
 // \$response['data'] = ['id' => \$dbContext->lastInsertId()];`;
+                }
                 break;
             case 'update':
-                code = `// Update record by ID
+                if (columns && columns.length > 0) {
+                    // Filter columns: skip primary key and created_at, but include updated_at
+                    const updateColumns = columns.filter(col => {
+                        return col.pk !== 1 && col.name.toLowerCase() !== 'created_at';
+                    });
+                    
+                    if (updateColumns.length > 0) {
+                        const setParts = [];
+                        const valueAssignments = [];
+                        updateColumns.forEach(col => {
+                            const colName = col.name;
+                            const isBool = col.type === 'INTEGER' && (
+                                col.dflt_value === '0' || col.dflt_value === '1' ||
+                                /^(is_|has_|can_|should_|must_|.*_(mi|mu|mi_durum|durum)$)/i.test(colName)
+                            );
+                            
+                            if (colName.toLowerCase() === 'updated_at') {
+                                setParts.push(`\`${colName}\` = CURRENT_TIMESTAMP`);
+                            } else {
+                                setParts.push(`\`${colName}\` = ?`);
+                                if (isBool) {
+                                    valueAssignments.push(`isset(\$request['${colName}']) ? 1 : 0`);
+                                } else if (col.type === 'INTEGER' || col.type === 'REAL' || col.type === 'NUMERIC') {
+                                    valueAssignments.push(`isset(\$request['${colName}']) ? intval(\$request['${colName}']) : null`);
+                                } else {
+                                    valueAssignments.push(`isset(\$request['${colName}']) ? trim(\$request['${colName}']) : null`);
+                                }
+                            }
+                        });
+                        
+                        const setClause = setParts.join(', ');
+                        const valuesList = valueAssignments.join(',\n    ');
+                        
+                        code = `// Update record by ID
+\$id = isset(\$request['id']) ? intval(\$request['id']) : 0;
+if (\$id <= 0) {
+    \$response['success'] = false;
+    \$response['message'] = 'Invalid ID';
+    return;
+}
+
+// Check if record exists
+\$stmt = \$dbContext->prepare("SELECT * FROM \`${escapedTable}\` WHERE id = ?");
+\$stmt->execute([\$id]);
+\$record = \$stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!\$record) {
+    \$response['success'] = false;
+    \$response['message'] = 'Record not found';
+    return;
+}
+
+// Update record
+\$values = [
+    ${valuesList}
+];
+\$values[] = \$id; // Add ID for WHERE clause
+
+\$stmt = \$dbContext->prepare("UPDATE \`${escapedTable}\` SET ${setClause} WHERE id = ?");
+\$stmt->execute(\$values);
+
+\$response['success'] = true;
+\$response['message'] = 'Record updated successfully';`;
+                    } else {
+                        code = `// Update record by ID
+\$id = isset(\$request['id']) ? intval(\$request['id']) : 0;
+if (\$id <= 0) {
+    \$response['success'] = false;
+    \$response['message'] = 'Invalid ID';
+    return;
+}
+
+// Check if record exists
+\$stmt = \$dbContext->prepare("SELECT * FROM \`${escapedTable}\` WHERE id = ?");
+\$stmt->execute([\$id]);
+\$record = \$stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!\$record) {
+    \$response['success'] = false;
+    \$response['message'] = 'Record not found';
+    return;
+}
+
+// No columns available for update
+\$response['success'] = false;
+\$response['message'] = 'No columns available for update';`;
+                    }
+                } else {
+                    code = `// Update record by ID
 \$id = isset(\$request['id']) ? intval(\$request['id']) : 0;
 if (\$id <= 0) {
     \$response['success'] = false;
@@ -1444,6 +1670,7 @@ if (!\$record) {
 
 \$response['success'] = true;
 \$response['message'] = 'Record updated successfully';`;
+                }
                 break;
             case 'delete':
                 code = `// Delete record by ID
@@ -1477,15 +1704,20 @@ if (!\$record) {
         return code;
     }
     
-    window.updateBuilderPreview = function() {
+    window.updateBuilderPreview = async function() {
         const preview = document.getElementById('builder_preview');
         if (preview) {
-            const code = generateFunctionCode();
-            preview.textContent = code || 'Select table and operation to preview code...';
+            preview.textContent = 'Loading preview...';
+            try {
+                const code = await generateFunctionCode();
+                preview.textContent = code || 'Select table and operation to preview code...';
+            } catch (error) {
+                preview.textContent = `Error: ${error.message}`;
+            }
         }
     };
     
-    window.generateAndCreateFunction = function() {
+    window.generateAndCreateFunction = async function() {
         const form = document.getElementById('builder-form');
         if (!form || !form.checkValidity()) {
             form?.reportValidity();
@@ -1498,7 +1730,7 @@ if (!\$record) {
         const language = document.getElementById('builder_language')?.value || 'php';
         const description = document.getElementById('builder_description')?.value || '';
         const group = document.getElementById('builder_group')?.value || '';
-        const code = generateFunctionCode();
+        const code = await generateFunctionCode();
         
         // Populate the main form
         document.getElementById('function_name').value = functionName;
