@@ -680,12 +680,14 @@ include '../includes/header.php';
                                                         Test
                                                     </a>
                                                     <button
-                                                        onclick="event.stopPropagation(); deleteFunction(<?php echo $func['id']; ?>, '<?php echo htmlspecialchars(addslashes($func['name'])); ?>')"
-                                                        class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1.5 transition-colors"
+                                                        onclick="event.stopPropagation(); if(typeof window.deleteFunction === 'function') { window.deleteFunction(<?php echo $func['id']; ?>, '<?php echo htmlspecialchars(addslashes($func['name'])); ?>'); } else { alert('Delete function not loaded yet. Please refresh the page.'); }"
+                                                        class="flex-1 inline-flex items-center justify-center rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 transition-colors"
+                                                        title="Delete function"
                                                     >
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                         </svg>
+                                                        Delete
                                                     </button>
                                                 </div>
                                             </div>
@@ -871,6 +873,16 @@ include '../includes/header.php';
                                                 >
                                                     Cancel
                                                 </a>
+                                                <button
+                                                    type="button"
+                                                    onclick="if(typeof window.deleteFunction === 'function') { window.deleteFunction(<?php echo $edit_function['id']; ?>, '<?php echo htmlspecialchars(addslashes($edit_function['name'])); ?>'); } else { alert('Delete function not loaded yet. Please refresh the page.'); }"
+                                                    class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 px-4 py-2 transition-colors"
+                                                >
+                                                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                    Delete
+                                                </button>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -1021,6 +1033,17 @@ include '../includes/header.php';
 </div>
 
 <script>
+    // Delete function - must be defined early
+    window.deleteFunction = function(id, name) {
+        if (confirm('Are you sure you want to delete "' + name + '"? This action cannot be undone.')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = '<input type="hidden" name="action" value="delete_function"><input type="hidden" name="function_id" value="' + id + '">';
+            document.body.appendChild(form);
+            form.submit();
+        }
+    };
+    
     // Table relations metadata (for function builder)
     const tableRelations = <?php echo json_encode($table_relations, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE); ?>;
     
@@ -1145,7 +1168,6 @@ include '../includes/header.php';
 //     \$response['message'] = 'Record not found';
 //     return;
 // }`;
-            }
             window.codeEditor.setValue(exampleCode);
         }
     };
@@ -1478,16 +1500,6 @@ if (!\$record) {
     
     function selectFunction(id) {
         window.location.href = '?edit=' + id;
-    }
-    
-    function deleteFunction(id, name) {
-        if (confirm('Are you sure you want to delete "' + name + '"? This action cannot be undone.')) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.innerHTML = '<input type="hidden" name="action" value="delete_function"><input type="hidden" name="function_id" value="' + id + '">';
-            document.body.appendChild(form);
-            form.submit();
-        }
     }
     
     // Update form submission to sync editor
