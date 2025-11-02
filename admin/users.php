@@ -5,6 +5,35 @@ requireLogin();
 $page_title = 'Users';
 $db = getDB();
 
+// Ensure users table exists
+try {
+    $settings = getSettings();
+    $dbType = $settings['db_type'] ?? 'sqlite';
+    
+    if ($dbType === 'mysql') {
+        // MySQL syntax
+        $db->exec("CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(255) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            user_type VARCHAR(50) DEFAULT 'user',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } else {
+        // SQLite syntax
+        $db->exec("CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            user_type TEXT DEFAULT 'user',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )");
+    }
+} catch (PDOException $e) {
+    // Table might already exist
+    error_log("Error creating users table: " . $e->getMessage());
+}
+
 // Handle user operations
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['action'])) {
@@ -67,7 +96,41 @@ try {
 }
 
 // Get all users
-$users = $db->query("SELECT id, username, user_type, created_at FROM users ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+$users = [];
+try {
+    // Try with created_at first
+    try {
+        $users = $db->query("SELECT id, username, user_type, created_at FROM users ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // If created_at column doesn't exist, try without it
+        try {
+            $users = $db->query("SELECT id, username, user_type FROM users ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+            // Add created_at as null for each user
+            foreach ($users as &$user) {
+                $user['created_at'] = null;
+            }
+        } catch (PDOException $e2) {
+            // If user_type column doesn't exist, try basic query
+            try {
+                $users = $db->query("SELECT id, username FROM users ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+                // Add default values
+                foreach ($users as &$user) {
+                    $user['user_type'] = 'user';
+                    $user['created_at'] = null;
+                }
+            } catch (PDOException $e3) {
+                error_log("Error fetching users: " . $e3->getMessage());
+                $users = [];
+            }
+        }
+    }
+} catch (Exception $e) {
+    error_log("Error fetching users: " . $e->getMessage());
+    $users = [];
+}
+
+// Debug: Log user count
+error_log("Users fetched: " . count($users));
 
 include '../includes/header.php';
 ?>
@@ -164,7 +227,13 @@ include '../includes/header.php';
                         <h3 class="text-lg font-semibold leading-none tracking-tight mb-4">All Users</h3>
                     </div>
                     <div class="p-6 pt-0">
-                        <?php if (empty($users)): ?>
+                        <?php 
+                        // Debug: Check if users array is set and not empty
+                        if (!isset($users)) {
+                            $users = [];
+                        }
+                        if (empty($users)): 
+                        ?>
                             <div class="text-center py-8 text-muted-foreground">
                                 No users added yet.
                             </div>
@@ -206,7 +275,15 @@ include '../includes/header.php';
                                                         </span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td class="p-4 align-middle text-sm text-muted-foreground"><?php echo date('d.m.Y H:i', strtotime($user['created_at'])); ?></td>
+                                                <td class="p-4 align-middle text-sm text-muted-foreground">
+                                                    <?php 
+                                                    if (!empty($user['created_at']) && $user['created_at'] !== null) {
+                                                        echo date('d.m.Y H:i', strtotime($user['created_at']));
+                                                    } else {
+                                                        echo '-';
+                                                    }
+                                                    ?>
+                                                </td>
                                                 <td class="p-4 align-middle">
                                                     <?php if ($user['id'] != $_SESSION['user_id']): ?>
                                                         <form method="POST" action="" class="inline">
