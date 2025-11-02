@@ -85,17 +85,65 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                 try {
                                     // Try to find a display column (name, title, label, etc.)
                                     $escaped_target = preg_replace('/[^a-zA-Z0-9_]/', '', $relation_target_table);
-                                    $target_stmt = $db->query("PRAGMA table_info(\"$escaped_target\")");
-                                    $target_columns = $target_stmt->fetchAll(PDO::FETCH_ASSOC);
+                                    
+                                    // Get settings for database type
+                                    $settings = getSettings();
+                                    $dbType = $settings['db_type'] ?? 'sqlite';
+                                    
+                                    // Get target table columns
+                                    if ($dbType === 'mysql') {
+                                        // MySQL: Get column info from INFORMATION_SCHEMA
+                                        $target_columns = $db->query("
+                                            SELECT 
+                                                COLUMN_NAME as name,
+                                                DATA_TYPE as type,
+                                                IS_NULLABLE as nullable,
+                                                COLUMN_DEFAULT as dflt_value,
+                                                COLUMN_KEY as pk_indicator,
+                                                ORDINAL_POSITION as cid
+                                            FROM INFORMATION_SCHEMA.COLUMNS 
+                                            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$escaped_target'
+                                            ORDER BY ORDINAL_POSITION
+                                        ")->fetchAll(PDO::FETCH_ASSOC);
+                                        
+                                        // Normalize MySQL result to match SQLite PRAGMA format
+                                        foreach ($target_columns as &$target_col) {
+                                            $target_col['pk'] = (strtoupper(trim($target_col['pk_indicator'] ?? '')) === 'PRI') ? 1 : 0;
+                                        }
+                                        unset($target_col);
+                                    } else {
+                                        // SQLite: Use PRAGMA table_info
+                                        $target_stmt = $db->query("PRAGMA table_info(\"$escaped_target\")");
+                                        $target_columns = $target_stmt->fetchAll(PDO::FETCH_ASSOC);
+                                    }
                                     
                                     // Find suitable display column
                                     $display_candidates = ['name', 'title', 'label', 'title_en', 'name_en'];
+                                    $found_display_column = false;
                                     foreach ($display_candidates as $candidate) {
                                         foreach ($target_columns as $target_col) {
                                             if (strtolower($target_col['name']) === $candidate) {
                                                 $relation_display_column = $target_col['name'];
+                                                $found_display_column = true;
                                                 break 2;
                                             }
+                                        }
+                                    }
+                                    
+                                    // If no name/title found, use first column after ID (primary key)
+                                    if (!$found_display_column) {
+                                        foreach ($target_columns as $target_col) {
+                                            // Skip primary key (id)
+                                            if ($target_col['pk'] == 1) {
+                                                continue;
+                                            }
+                                            // Skip timestamps
+                                            if (in_array(strtolower($target_col['name']), ['created_at', 'updated_at'])) {
+                                                continue;
+                                            }
+                                            // Use first non-ID, non-timestamp column
+                                            $relation_display_column = $target_col['name'];
+                                            break;
                                         }
                                     }
                                     
@@ -546,18 +594,66 @@ function renderDynamicPage($db, $page_config, $columns, $primary_key, $enable_li
                                                     if ($is_relation && $relation_target_table && $value !== null):
                                                         try {
                                                             $escaped_target = preg_replace('/[^a-zA-Z0-9_]/', '', $relation_target_table);
-                                                            $target_stmt = $db->query("PRAGMA table_info(\"$escaped_target\")");
-                                                            $target_columns = $target_stmt->fetchAll(PDO::FETCH_ASSOC);
+                                                            
+                                                            // Get settings for database type
+                                                            $settings = getSettings();
+                                                            $dbType = $settings['db_type'] ?? 'sqlite';
+                                                            
+                                                            // Get target table columns
+                                                            if ($dbType === 'mysql') {
+                                                                // MySQL: Get column info from INFORMATION_SCHEMA
+                                                                $target_columns = $db->query("
+                                                                    SELECT 
+                                                                        COLUMN_NAME as name,
+                                                                        DATA_TYPE as type,
+                                                                        IS_NULLABLE as nullable,
+                                                                        COLUMN_DEFAULT as dflt_value,
+                                                                        COLUMN_KEY as pk_indicator,
+                                                                        ORDINAL_POSITION as cid
+                                                                    FROM INFORMATION_SCHEMA.COLUMNS 
+                                                                    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$escaped_target'
+                                                                    ORDER BY ORDINAL_POSITION
+                                                                ")->fetchAll(PDO::FETCH_ASSOC);
+                                                                
+                                                                // Normalize MySQL result to match SQLite PRAGMA format
+                                                                foreach ($target_columns as &$target_col) {
+                                                                    $target_col['pk'] = (strtoupper(trim($target_col['pk_indicator'] ?? '')) === 'PRI') ? 1 : 0;
+                                                                }
+                                                                unset($target_col);
+                                                            } else {
+                                                                // SQLite: Use PRAGMA table_info
+                                                                $target_stmt = $db->query("PRAGMA table_info(\"$escaped_target\")");
+                                                                $target_columns = $target_stmt->fetchAll(PDO::FETCH_ASSOC);
+                                                            }
                                                             
                                                             // Find display column
                                                             $relation_display_column = 'name';
                                                             $display_candidates = ['name', 'title', 'label', 'title_en', 'name_en'];
+                                                            $found_display_column = false;
                                                             foreach ($display_candidates as $candidate) {
                                                                 foreach ($target_columns as $target_col) {
                                                                     if (strtolower($target_col['name']) === $candidate) {
                                                                         $relation_display_column = $target_col['name'];
+                                                                        $found_display_column = true;
                                                                         break 2;
                                                                     }
+                                                                }
+                                                            }
+                                                            
+                                                            // If no name/title found, use first column after ID (primary key)
+                                                            if (!$found_display_column) {
+                                                                foreach ($target_columns as $target_col) {
+                                                                    // Skip primary key (id)
+                                                                    if ($target_col['pk'] == 1) {
+                                                                        continue;
+                                                                    }
+                                                                    // Skip timestamps
+                                                                    if (in_array(strtolower($target_col['name']), ['created_at', 'updated_at'])) {
+                                                                        continue;
+                                                                    }
+                                                                    // Use first non-ID, non-timestamp column
+                                                                    $relation_display_column = $target_col['name'];
+                                                                    break;
                                                                 }
                                                             }
                                                             
