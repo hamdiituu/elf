@@ -271,6 +271,23 @@ try {
     $all_tables = [];
 }
 
+// Get relation metadata for all tables
+$table_relations = [];
+try {
+    $relations_stmt = $db->query("SELECT table_name, column_name, target_table FROM relation_metadata ORDER BY table_name, column_name");
+    $relations = $relations_stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($relations as $rel) {
+        $table_name = $rel['table_name'];
+        if (!isset($table_relations[$table_name])) {
+            $table_relations[$table_name] = [];
+        }
+        $table_relations[$table_name][$rel['column_name']] = $rel['target_table'];
+    }
+} catch (PDOException $e) {
+    // relation_metadata table might not exist
+    $table_relations = [];
+}
+
 // Get all function groups
 $function_groups = [];
 try {
@@ -1026,6 +1043,9 @@ include '../includes/header.php';
 </div>
 
 <script>
+    // Table relations metadata (for function builder)
+    const tableRelations = <?php echo json_encode($table_relations, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE); ?>;
+    
     // Initialize CodeMirror
     const codeTextarea = document.getElementById('code');
     if (!codeTextarea) {
@@ -1334,21 +1354,66 @@ response.message = 'Function executed successfully';
     
     function generatePHPCode(functionName, tableName, operation) {
         const escapedTable = tableName.replace(/[^a-zA-Z0-9_]/g, '');
+        
+        // Get relations for this table
+        const relations = tableRelations[tableName] || {};
+        const hasRelations = Object.keys(relations).length > 0;
+        
+        // Build JOIN clauses if relations exist
+        let joinClauses = '';
+        let selectFields = `\`${escapedTable}\`.*`;
+        
+        if (hasRelations && (operation === 'list' || operation === 'get')) {
+            const joins = [];
+            const aliases = {};
+            let aliasIndex = 1;
+            
+            for (const [column, targetTable] of Object.entries(relations)) {
+                const escapedColumn = column.replace(/[^a-zA-Z0-9_]/g, '');
+                const escapedTarget = targetTable.replace(/[^a-zA-Z0-9_]/g, '');
+                const alias = `r${aliasIndex++}`;
+                aliases[targetTable] = alias;
+                
+                joins.push(`LEFT JOIN \`${escapedTarget}\` AS \`${alias}\` ON \`${escapedTable}\`.\`${escapedColumn}\` = \`${alias}\`.\`id\``);
+                
+                // Add related table fields (id, name/title)
+                selectFields += `, \`${alias}\`.\`id\` AS \`${column}_id\``;
+                selectFields += `, \`${alias}\`.\`name\` AS \`${column}_name\``;
+                selectFields += `, \`${alias}\`.\`title\` AS \`${column}_title\``;
+            }
+            
+            if (joins.length > 0) {
+                joinClauses = ' ' + joins.join(' ');
+            }
+        }
+        
         let code = '';
         
         switch(operation) {
             case 'list':
-                code = `// List all records from ${tableName}
-\$stmt = \$dbContext->query("SELECT * FROM ${escapedTable} ORDER BY id DESC");
+                if (hasRelations && joinClauses) {
+                    code = `// List all records from ${tableName} with relations
+\$stmt = \$dbContext->query("SELECT ${selectFields} FROM \`${escapedTable}\`${joinClauses} ORDER BY \`${escapedTable}\`.\`id\` DESC");
 \$records = \$stmt->fetchAll(PDO::FETCH_ASSOC);
 
 \$response['success'] = true;
 \$response['data'] = \$records;
 \$response['message'] = 'Records retrieved successfully';
 \$response['count'] = count(\$records);`;
+                } else {
+                    code = `// List all records from ${tableName}
+\$stmt = \$dbContext->query("SELECT * FROM \`${escapedTable}\` ORDER BY id DESC");
+\$records = \$stmt->fetchAll(PDO::FETCH_ASSOC);
+
+\$response['success'] = true;
+\$response['data'] = \$records;
+\$response['message'] = 'Records retrieved successfully';
+\$response['count'] = count(\$records);`;
+                }
                 break;
             case 'get':
-                code = `// Get single record by ID
+                if (hasRelations && joinClauses) {
+                    code = `// Get single record by ID with relations
 \$id = isset(\$request['id']) ? intval(\$request['id']) : 0;
 if (\$id <= 0) {
     \$response['success'] = false;
@@ -1356,7 +1421,7 @@ if (\$id <= 0) {
     return;
 }
 
-\$stmt = \$dbContext->prepare("SELECT * FROM ${escapedTable} WHERE id = ?");
+\$stmt = \$dbContext->prepare("SELECT ${selectFields} FROM \`${escapedTable}\`${joinClauses} WHERE \`${escapedTable}\`.\`id\` = ?");
 \$stmt->execute([\$id]);
 \$record = \$stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -1369,6 +1434,29 @@ if (!\$record) {
 \$response['success'] = true;
 \$response['data'] = \$record;
 \$response['message'] = 'Record retrieved successfully';`;
+                } else {
+                    code = `// Get single record by ID
+\$id = isset(\$request['id']) ? intval(\$request['id']) : 0;
+if (\$id <= 0) {
+    \$response['success'] = false;
+    \$response['message'] = 'Invalid ID';
+    return;
+}
+
+\$stmt = \$dbContext->prepare("SELECT * FROM \`${escapedTable}\` WHERE id = ?");
+\$stmt->execute([\$id]);
+\$record = \$stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!\$record) {
+    \$response['success'] = false;
+    \$response['message'] = 'Record not found';
+    return;
+}
+
+\$response['success'] = true;
+\$response['data'] = \$record;
+\$response['message'] = 'Record retrieved successfully';`;
+                }
                 break;
             case 'create':
                 code = `// Create new record
@@ -1441,11 +1529,58 @@ if (!\$record) {
     
     function generateJavaScriptCode(functionName, tableName, operation) {
         const escapedTable = tableName.replace(/[^a-zA-Z0-9_]/g, '');
+        
+        // Get relations for this table
+        const relations = tableRelations[tableName] || {};
+        const hasRelations = Object.keys(relations).length > 0;
+        
+        // Build JOIN clauses if relations exist
+        let joinClauses = '';
+        let selectFields = `${escapedTable}.*`;
+        
+        if (hasRelations && (operation === 'list' || operation === 'get')) {
+            const joins = [];
+            const aliases = {};
+            let aliasIndex = 1;
+            
+            for (const [column, targetTable] of Object.entries(relations)) {
+                const escapedColumn = column.replace(/[^a-zA-Z0-9_]/g, '');
+                const escapedTarget = targetTable.replace(/[^a-zA-Z0-9_]/g, '');
+                const alias = `r${aliasIndex++}`;
+                aliases[targetTable] = alias;
+                
+                joins.push(`LEFT JOIN \`${escapedTarget}\` AS \`${alias}\` ON \`${escapedTable}\`.\`${escapedColumn}\` = \`${alias}\`.\`id\``);
+                
+                // Add related table fields (id, name/title)
+                selectFields += `, \`${alias}\`.\`id\` AS \`${column}_id\``;
+                selectFields += `, \`${alias}\`.\`name\` AS \`${column}_name\``;
+                selectFields += `, \`${alias}\`.\`title\` AS \`${column}_title\``;
+            }
+            
+            if (joins.length > 0) {
+                joinClauses = ' ' + joins.join(' ');
+            }
+        }
+        
         let code = '';
         
         switch(operation) {
             case 'list':
-                code = `// List all records from ${tableName}
+                if (hasRelations && joinClauses) {
+                    code = `// List all records from ${tableName} with relations
+try {
+    const records = await dbQuery(\`SELECT ${selectFields} FROM \\\`${escapedTable}\\\`${joinClauses} ORDER BY \\\`${escapedTable}\\\`.\\\`id\\\` DESC\`);
+    response.success = true;
+    response.data = records;
+    response.message = 'Records retrieved successfully';
+    response.count = records.length;
+} catch (error) {
+    response.success = false;
+    response.message = 'Database error: ' + error.message;
+    response.error = error.message;
+}`;
+                } else {
+                    code = `// List all records from ${tableName}
 try {
     const records = await dbQuery('SELECT * FROM ${escapedTable} ORDER BY id DESC');
     response.success = true;
@@ -1457,9 +1592,35 @@ try {
     response.message = 'Database error: ' + error.message;
     response.error = error.message;
 }`;
+                }
                 break;
             case 'get':
-                code = `// Get single record by ID
+                if (hasRelations && joinClauses) {
+                    code = `// Get single record by ID with relations
+const id = request.id ? parseInt(request.id) : 0;
+if (id <= 0) {
+    response.success = false;
+    response.message = 'Invalid ID';
+    return;
+}
+
+try {
+    const record = await dbQueryOne(\`SELECT ${selectFields} FROM \\\`${escapedTable}\\\`${joinClauses} WHERE \\\`${escapedTable}\\\`.\\\`id\\\` = ?\`, [id]);
+    if (!record) {
+        response.success = false;
+        response.message = 'Record not found';
+        return;
+    }
+    response.success = true;
+    response.data = record;
+    response.message = 'Record retrieved successfully';
+} catch (error) {
+    response.success = false;
+    response.message = 'Database error: ' + error.message;
+    response.error = error.message;
+}`;
+                } else {
+                    code = `// Get single record by ID
 const id = request.id ? parseInt(request.id) : 0;
 if (id <= 0) {
     response.success = false;
@@ -1482,6 +1643,7 @@ try {
     response.message = 'Database error: ' + error.message;
     response.error = error.message;
 }`;
+                }
                 break;
             case 'create':
                 code = `// Create new record
