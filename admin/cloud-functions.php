@@ -1141,6 +1141,7 @@ include '../includes/header.php';
 // \$method - HTTP method (string: GET, POST, PUT, DELETE)
 // \$headers - Request headers (array)
 // \$response - Response array (must set this)
+// \$_FILES - Uploaded files array (if any files uploaded)
 
 // Example: Get users
 \$stmt = \$dbContext->query("SELECT * FROM users LIMIT 10");
@@ -1158,6 +1159,47 @@ include '../includes/header.php';
 // \$users = \$stmt->fetchAll(PDO::FETCH_ASSOC);
 // \$response['success'] = true;
 // \$response['data'] = \$users;
+
+// Example: Image Upload
+// Note: Use multipart/form-data when calling the API with file upload
+// if (isset(\$_FILES['image']) && \$_FILES['image']['error'] === UPLOAD_ERR_OK) {
+//     \$file = \$_FILES['image'];
+//     \$file_ext = strtolower(pathinfo(\$file['name'], PATHINFO_EXTENSION));
+//     \$allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+//     
+//     if (in_array(\$file_ext, \$allowed_exts)) {
+//         // Get uploads directory (relative to project root)
+//         \$uploads_dir = dirname(__DIR__, 2) . '/uploads';
+//         if (!is_dir(\$uploads_dir)) {
+//             mkdir(\$uploads_dir, 0755, true);
+//         }
+//         
+//         \$filename = 'image_' . time() . '_' . uniqid() . '.' . \$file_ext;
+//         \$file_path = \$uploads_dir . '/' . \$filename;
+//         
+//         if (move_uploaded_file(\$file['tmp_name'], \$file_path)) {
+//             \$image_path = 'uploads/' . \$filename;
+//             
+//             // Optional: Save to database
+//             // \$stmt = \$dbContext->prepare("INSERT INTO images (image_path, created_at) VALUES (?, CURRENT_TIMESTAMP)");
+//             // \$stmt->execute([\$image_path]);
+//             
+//             \$response['success'] = true;
+//             \$response['data'] = ['image_path' => \$image_path, 'url' => '/' . \$image_path];
+//             \$response['message'] = 'Image uploaded successfully';
+//         } else {
+//             \$response['success'] = false;
+//             \$response['message'] = 'Failed to move uploaded file';
+//         }
+//     } else {
+//         \$response['success'] = false;
+//         \$response['message'] = 'Invalid file type. Allowed: ' . implode(', ', \$allowed_exts);
+//     }
+// } else {
+//     \$error_msg = isset(\$_FILES['image']) ? 'Upload error code: ' . \$_FILES['image']['error'] : 'No image file uploaded';
+//     \$response['success'] = false;
+//     \$response['message'] = \$error_msg;
+// }
 
 // Example: Check if record exists
 // \$stmt = \$dbContext->prepare("SELECT * FROM table WHERE id = ?");
