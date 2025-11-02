@@ -1491,10 +1491,64 @@ if (!\$record) {
                     });
                     
                     if (insertColumns.length > 0) {
-                        const columnNames = insertColumns.map(col => `\`${col.name}\``).join(', ');
-                        const placeholders = insertColumns.map(() => '?').join(', ');
-                        const paramNames = insertColumns.map(col => col.name).join(', ');
-                        const valueAssignments = insertColumns.map(col => {
+                        // Separate image columns from regular columns
+                        const imageColumns = insertColumns.filter(col => {
+                            const colName = col.name.toLowerCase();
+                            return /\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i.test(colName);
+                        });
+                        const regularColumns = insertColumns.filter(col => {
+                            const colName = col.name.toLowerCase();
+                            return !/\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i.test(colName);
+                        });
+                        
+                        // Build upload code for image columns
+                        let uploadCode = '';
+                        let imageValueAssignments = [];
+                        if (imageColumns.length > 0) {
+                            uploadCode += '// Handle image uploads\n';
+                            uploadCode += '\$uploads_dir = dirname(__DIR__, 2) . \'/uploads\';\n';
+                            uploadCode += 'if (!is_dir(\$uploads_dir)) {\n';
+                            uploadCode += '    mkdir(\$uploads_dir, 0755, true);\n';
+                            uploadCode += '}\n\n';
+                            
+                            imageColumns.forEach(col => {
+                                const colName = col.name;
+                                uploadCode += `// Process ${colName}\n`;
+                                uploadCode += `\$${colName}_path = null;\n`;
+                                uploadCode += `if (isset(\$_FILES['${colName}']) && \$_FILES['${colName}']['error'] === UPLOAD_ERR_OK) {\n`;
+                                uploadCode += `    \$file = \$_FILES['${colName}'];\n`;
+                                uploadCode += `    \$file_ext = strtolower(pathinfo(\$file['name'], PATHINFO_EXTENSION));\n`;
+                                uploadCode += `    \$allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];\n`;
+                                uploadCode += `    \n`;
+                                uploadCode += `    if (in_array(\$file_ext, \$allowed_exts)) {\n`;
+                                uploadCode += `        \$filename = '${colName}_' . time() . '_' . uniqid() . '.' . \$file_ext;\n`;
+                                uploadCode += `        \$file_path = \$uploads_dir . '/' . \$filename;\n`;
+                                uploadCode += `        \n`;
+                                uploadCode += `        if (move_uploaded_file(\$file['tmp_name'], \$file_path)) {\n`;
+                                uploadCode += `            \$${colName}_path = 'uploads/' . \$filename;\n`;
+                                uploadCode += `        } else {\n`;
+                                uploadCode += `            \$response['success'] = false;\n`;
+                                uploadCode += `            \$response['message'] = 'Failed to upload ${colName}';\n`;
+                                uploadCode += `            return;\n`;
+                                uploadCode += `        }\n`;
+                                uploadCode += `    } else {\n`;
+                                uploadCode += `        \$response['success'] = false;\n`;
+                                uploadCode += `        \$response['message'] = 'Invalid file type for ${colName}. Allowed: jpg, jpeg, png, gif, webp, svg';\n`;
+                                uploadCode += `        return;\n`;
+                                uploadCode += `    }\n`;
+                                uploadCode += `} else if (isset(\$request['${colName}'])) {\n`;
+                                uploadCode += `    // Use existing path from request (if updating with existing image)\n`;
+                                uploadCode += `    \$${colName}_path = trim(\$request['${colName}']);\n`;
+                                uploadCode += `}\n\n`;
+                                
+                                imageValueAssignments.push(`\$${colName}_path`);
+                            });
+                        }
+                        
+                        const columnNames = [...regularColumns, ...imageColumns].map(col => `\`${col.name}\``).join(', ');
+                        const placeholders = [...regularColumns, ...imageColumns].map(() => '?').join(', ');
+                        const paramNames = [...regularColumns, ...imageColumns].map(col => col.name).join(', ');
+                        const valueAssignments = regularColumns.map(col => {
                             const colName = col.name;
                             const isBool = col.type === 'INTEGER' && (
                                 col.dflt_value === '0' || col.dflt_value === '1' ||
@@ -1508,7 +1562,10 @@ if (!\$record) {
                             } else {
                                 return `isset(\$request['${colName}']) ? trim(\$request['${colName}']) : null`;
                             }
-                        }).join(',\n    ');
+                        });
+                        
+                        // Combine regular and image value assignments
+                        const allValueAssignments = [...valueAssignments, ...imageValueAssignments].join(',\n    ');
                         
                         // Check for timestamp columns
                         const hasCreatedAt = columns.some(col => col.name.toLowerCase() === 'created_at');
@@ -1526,9 +1583,8 @@ if (!\$record) {
                         }
                         
                         code = `// Create new record
-\$columns = [${paramNames}];
-\$values = [
-    ${valueAssignments}
+${uploadCode}\$values = [
+    ${allValueAssignments}
 ];
 
 // Prepare SQL with columns
@@ -1564,9 +1620,70 @@ if (!\$record) {
                     });
                     
                     if (updateColumns.length > 0) {
+                        // Separate image columns from regular columns
+                        const imageColumns = updateColumns.filter(col => {
+                            const colName = col.name.toLowerCase();
+                            return /\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i.test(colName) &&
+                                   colName !== 'updated_at';
+                        });
+                        const regularColumns = updateColumns.filter(col => {
+                            const colName = col.name.toLowerCase();
+                            return !/\b(image|img|photo|picture|resim|foto|avatar|thumbnail|profile_picture|profile_image)\b/i.test(colName);
+                        });
+                        
+                        // Build upload code for image columns
+                        let uploadCode = '';
                         const setParts = [];
                         const valueAssignments = [];
-                        updateColumns.forEach(col => {
+                        
+                        if (imageColumns.length > 0) {
+                            uploadCode += '// Handle image uploads\n';
+                            uploadCode += '\$uploads_dir = dirname(__DIR__, 2) . \'/uploads\';\n';
+                            uploadCode += 'if (!is_dir(\$uploads_dir)) {\n';
+                            uploadCode += '    mkdir(\$uploads_dir, 0755, true);\n';
+                            uploadCode += '}\n\n';
+                            
+                            imageColumns.forEach(col => {
+                                const colName = col.name;
+                                uploadCode += `// Process ${colName}\n`;
+                                uploadCode += `\$${colName}_path = \$record['${colName}']; // Keep existing if no new upload\n`;
+                                uploadCode += `if (isset(\$_FILES['${colName}']) && \$_FILES['${colName}']['error'] === UPLOAD_ERR_OK) {\n`;
+                                uploadCode += `    \$file = \$_FILES['${colName}'];\n`;
+                                uploadCode += `    \$file_ext = strtolower(pathinfo(\$file['name'], PATHINFO_EXTENSION));\n`;
+                                uploadCode += `    \$allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];\n`;
+                                uploadCode += `    \n`;
+                                uploadCode += `    if (in_array(\$file_ext, \$allowed_exts)) {\n`;
+                                uploadCode += `        // Delete old image if exists\n`;
+                                uploadCode += `        if (!empty(\$record['${colName}']) && file_exists(dirname(__DIR__, 2) . '/' . \$record['${colName}'])) {\n`;
+                                uploadCode += `            @unlink(dirname(__DIR__, 2) . '/' . \$record['${colName}']);\n`;
+                                uploadCode += `        }\n`;
+                                uploadCode += `        \n`;
+                                uploadCode += `        \$filename = '${colName}_' . time() . '_' . uniqid() . '.' . \$file_ext;\n`;
+                                uploadCode += `        \$file_path = \$uploads_dir . '/' . \$filename;\n`;
+                                uploadCode += `        \n`;
+                                uploadCode += `        if (move_uploaded_file(\$file['tmp_name'], \$file_path)) {\n`;
+                                uploadCode += `            \$${colName}_path = 'uploads/' . \$filename;\n`;
+                                uploadCode += `        } else {\n`;
+                                uploadCode += `            \$response['success'] = false;\n`;
+                                uploadCode += `            \$response['message'] = 'Failed to upload ${colName}';\n`;
+                                uploadCode += `            return;\n`;
+                                uploadCode += `        }\n`;
+                                uploadCode += `    } else {\n`;
+                                uploadCode += `        \$response['success'] = false;\n`;
+                                uploadCode += `        \$response['message'] = 'Invalid file type for ${colName}. Allowed: jpg, jpeg, png, gif, webp, svg';\n`;
+                                uploadCode += `        return;\n`;
+                                uploadCode += `    }\n`;
+                                uploadCode += `} else if (isset(\$request['${colName}'])) {\n`;
+                                uploadCode += `    // Use path from request (if explicitly provided)\n`;
+                                uploadCode += `    \$${colName}_path = trim(\$request['${colName}']);\n`;
+                                uploadCode += `}\n\n`;
+                                
+                                setParts.push(`\`${colName}\` = ?`);
+                                valueAssignments.push(`\$${colName}_path`);
+                            });
+                        }
+                        
+                        regularColumns.forEach(col => {
                             const colName = col.name;
                             const isBool = col.type === 'INTEGER' && (
                                 col.dflt_value === '0' || col.dflt_value === '1' ||
@@ -1609,7 +1726,7 @@ if (!\$record) {
     return;
 }
 
-// Update record
+${uploadCode}// Update record
 \$values = [
     ${valuesList}
 ];
