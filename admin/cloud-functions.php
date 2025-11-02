@@ -1576,21 +1576,21 @@ try {
     response.count = records.length;
 } catch (error) {
     response.success = false;
-    response.message = 'Database error: ' + error.message;
-    response.error = error.message;
+    response.message = 'Database error: ' + (error.message || error);
+    response.error = error.message || error;
 }`;
                 } else {
                     code = `// List all records from ${tableName}
 try {
-    const records = await dbQuery('SELECT * FROM ${escapedTable} ORDER BY id DESC');
+    const records = await dbQuery(\`SELECT * FROM \\\`${escapedTable}\\\` ORDER BY id DESC\`);
     response.success = true;
     response.data = records;
     response.message = 'Records retrieved successfully';
     response.count = records.length;
 } catch (error) {
     response.success = false;
-    response.message = 'Database error: ' + error.message;
-    response.error = error.message;
+    response.message = 'Database error: ' + (error.message || error);
+    response.error = error.message || error;
 }`;
                 }
                 break;
@@ -1616,8 +1616,8 @@ try {
     response.message = 'Record retrieved successfully';
 } catch (error) {
     response.success = false;
-    response.message = 'Database error: ' + error.message;
-    response.error = error.message;
+    response.message = 'Database error: ' + (error.message || error);
+    response.error = error.message || error;
 }`;
                 } else {
                     code = `// Get single record by ID
@@ -1629,7 +1629,7 @@ if (id <= 0) {
 }
 
 try {
-    const record = await dbQueryOne('SELECT * FROM ${escapedTable} WHERE id = ?', [id]);
+    const record = await dbQueryOne(\`SELECT * FROM \\\`${escapedTable}\\\` WHERE id = ?\`, [id]);
     if (!record) {
         response.success = false;
         response.message = 'Record not found';
@@ -1640,8 +1640,8 @@ try {
     response.message = 'Record retrieved successfully';
 } catch (error) {
     response.success = false;
-    response.message = 'Database error: ' + error.message;
-    response.error = error.message;
+    response.message = 'Database error: ' + (error.message || error);
+    response.error = error.message || error;
 }`;
                 }
                 break;

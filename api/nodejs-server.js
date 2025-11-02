@@ -243,19 +243,36 @@ const server = http.createServer(async (req, res) => {
             
             // Execute user code
             try {
-                // Wrap code in async IIFE to support await
-                // User code can use await directly
-                await (async function() {
-                    // Make database functions available
-                    // User code can use dbQuery, dbQueryOne, dbExecute
-                    // Note: We can't pass them as parameters to eval, so we'll make them global
-                    global.dbQuery = dbQuery;
-                    global.dbQueryOne = dbQueryOne;
-                    global.dbExecute = dbExecute;
+                // Make database functions available globally for user code
+                global.dbQuery = dbQuery;
+                global.dbQueryOne = dbQueryOne;
+                global.dbExecute = dbExecute;
+                
+                // Create async function wrapper for user code
+                // This allows user code to use await directly
+                const executeUserCode = async () => {
+                    // Make database functions available in user code scope
+                    const dbQuery = global.dbQuery;
+                    const dbQueryOne = global.dbQueryOne;
+                    const dbExecute = global.dbExecute;
                     
-                    // Execute user code
-                    eval(code);
-                })();
+                    // User code starts here
+                    // Use Function constructor to properly handle await
+                    const userCodeFunction = new Function(`
+                        return (async function() {
+                            const dbQuery = arguments[0];
+                            const dbQueryOne = arguments[1];
+                            const dbExecute = arguments[2];
+                            
+                            ${code}
+                        })();
+                    `);
+                    
+                    return await userCodeFunction(dbQuery, dbQueryOne, dbExecute);
+                };
+                
+                // Execute user code
+                await executeUserCode();
                 
                 // Ensure response has all required fields
                 if (typeof response.success === 'undefined') {
