@@ -452,15 +452,26 @@ include '../includes/header.php';
                             <h1 class="text-3xl font-bold text-foreground">Cloud Functions</h1>
                             <p class="mt-2 text-sm text-muted-foreground">Create and manage serverless functions</p>
                         </div>
-                        <button
-                            onclick="showCreateForm()"
-                            class="inline-flex items-center justify-center rounded-md text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2.5 transition-colors shadow-sm"
-                        >
-                            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                            New Function
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button
+                                onclick="showFunctionBuilder()"
+                                class="inline-flex items-center justify-center rounded-md text-sm font-semibold bg-green-600 text-white hover:bg-green-700 px-4 py-2.5 transition-colors shadow-sm"
+                            >
+                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                </svg>
+                                Function Builder
+                            </button>
+                            <button
+                                onclick="showCreateForm()"
+                                class="inline-flex items-center justify-center rounded-md text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2.5 transition-colors shadow-sm"
+                            >
+                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                New Function
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- Stats Dashboard -->

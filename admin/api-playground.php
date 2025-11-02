@@ -25,15 +25,49 @@ try {
     // Table might already exist
 }
 
-// Get cloud functions from database
-$cloud_functions = $db->query("SELECT * FROM cloud_functions WHERE enabled = 1 ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+// Get cloud functions from database (with grouping)
+$cloud_functions = [];
+try {
+    // Check if function_group column exists
+    $settings = getSettings();
+    $dbType = $settings['db_type'] ?? 'sqlite';
+    
+    if ($dbType === 'sqlite') {
+        $stmt = $db->query("PRAGMA table_info(cloud_functions)");
+        $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $column_names = array_column($columns, 'name');
+        $has_group = in_array('function_group', $column_names);
+    } else {
+        try {
+            $db->query("SELECT function_group FROM cloud_functions LIMIT 1");
+            $has_group = true;
+        } catch (PDOException $e) {
+            $has_group = false;
+        }
+    }
+    
+    if ($has_group) {
+        $cloud_functions = $db->query("SELECT * FROM cloud_functions WHERE enabled = 1 ORDER BY function_group ASC, name ASC")->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $cloud_functions = $db->query("SELECT * FROM cloud_functions WHERE enabled = 1 ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (PDOException $e) {
+    // Fallback to basic query
+    $cloud_functions = $db->query("SELECT * FROM cloud_functions WHERE enabled = 1 ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // Define available APIs
 $apis = [];
 
-// Add cloud functions to API list
+// Group cloud functions by function_group
+$grouped_functions = [];
+$ungrouped_functions = [];
+
 foreach ($cloud_functions as $cf) {
-    $apis[] = [
+    $group = $cf['function_group'] ?? '';
+    $group = trim($group);
+    
+    $api_item = [
         'id' => 'cloud-function-' . $cf['id'],
         'name' => $cf['name'],
         'full_name' => $cf['name'] . ' (Cloud Function)',
@@ -46,8 +80,44 @@ foreach ($cloud_functions as $cf) {
         ],
         'is_cloud_function' => true,
         'cloud_function_id' => $cf['id'],
-        'cloud_function_name' => $cf['name']
+        'cloud_function_name' => $cf['name'],
+        'function_group' => $group
     ];
+    
+    if (!empty($group)) {
+        if (!isset($grouped_functions[$group])) {
+            $grouped_functions[$group] = [];
+        }
+        $grouped_functions[$group][] = $api_item;
+    } else {
+        $ungrouped_functions[] = $api_item;
+    }
+}
+
+// Sort groups alphabetically
+ksort($grouped_functions);
+
+// Build APIs array: first grouped functions, then ungrouped
+foreach ($grouped_functions as $group => $group_apis) {
+    $apis[] = [
+        'id' => 'group-header-' . md5($group),
+        'name' => $group,
+        'full_name' => $group,
+        'description' => '',
+        'methods' => [],
+        'endpoint' => '',
+        'parameters' => [],
+        'is_group_header' => true,
+        'function_group' => $group
+    ];
+    foreach ($group_apis as $api_item) {
+        $apis[] = $api_item;
+    }
+}
+
+// Add ungrouped functions
+foreach ($ungrouped_functions as $api_item) {
+    $apis[] = $api_item;
 }
 
 include '../includes/header.php';
@@ -114,54 +184,63 @@ include '../includes/header.php';
                                         </div>
                                     <?php else: ?>
                                         <?php foreach ($apis as $api): ?>
-                                            <div 
-                                                class="p-3 rounded-lg border border-border hover:border-primary/50 cursor-pointer transition-all api-item group <?php echo (isset($api['is_cloud_function']) && $api['is_cloud_function']) ? 'bg-gradient-to-br from-purple-50/50 to-blue-50/50 border-purple-200' : 'bg-background hover:bg-muted/50'; ?>"
-                                                data-api-id="<?php echo htmlspecialchars($api['id']); ?>"
-                                                data-api-name="<?php echo htmlspecialchars(strtolower($api['name'])); ?>"
-                                                data-api-desc="<?php echo htmlspecialchars(strtolower($api['description'])); ?>"
-                                            >
-                                                <div class="flex items-start justify-between gap-2">
-                                                    <div class="flex-1 min-w-0">
-                                                        <div class="flex items-center gap-2 mb-2 flex-wrap">
-                                                            <?php foreach ($api['methods'] as $method): 
-                                                                $methodColors = [
-                                                                    'GET' => 'bg-blue-500 text-white',
-                                                                    'POST' => 'bg-green-500 text-white',
-                                                                    'PUT' => 'bg-yellow-500 text-white',
-                                                                    'DELETE' => 'bg-red-500 text-white',
-                                                                    'PATCH' => 'bg-purple-500 text-white'
-                                                                ];
-                                                                $colorClass = $methodColors[$method] ?? 'bg-gray-500 text-white';
-                                                            ?>
-                                                                <span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold <?php echo $colorClass; ?>">
-                                                                    <?php echo $method; ?>
-                                                                </span>
-                                                            <?php endforeach; ?>
-                                                            <?php if (isset($api['is_cloud_function']) && $api['is_cloud_function']): ?>
-                                                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800">
-                                                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                                        <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path>
-                                                                        <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"></path>
-                                                                    </svg>
-                                                                    Cloud
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                        <h4 class="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                                                            <?php echo htmlspecialchars($api['name']); ?>
-                                                        </h4>
-                                                        <p class="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                                            <?php echo htmlspecialchars($api['description']); ?>
-                                                        </p>
-                                                        <p class="text-xs text-muted-foreground mt-2 font-mono truncate opacity-75">
-                                                            <?php echo htmlspecialchars($api['endpoint']); ?>
-                                                        </p>
-                                                    </div>
-                                                    <svg class="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                                    </svg>
+                                            <?php if (isset($api['is_group_header']) && $api['is_group_header']): ?>
+                                                <!-- Group Header -->
+                                                <div class="py-2 px-3 bg-muted/50 border-b border-border">
+                                                    <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                        <?php echo htmlspecialchars($api['name']); ?>
+                                                    </h4>
                                                 </div>
-                                            </div>
+                                            <?php else: ?>
+                                                <div 
+                                                    class="p-3 rounded-lg border border-border hover:border-primary/50 cursor-pointer transition-all api-item group <?php echo (isset($api['is_cloud_function']) && $api['is_cloud_function']) ? 'bg-gradient-to-br from-purple-50/50 to-blue-50/50 border-purple-200' : 'bg-background hover:bg-muted/50'; ?>"
+                                                    data-api-id="<?php echo htmlspecialchars($api['id']); ?>"
+                                                    data-api-name="<?php echo htmlspecialchars(strtolower($api['name'])); ?>"
+                                                    data-api-desc="<?php echo htmlspecialchars(strtolower($api['description'])); ?>"
+                                                >
+                                                    <div class="flex items-start justify-between gap-2">
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                                                <?php foreach ($api['methods'] as $method): 
+                                                                    $methodColors = [
+                                                                        'GET' => 'bg-blue-500 text-white',
+                                                                        'POST' => 'bg-green-500 text-white',
+                                                                        'PUT' => 'bg-yellow-500 text-white',
+                                                                        'DELETE' => 'bg-red-500 text-white',
+                                                                        'PATCH' => 'bg-purple-500 text-white'
+                                                                    ];
+                                                                    $colorClass = $methodColors[$method] ?? 'bg-gray-500 text-white';
+                                                                ?>
+                                                                    <span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold <?php echo $colorClass; ?>">
+                                                                        <?php echo $method; ?>
+                                                                    </span>
+                                                                <?php endforeach; ?>
+                                                                <?php if (isset($api['is_cloud_function']) && $api['is_cloud_function']): ?>
+                                                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800">
+                                                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path>
+                                                                            <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"></path>
+                                                                        </svg>
+                                                                        Cloud
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                            <h4 class="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                                                                <?php echo htmlspecialchars($api['name']); ?>
+                                                            </h4>
+                                                            <p class="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                                                <?php echo htmlspecialchars($api['description']); ?>
+                                                            </p>
+                                                            <p class="text-xs text-muted-foreground mt-2 font-mono truncate opacity-75">
+                                                                <?php echo htmlspecialchars($api['endpoint']); ?>
+                                                            </p>
+                                                        </div>
+                                                        <svg class="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </div>
@@ -245,6 +324,9 @@ document.querySelectorAll('.api-item').forEach(item => {
 function selectAPI(apiId) {
     const api = apiData[apiId];
     if (!api) return;
+    
+    // Skip group headers
+    if (api.is_group_header) return;
     
     currentApiId = apiId;
     
